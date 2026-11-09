@@ -75,5 +75,6 @@ docs/screens.md
 - Task 2 — **S-WEB-01 Home** at `/` with loading, empty, error and no-featured states.
 - Task 3 — **S-WEB-03 Explorations catalogue** at `/explorations` with category tabs, result count, card grid, load more, locked-stage markers, and loading, empty, error and no-results states.
 - Task 4 — **S-WEB-04 Exploration detail** at `/explorations/:slug` with breadcrumb, lesson header, hero artwork, visitor gate (flag-controlled), full practitioner lesson, related cards, and loading, unpublished and missing states.
+- Task 5 — **S-WEB-05 Meditations catalogue** at `/meditations` with category tabs, free-previews filter, track grid, pagination, preview play affordances, unavailable-track markers, and loading, empty and error states.
 
 Later screens are routed to a clearly labelled placeholder so navigation works while each screen is built.

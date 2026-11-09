@@ -153,7 +153,7 @@ export async function getCatalogue(
     }
 
     const search = query.search?.trim().toLowerCase()
-    const items = publishedContent()
+    let items = publishedContent()
       .filter((item) => item.type === type)
       .filter((item) => (query.category ? item.category === query.category : true))
       .filter((item) =>
@@ -167,6 +167,14 @@ export async function getCatalogue(
         if (query.sort === 'shortest') return minutesFor(a) - minutesFor(b)
         return b.updatedAt.localeCompare(a.updatedAt)
       })
+
+    if (type === 'meditation' && getScenario() === 'transcode-failed') {
+      items = items.map((item, index) =>
+        index === 0 && item.type === 'meditation'
+          ? { ...item, transcode: 'failed' as const }
+          : item,
+      )
+    }
 
     return { items, total: items.length }
   })

@@ -6,6 +6,7 @@ import { PublicLayout } from '@/app/layouts/PublicLayout'
 import { ExplorationDetailPage } from '@/pages/public/ExplorationDetailPage'
 import { ExplorationsPage } from '@/pages/public/ExplorationsPage'
 import { HomePage } from '@/pages/public/HomePage'
+import { MeditationsPage } from '@/pages/public/MeditationsPage'
 import { ComingSoonPage } from '@/pages/system/ComingSoonPage'
 import { ForbiddenPage } from '@/pages/system/ForbiddenPage'
 import { NotFoundPage } from '@/pages/system/NotFoundPage'
@@ -22,7 +23,7 @@ export const router = createBrowserRouter(
       { path: 'about/:slug', element: <ComingSoonPage title="About" /> },
       { path: 'explorations', element: <ExplorationsPage /> },
       { path: 'explorations/:slug', element: <ExplorationDetailPage /> },
-      { path: 'meditations', element: <ComingSoonPage title="Meditations" /> },
+      { path: 'meditations', element: <MeditationsPage /> },
       {
         path: 'meditations/:slug',
         element: <ComingSoonPage title="Meditation" />,

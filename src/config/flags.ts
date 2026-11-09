@@ -13,6 +13,8 @@ export const FLAGS = {
   editorCanPublish: false,
   /** Catalogue search, filter and sort controls. */
   catalogueSearch: false,
+  /** Free previews filter on the meditations catalogue. */
+  meditationPreviewFilter: true,
   /** Meditation transcripts. */
   transcripts: false,
   /** Deletion grace period in days. */

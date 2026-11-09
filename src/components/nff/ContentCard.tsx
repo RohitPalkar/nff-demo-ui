@@ -1,4 +1,5 @@
 import {
+  AlertTriangle,
   ArrowRight,
   BookOpen,
   Headphones,
@@ -25,6 +26,7 @@ interface ContentCardProps {
   stageLabel: string
   locked?: boolean
   lockedLabel?: string
+  unavailable?: boolean
   className?: string
 }
 
@@ -33,6 +35,7 @@ export function ContentCard({
   stageLabel,
   locked = false,
   lockedLabel = 'Sign up to unlock',
+  unavailable = false,
   className,
 }: ContentCardProps) {
   const isExploration = item.type === 'exploration'
@@ -62,9 +65,14 @@ export function ContentCard({
             {item.artwork.label}
           </span>
           <div className="absolute left-3 top-3 flex flex-wrap gap-2">
-            {item.type === 'meditation' && item.preview && (
+            {item.type === 'meditation' && item.preview && !unavailable && (
               <StatusChip tone="success" icon={Play}>
                 Free preview
+              </StatusChip>
+            )}
+            {unavailable && (
+              <StatusChip tone="warning" icon={AlertTriangle}>
+                Unavailable
               </StatusChip>
             )}
             {locked && (
@@ -73,7 +81,7 @@ export function ContentCard({
               </StatusChip>
             )}
           </div>
-          {!isExploration && !locked && (
+          {!isExploration && !locked && !unavailable && item.preview && (
             <span
               aria-hidden="true"
               className="absolute bottom-3 right-3 flex size-10 items-center justify-center rounded-full bg-nff-bg-surface/90 text-nff-icon-brand shadow-nff-1"
@@ -108,9 +116,11 @@ export function ContentCard({
           <span className="mt-auto inline-flex items-center gap-1.5 nff-label-md text-nff-text-link-default">
             {locked
               ? lockedLabel
-              : isExploration
-                ? 'Read exploration'
-                : 'Listen'}
+              : unavailable
+                ? 'View track'
+                : isExploration
+                  ? 'Read exploration'
+                  : 'Listen'}
             <ArrowRight
               aria-hidden="true"
               className="size-4 transition-transform duration-150 group-hover:translate-x-0.5"

@@ -8,6 +8,7 @@ import {
 } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
+import { CategoryTabs } from '@/components/nff/CategoryTabs'
 import { ContentCard } from '@/components/nff/ContentCard'
 import { EmptyState } from '@/components/nff/EmptyState'
 import { ErrorState } from '@/components/nff/ErrorState'
@@ -23,40 +24,23 @@ import {
 } from '@/components/ui/select'
 import { FLAGS } from '@/config/flags'
 import { useAuth } from '@/features/auth/AuthProvider'
+import { readCategoryParam } from '@/lib/catalogue'
 import { pluralise } from '@/lib/format'
-import { cn } from '@/lib/utils'
 import {
   CATEGORY_COPY,
   getCatalogue,
   getJourney,
   getStageTitle,
 } from '@/services/content'
-import type { Category, CatalogueSort } from '@/types'
+import type { CatalogueSort } from '@/types'
 
 const PAGE_SIZE = 12
-
-const TABS: Array<{ value: 'all' | Category; label: string }> = [
-  { value: 'all', label: 'All' },
-  { value: 'foundations', label: CATEGORY_COPY.foundations.label },
-  { value: 'understand', label: CATEGORY_COPY.understand.label },
-  { value: 'contemplate', label: CATEGORY_COPY.contemplate.label },
-  { value: 'explore', label: CATEGORY_COPY.explore.label },
-]
 
 const SORTS: Array<{ value: CatalogueSort; label: string }> = [
   { value: 'newest', label: 'Newest first' },
   { value: 'title', label: 'Title A–Z' },
   { value: 'shortest', label: 'Shortest read' },
 ]
-
-function readCategory(value: string | null): Category | undefined {
-  return value === 'foundations' ||
-    value === 'understand' ||
-    value === 'contemplate' ||
-    value === 'explore'
-    ? value
-    : undefined
-}
 
 function readSort(value: string | null): CatalogueSort {
   return value === 'title' || value === 'shortest' ? value : 'newest'
@@ -66,7 +50,7 @@ export function ExplorationsPage() {
   const [params, setParams] = useSearchParams()
   const { user } = useAuth()
 
-  const category = readCategory(params.get('tab'))
+  const category = readCategoryParam(params.get('tab'))
   const rawSearch = params.get('q') ?? ''
   const search = rawSearch.trim()
   const sort = readSort(params.get('sort'))
@@ -249,31 +233,10 @@ export function ExplorationsPage() {
         aria-label="Explorations catalogue"
         className="nff-content flex flex-col gap-6 py-10 md:py-12"
       >
-        <nav aria-label="Filter by category">
-          <ul className="flex gap-1 overflow-x-auto rounded-lg border bg-nff-bg-muted p-1">
-            {TABS.map((tab) => {
-              const active = tab.value === 'all' ? !category : category === tab.value
-              return (
-                <li key={tab.value} className="shrink-0">
-                  <Link
-                    to={hrefFor({
-                      tab: tab.value === 'all' ? undefined : tab.value,
-                    })}
-                    aria-current={active ? 'page' : undefined}
-                    className={cn(
-                      'inline-flex min-h-11 items-center rounded-md px-4 nff-label-md transition-colors nff-focus-ring',
-                      active
-                        ? 'bg-background text-foreground shadow-nff-1'
-                        : 'text-muted-foreground hover:bg-nff-bg-hover hover:text-foreground',
-                    )}
-                  >
-                    {tab.label}
-                  </Link>
-                </li>
-              )
-            })}
-          </ul>
-        </nav>
+        <CategoryTabs
+          active={category}
+          hrefFor={(next) => hrefFor({ tab: next })}
+        />
 
         <div className="flex flex-col gap-3 border-b pb-5 sm:flex-row sm:items-center sm:justify-between">
           <p

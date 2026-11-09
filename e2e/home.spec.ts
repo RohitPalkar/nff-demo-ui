@@ -45,3 +45,17 @@ test('exploration detail gates the full lesson for visitors', async ({ page }) =
     page.getByRole('heading', { name: 'Sign up free to read the full lesson' }),
   ).toBeVisible()
 })
+
+test('meditations catalogue paginates the track grid', async ({ page }) => {
+  await page.goto('/meditations')
+  await expect(
+    page.getByRole('heading', { level: 1, name: 'Meditations' }),
+  ).toBeVisible()
+  await expect(
+    page.getByText('Showing 1–12 of 60 meditations'),
+  ).toBeVisible()
+  await page.getByRole('link', { name: 'Next page' }).click()
+  await expect(
+    page.getByText('Showing 13–24 of 60 meditations'),
+  ).toBeVisible()
+})
