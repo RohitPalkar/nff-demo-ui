@@ -3,6 +3,7 @@ import { AuthLayout } from '@/app/layouts/AuthLayout'
 import { CmsLayout } from '@/app/layouts/CmsLayout'
 import { PractitionerLayout } from '@/app/layouts/PractitionerLayout'
 import { PublicLayout } from '@/app/layouts/PublicLayout'
+import { ExplorationDetailPage } from '@/pages/public/ExplorationDetailPage'
 import { ExplorationsPage } from '@/pages/public/ExplorationsPage'
 import { HomePage } from '@/pages/public/HomePage'
 import { ComingSoonPage } from '@/pages/system/ComingSoonPage'
@@ -20,10 +21,7 @@ export const router = createBrowserRouter(
       { index: true, element: <HomePage /> },
       { path: 'about/:slug', element: <ComingSoonPage title="About" /> },
       { path: 'explorations', element: <ExplorationsPage /> },
-      {
-        path: 'explorations/:slug',
-        element: <ComingSoonPage title="Exploration" />,
-      },
+      { path: 'explorations/:slug', element: <ExplorationDetailPage /> },
       { path: 'meditations', element: <ComingSoonPage title="Meditations" /> },
       {
         path: 'meditations/:slug',

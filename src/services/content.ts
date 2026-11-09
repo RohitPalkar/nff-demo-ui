@@ -11,6 +11,7 @@ import type {
   Category,
   CatalogueQuery,
   CatalogueResult,
+  ContentDetail,
   ContentItem,
   ContentType,
   HomeContent,
@@ -171,26 +172,49 @@ export async function getCatalogue(
   })
 }
 
+function findPublishedContent(type: ContentType, slug: string): ContentItem {
+  const item = content.find(
+    (entry) => entry.type === type && entry.slug === slug,
+  )
+  if (!item) {
+    throw new ApiError('not_found', 'We could not find that page.', 404)
+  }
+  if (!item.published) {
+    throw new ApiError(
+      'unpublished',
+      'This content is not published yet.',
+      404,
+    )
+  }
+  return item
+}
+
 export async function getContentBySlug(
   type: ContentType,
   slug: string,
 ): Promise<ContentItem> {
+  return mockApi(() => findPublishedContent(type, slug), { allowError: false })
+}
+
+export async function getContentDetail(
+  type: ContentType,
+  slug: string,
+): Promise<ContentDetail> {
   return mockApi(
     () => {
-      const item = content.find(
-        (entry) => entry.type === type && entry.slug === slug,
-      )
-      if (!item) {
-        throw new ApiError('not_found', 'We could not find that page.', 404)
-      }
-      if (!item.published) {
-        throw new ApiError(
-          'unpublished',
-          'This content is not published yet.',
-          404,
-        )
-      }
-      return item
+      const item = findPublishedContent(type, slug)
+      const related = publishedContent()
+        .filter((entry) => entry.id !== item.id && entry.type === item.type)
+        .sort((a, b) => {
+          const sameCategory =
+            Number(b.category === item.category) -
+            Number(a.category === item.category)
+          if (sameCategory !== 0) return sameCategory
+          return b.updatedAt.localeCompare(a.updatedAt)
+        })
+        .slice(0, 3)
+
+      return { item, related }
     },
     { allowError: false },
   )

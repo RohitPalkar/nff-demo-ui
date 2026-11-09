@@ -299,7 +299,24 @@ function buildMeditations(): Meditation[] {
   return items
 }
 
-export const explorations = buildExplorations()
+const draftExploration: Exploration = {
+  id: 'exp-draft',
+  slug: 'a-draft-exploration',
+  type: 'exploration',
+  title: 'A draft exploration',
+  excerpt:
+    'This piece is still being written. It is here so editors can preview the unpublished state.',
+  category: 'foundations',
+  stageId: 'stage-3',
+  artwork: { tone: 'neutral', label: 'DR' },
+  published: false,
+  featured: false,
+  updatedAt: daysAgo(2),
+  readingTimeMin: 5,
+  body: [PARAGRAPHS[0]!],
+}
+
+export const explorations = [...buildExplorations(), draftExploration]
 export const meditations = buildMeditations()
 export const content: ContentItem[] = [...explorations, ...meditations]
 

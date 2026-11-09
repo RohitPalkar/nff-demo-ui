@@ -211,6 +211,11 @@ export interface CatalogueResult {
   total: number
 }
 
+export interface ContentDetail {
+  item: ContentItem
+  related: ContentItem[]
+}
+
 export interface Journey {
   overallPercent: number
   stagesCompleted: number

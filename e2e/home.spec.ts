@@ -35,3 +35,13 @@ test('explorations catalogue filters by category', async ({ page }) => {
     page.getByRole('heading', { name: 'How the mind meets the moment' }),
   ).toBeVisible()
 })
+
+test('exploration detail gates the full lesson for visitors', async ({ page }) => {
+  await page.goto('/explorations/what-is-neurofelicitology')
+  await expect(
+    page.getByRole('heading', { level: 1, name: 'What is NeuroFelicitology?' }),
+  ).toBeVisible()
+  await expect(
+    page.getByRole('heading', { name: 'Sign up free to read the full lesson' }),
+  ).toBeVisible()
+})
