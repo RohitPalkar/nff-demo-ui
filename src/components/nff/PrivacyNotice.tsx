@@ -3,7 +3,7 @@ import { Cookie } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { toast } from 'sonner'
-import { CookiePreferencesPanel } from '@/components/nff/CookiePreferencesPanel'
+import { PrivacyChoicesPanel } from '@/components/nff/PrivacyChoicesPanel'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -23,7 +23,7 @@ import {
   CONSENT_EVENT,
   getStoredConsent,
   saveConsent,
-} from '@/services/consent'
+} from '@/services/privacyChoices'
 import type { ConsentRecord } from '@/types'
 
 const DESCRIPTION =
@@ -44,7 +44,7 @@ function useIsMobile() {
   return Boolean(mobile)
 }
 
-export function CookieBanner() {
+export function PrivacyNotice() {
   const [consent, setConsent] = useState<ConsentRecord | null>(() =>
     getStoredConsent(),
   )
@@ -70,7 +70,7 @@ export function CookieBanner() {
 
   if (consent || pathname === '/cookie-preferences') return null
 
-  const panel = <CookiePreferencesPanel onSaved={() => setPanelOpen(false)} />
+  const panel = <PrivacyChoicesPanel onSaved={() => setPanelOpen(false)} />
 
   return (
     <>
@@ -79,11 +79,7 @@ export function CookieBanner() {
         aria-label="Cookie preferences"
         className="fixed inset-x-0 bottom-0 z-50 border-t bg-popover shadow-nff-2"
       >
-        <div
-          className={`nff-content flex flex-col gap-4 py-4 md:flex-row md:items-center ${
-            import.meta.env.DEV ? 'md:pl-68' : ''
-          }`}
-        >
+        <div className="nff-content flex flex-col gap-4 py-4 md:flex-row md:items-center">
           <div className="flex items-start gap-3">
             <span
               aria-hidden="true"

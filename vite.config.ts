@@ -5,6 +5,8 @@ import { defineConfig } from 'vitest/config'
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  // Bind IPv4 explicitly so browsers that resolve localhost to 127.0.0.1 (e.g. Arc) can connect.
+  server: { host: '127.0.0.1', port: 5173 },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),

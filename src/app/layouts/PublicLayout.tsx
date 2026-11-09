@@ -1,5 +1,5 @@
 import { Outlet } from 'react-router-dom'
-import { CookieBanner } from '@/components/nff/CookieBanner'
+import { PrivacyNotice } from '@/components/nff/PrivacyNotice'
 import { Footer } from '@/components/nff/Footer'
 import { Header } from '@/components/nff/Header'
 import { MiniPlayer } from '@/components/nff/MiniPlayer'
@@ -22,7 +22,7 @@ export function PublicLayout() {
       <Footer />
       <MiniPlayer />
       {track && <div aria-hidden="true" className="h-20" />}
-      <CookieBanner />
+      <PrivacyNotice />
     </div>
   )
 }

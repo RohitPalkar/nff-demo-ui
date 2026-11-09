@@ -5,14 +5,14 @@ import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
-import { getStoredConsent, saveConsent } from '@/services/consent'
+import { getStoredConsent, saveConsent } from '@/services/privacyChoices'
 import type { ConsentRecord } from '@/types'
 
-interface CookiePreferencesPanelProps {
+interface PrivacyChoicesPanelProps {
   onSaved?: (record: ConsentRecord) => void
 }
 
-export function CookiePreferencesPanel({ onSaved }: CookiePreferencesPanelProps) {
+export function PrivacyChoicesPanel({ onSaved }: PrivacyChoicesPanelProps) {
   const [analytics, setAnalytics] = useState(
     () => getStoredConsent()?.analytics ?? false,
   )

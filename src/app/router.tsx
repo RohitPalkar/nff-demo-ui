@@ -39,7 +39,7 @@ import { ExplorationEditorPage } from '@/pages/cms/ExplorationEditorPage'
 import { ExplorationsListPage } from '@/pages/cms/ExplorationsListPage'
 import { MeditationEditorPage } from '@/pages/cms/MeditationEditorPage'
 import { MeditationsListPage } from '@/pages/cms/MeditationsListPage'
-import { CookiePreferencesPage } from '@/pages/public/CookiePreferencesPage'
+import { PrivacyChoicesPage } from '@/pages/public/PrivacyChoicesPage'
 import { AboutPage } from '@/pages/public/AboutPage'
 import { ExplorationDetailPage } from '@/pages/public/ExplorationDetailPage'
 import { ExplorationsPage } from '@/pages/public/ExplorationsPage'
@@ -70,7 +70,7 @@ export const router = createBrowserRouter(
         path: 'accessibility',
         element: <ComingSoonPage title="Accessibility" />,
       },
-      { path: 'cookie-preferences', element: <CookiePreferencesPage /> },
+      { path: 'cookie-preferences', element: <PrivacyChoicesPage /> },
       { path: 'unsubscribe/:token', element: <UnsubscribePage /> },
       { path: '403', element: <ForbiddenPage /> },
       { path: '*', element: <NotFoundPage /> },

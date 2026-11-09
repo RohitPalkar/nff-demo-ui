@@ -1,12 +1,12 @@
 import { CheckCircle2, Cookie } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { CookiePreferencesPanel } from '@/components/nff/CookiePreferencesPanel'
+import { PrivacyChoicesPanel } from '@/components/nff/PrivacyChoicesPanel'
 import { DetailBreadcrumb } from '@/components/nff/DetailBreadcrumb'
 import {
   CONSENT_EVENT,
   getConsentLedger,
   getStoredConsent,
-} from '@/services/consent'
+} from '@/services/privacyChoices'
 import type { ConsentRecord } from '@/types'
 
 function when(iso: string) {
@@ -19,7 +19,7 @@ function when(iso: string) {
   })
 }
 
-export function CookiePreferencesPage() {
+export function PrivacyChoicesPage() {
   const [current, setCurrent] = useState<ConsentRecord | null>(getStoredConsent)
   const [ledger, setLedger] = useState<ConsentRecord[]>(getConsentLedger)
   const [updated, setUpdated] = useState(false)
@@ -84,7 +84,7 @@ export function CookiePreferencesPage() {
           )}
         </section>
 
-        <CookiePreferencesPanel />
+        <PrivacyChoicesPanel />
 
         {ledger.length > 0 && (
           <section aria-labelledby="history" className="flex flex-col gap-3">
