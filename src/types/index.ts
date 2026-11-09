@@ -198,6 +198,14 @@ export interface HomeContent {
   featured: ContentItem[]
 }
 
+export type CatalogueSort = 'newest' | 'title' | 'shortest'
+
+export interface CatalogueQuery {
+  category?: Category
+  search?: string
+  sort?: CatalogueSort
+}
+
 export interface CatalogueResult {
   items: ContentItem[]
   total: number

@@ -3,6 +3,7 @@ import { AuthLayout } from '@/app/layouts/AuthLayout'
 import { CmsLayout } from '@/app/layouts/CmsLayout'
 import { PractitionerLayout } from '@/app/layouts/PractitionerLayout'
 import { PublicLayout } from '@/app/layouts/PublicLayout'
+import { ExplorationsPage } from '@/pages/public/ExplorationsPage'
 import { HomePage } from '@/pages/public/HomePage'
 import { ComingSoonPage } from '@/pages/system/ComingSoonPage'
 import { ForbiddenPage } from '@/pages/system/ForbiddenPage'
@@ -18,10 +19,7 @@ export const router = createBrowserRouter(
     children: [
       { index: true, element: <HomePage /> },
       { path: 'about/:slug', element: <ComingSoonPage title="About" /> },
-      {
-        path: 'explorations',
-        element: <ComingSoonPage title="Explorations" />,
-      },
+      { path: 'explorations', element: <ExplorationsPage /> },
       {
         path: 'explorations/:slug',
         element: <ComingSoonPage title="Exploration" />,

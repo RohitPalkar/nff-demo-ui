@@ -20,3 +20,18 @@ test('tab query parameter selects a tab', async ({ page }) => {
     'true',
   )
 })
+
+test('explorations catalogue filters by category', async ({ page }) => {
+  await page.goto('/explorations?tab=understand')
+  await expect(
+    page.getByRole('heading', { level: 1, name: 'Explorations' }),
+  ).toBeVisible()
+  await expect(
+    page
+      .getByRole('navigation', { name: 'Filter by category' })
+      .getByRole('link', { name: 'Understand' }),
+  ).toHaveAttribute('aria-current', 'page')
+  await expect(
+    page.getByRole('heading', { name: 'How the mind meets the moment' }),
+  ).toBeVisible()
+})

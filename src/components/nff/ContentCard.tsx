@@ -24,6 +24,7 @@ interface ContentCardProps {
   item: ContentItem
   stageLabel: string
   locked?: boolean
+  lockedLabel?: string
   className?: string
 }
 
@@ -31,6 +32,7 @@ export function ContentCard({
   item,
   stageLabel,
   locked = false,
+  lockedLabel = 'Sign up to unlock',
   className,
 }: ContentCardProps) {
   const isExploration = item.type === 'exploration'
@@ -105,7 +107,7 @@ export function ContentCard({
 
           <span className="mt-auto inline-flex items-center gap-1.5 nff-label-md text-nff-text-link-default">
             {locked
-              ? 'Sign up to unlock'
+              ? lockedLabel
               : isExploration
                 ? 'Read exploration'
                 : 'Listen'}

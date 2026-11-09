@@ -9,6 +9,7 @@ import {
 import { getScenario } from '@/mocks/scenario'
 import type {
   Category,
+  CatalogueQuery,
   CatalogueResult,
   ContentItem,
   ContentType,
@@ -22,7 +23,7 @@ import type {
   UnderstandTopic,
 } from '@/types'
 
-const TAB_COPY: Record<
+export const CATEGORY_COPY: Record<
   Category,
   { label: string; description: string }
 > = {
@@ -68,7 +69,7 @@ function takeMix(category: Category, topic?: UnderstandTopic): ContentItem[] {
 }
 
 function buildTab(category: Category): HomeTab {
-  const copy = TAB_COPY[category]
+  const copy = CATEGORY_COPY[category]
   const tab: HomeTab = {
     key: category,
     label: copy.label,
@@ -135,18 +136,37 @@ export function getStage(stageId: string): Stage | undefined {
   return stages.find((stage) => stage.id === stageId)
 }
 
+function minutesFor(item: ContentItem) {
+  return item.type === 'exploration'
+    ? item.readingTimeMin
+    : Math.ceil(item.durationSec / 60)
+}
+
 export async function getCatalogue(
   type: ContentType,
-  category?: Category,
+  query: CatalogueQuery = {},
 ): Promise<CatalogueResult> {
   return mockApi(() => {
     if (getScenario() === 'empty') {
       return { items: [], total: 0 }
     }
+
+    const search = query.search?.trim().toLowerCase()
     const items = publishedContent()
       .filter((item) => item.type === type)
-      .filter((item) => (category ? item.category === category : true))
-      .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
+      .filter((item) => (query.category ? item.category === query.category : true))
+      .filter((item) =>
+        search
+          ? item.title.toLowerCase().includes(search) ||
+            item.excerpt.toLowerCase().includes(search)
+          : true,
+      )
+      .sort((a, b) => {
+        if (query.sort === 'title') return a.title.localeCompare(b.title)
+        if (query.sort === 'shortest') return minutesFor(a) - minutesFor(b)
+        return b.updatedAt.localeCompare(a.updatedAt)
+      })
+
     return { items, total: items.length }
   })
 }

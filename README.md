@@ -73,5 +73,6 @@ docs/screens.md
 
 - Task 1 — foundation: tokens, shells, providers, mock layer, auth service, scenario/role controls, quality scripts.
 - Task 2 — **S-WEB-01 Home** at `/` with loading, empty, error and no-featured states.
+- Task 3 — **S-WEB-03 Explorations catalogue** at `/explorations` with category tabs, result count, card grid, load more, locked-stage markers, and loading, empty, error and no-results states.
 
 Later screens are routed to a clearly labelled placeholder so navigation works while each screen is built.
