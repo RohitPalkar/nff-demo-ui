@@ -1,6 +1,8 @@
 import { BookOpen, Headphones, LogOut } from 'lucide-react'
 import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { BrandLogo } from '@/components/nff/BrandLogo'
+import { MiniPlayer } from '@/components/nff/MiniPlayer'
+import { usePlayer } from '@/features/player/PlayerProvider'
 import { ThemeToggle } from '@/components/nff/ThemeToggle'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/features/auth/AuthProvider'
@@ -13,6 +15,7 @@ const NAV = [
 
 export function PractitionerLayout() {
   const { user, logout } = useAuth()
+  const { track } = usePlayer()
   const navigate = useNavigate()
 
   return (
@@ -78,9 +81,14 @@ export function PractitionerLayout() {
           </div>
         </div>
       </header>
-      <main id="main" tabIndex={-1} className="flex-1 outline-none">
+      <main
+        id="main"
+        tabIndex={-1}
+        className={`flex-1 outline-none ${track ? 'pb-24' : ''}`}
+      >
         <Outlet />
       </main>
+      <MiniPlayer />
     </div>
   )
 }

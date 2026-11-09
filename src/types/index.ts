@@ -216,6 +216,29 @@ export interface ContentDetail {
   related: ContentItem[]
 }
 
+export type AboutSlug = 'who-we-are' | 'what-we-do' | 'how-we-do-it'
+
+export interface AboutSection {
+  heading: string
+  paragraphs: string[]
+}
+
+export interface AboutImage {
+  src: string
+  alt: string
+  caption: string
+}
+
+export interface AboutPage {
+  slug: AboutSlug
+  title: string
+  eyebrow: string
+  lead: string
+  updatedAt: string
+  image: AboutImage
+  sections: AboutSection[]
+}
+
 export interface Journey {
   overallPercent: number
   stagesCompleted: number

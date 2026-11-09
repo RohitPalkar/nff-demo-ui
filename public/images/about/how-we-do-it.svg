@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 675" role="img" aria-labelledby="title">
+  <title id="title">A winding path through soft green and sand shapes</title>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#eef7f0"/>
+      <stop offset="1" stop-color="#fbf7ee"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="675" fill="url(#bg)"/>
+  <circle cx="880" cy="180" r="220" fill="#8fbf9f" fill-opacity="0.16"/>
+  <circle cx="300" cy="520" r="260" fill="#d9c8a4" fill-opacity="0.22"/>
+  <path d="M150 520 C 330 520 350 380 530 380 S 760 500 940 400 S 1060 220 1090 190" fill="none" stroke="#5f8f74" stroke-opacity="0.55" stroke-width="3" stroke-linecap="round"/>
+  <g fill="#5f8f74" fill-opacity="0.55">
+    <circle cx="150" cy="520" r="9"/>
+    <circle cx="530" cy="380" r="7"/>
+    <circle cx="940" cy="400" r="7"/>
+    <circle cx="1090" cy="190" r="9"/>
+  </g>
+</svg>
