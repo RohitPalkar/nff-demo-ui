@@ -1,8 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import {
-  ArrowLeft,
   ArrowRight,
-  ChevronRight,
   Clock,
   FileClock,
   FileQuestion,
@@ -11,9 +9,11 @@ import {
 } from 'lucide-react'
 import { Link, useParams } from 'react-router-dom'
 import { ContentCard } from '@/components/nff/ContentCard'
+import { DetailBreadcrumb } from '@/components/nff/DetailBreadcrumb'
 import { ErrorState } from '@/components/nff/ErrorState'
 import { SectionHeading } from '@/components/nff/SectionHeading'
 import { StatusChip } from '@/components/nff/StatusChip'
+import { UnavailableState } from '@/components/nff/UnavailableState'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { FLAGS } from '@/config/flags'
@@ -36,82 +36,10 @@ const TONE_BG: Record<Artwork['tone'], string> = {
   neutral: 'bg-nff-bg-muted text-nff-text-secondary',
 }
 
-function Breadcrumb({ current }: { current: string }) {
-  return (
-    <nav aria-label="Breadcrumb">
-      <ol className="flex min-w-0 flex-wrap items-center gap-1.5 nff-body-sm text-muted-foreground">
-        <li>
-          <Link
-            to="/"
-            className="rounded-sm hover:text-foreground nff-focus-ring"
-          >
-            Home
-          </Link>
-        </li>
-        <li aria-hidden="true">
-          <ChevronRight className="size-3.5" />
-        </li>
-        <li>
-          <Link
-            to="/explorations"
-            className="rounded-sm hover:text-foreground nff-focus-ring"
-          >
-            Explorations
-          </Link>
-        </li>
-        <li aria-hidden="true">
-          <ChevronRight className="size-3.5" />
-        </li>
-        <li
-          aria-current="page"
-          className="line-clamp-1 text-foreground"
-        >
-          {current}
-        </li>
-      </ol>
-    </nav>
-  )
-}
-
-function UnavailableState({ variant }: { variant: 'missing' | 'unpublished' }) {
-  const unpublished = variant === 'unpublished'
-  const Icon = unpublished ? FileClock : FileQuestion
-
-  return (
-    <div>
-      <div className="nff-content pt-6 md:pt-8">
-        <Breadcrumb current={unpublished ? 'Not published' : 'Not found'} />
-      </div>
-      <div className="nff-content py-16 md:py-24">
-        <div className="nff-reading mx-auto flex flex-col items-start gap-5">
-          <span
-            aria-hidden="true"
-            className="flex size-14 items-center justify-center rounded-full bg-nff-bg-muted text-nff-icon-secondary"
-          >
-            <Icon className="size-6" />
-          </span>
-          <p className="nff-overline text-nff-text-brand">Not available</p>
-          <h1 className="nff-heading-h1 text-foreground">
-            {unpublished
-              ? 'This exploration is not published yet'
-              : 'We could not find that exploration'}
-          </h1>
-          <p className="nff-body-lg text-muted-foreground">
-            {unpublished
-              ? 'The piece is still being written. It will appear in the library once an editor has published it.'
-              : 'The link may be broken or the piece may have moved. Browse the library to find something to read.'}
-          </p>
-          <Button asChild variant="outline" className="h-11">
-            <Link to="/explorations">
-              <ArrowLeft aria-hidden="true" className="size-4" />
-              Back to explorations
-            </Link>
-          </Button>
-        </div>
-      </div>
-    </div>
-  )
-}
+const TRAIL = [
+  { label: 'Home', to: '/' },
+  { label: 'Explorations', to: '/explorations' },
+]
 
 function DetailSkeleton() {
   return (
@@ -154,13 +82,35 @@ export function ExplorationDetailPage() {
 
   if (query.isError) {
     const code = (query.error as { code?: string } | null)?.code
-    if (code === 'unpublished') return <UnavailableState variant="unpublished" />
-    if (code === 'not_found') return <UnavailableState variant="missing" />
+    if (code === 'unpublished') {
+      return (
+        <UnavailableState
+          icon={FileClock}
+          title="This exploration is not published yet"
+          description="The piece is still being written. It will appear in the library once an editor has published it."
+          trail={TRAIL}
+          backTo="/explorations"
+          backLabel="Back to explorations"
+        />
+      )
+    }
+    if (code === 'not_found') {
+      return (
+        <UnavailableState
+          icon={FileQuestion}
+          title="We could not find that exploration"
+          description="The link may be broken or the piece may have moved. Browse the library to find something to read."
+          trail={TRAIL}
+          backTo="/explorations"
+          backLabel="Back to explorations"
+        />
+      )
+    }
 
     return (
       <div>
         <div className="nff-content pt-6 md:pt-8">
-          <Breadcrumb current="Unavailable" />
+          <DetailBreadcrumb trail={TRAIL} current="Unavailable" />
         </div>
         <div className="nff-content py-16">
           <h1 className="sr-only">Exploration unavailable</h1>
@@ -178,10 +128,32 @@ export function ExplorationDetailPage() {
     )
   }
 
-  if (!query.data) return <UnavailableState variant="missing" />
+  if (!query.data) {
+    return (
+      <UnavailableState
+        icon={FileQuestion}
+        title="We could not find that exploration"
+        description="The link may be broken or the piece may have moved. Browse the library to find something to read."
+        trail={TRAIL}
+        backTo="/explorations"
+        backLabel="Back to explorations"
+      />
+    )
+  }
 
   const item = query.data.item
-  if (item.type !== 'exploration') return <UnavailableState variant="missing" />
+  if (item.type !== 'exploration') {
+    return (
+      <UnavailableState
+        icon={FileQuestion}
+        title="We could not find that exploration"
+        description="The link may be broken or the piece may have moved. Browse the library to find something to read."
+        trail={TRAIL}
+        backTo="/explorations"
+        backLabel="Back to explorations"
+      />
+    )
+  }
 
   const related = query.data.related
   const paragraphs = canReadFull ? item.body : item.body.slice(0, 1)
@@ -189,7 +161,7 @@ export function ExplorationDetailPage() {
   return (
     <div>
       <div className="nff-content pt-6 md:pt-8">
-        <Breadcrumb current={item.title} />
+        <DetailBreadcrumb trail={TRAIL} current={item.title} />
       </div>
 
       <article className="pb-16 md:pb-24">

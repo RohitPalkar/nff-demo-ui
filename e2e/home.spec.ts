@@ -46,6 +46,34 @@ test('exploration detail gates the full lesson for visitors', async ({ page }) =
   ).toBeVisible()
 })
 
+test('meditation detail plays a free preview for visitors', async ({ page }) => {
+  await page.goto('/meditations/loving-kindness-for-a-difficult-day')
+  await expect(
+    page.getByRole('heading', {
+      level: 1,
+      name: 'Loving-kindness for a difficult day',
+    }),
+  ).toBeVisible()
+  await expect(page.getByText(/The player stops after one minute/)).toBeVisible()
+
+  await page.getByRole('button', { name: 'Play' }).click()
+  await expect(page.getByRole('button', { name: 'Pause' })).toBeVisible({
+    timeout: 3000,
+  })
+})
+
+test('meditation detail gates a full track for visitors', async ({ page }) => {
+  await page.goto('/meditations/body-scan-for-rest')
+  await expect(
+    page.getByRole('heading', { level: 1, name: 'Body scan for rest' }),
+  ).toBeVisible()
+  await expect(
+    page.getByRole('heading', {
+      name: 'Sign up free to listen to this track',
+    }),
+  ).toBeVisible()
+})
+
 test('meditations catalogue paginates the track grid', async ({ page }) => {
   await page.goto('/meditations')
   await expect(

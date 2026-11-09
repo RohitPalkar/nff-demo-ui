@@ -291,7 +291,7 @@ function buildMeditations(): Meditation[] {
       updatedAt: daysAgo(int(1, 120)),
       durationSec: int(5, 30) * 60,
       preview: index % 4 === 0,
-      audioUrl: `/audio/mock-${(index % 6) + 1}.mp3`,
+      audioUrl: '/audio/meditation-preview.wav',
       transcode: index % 19 === 0 ? 'transcoding' : 'ready',
     })
     stage.itemIds.push(id)

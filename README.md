@@ -76,5 +76,8 @@ docs/screens.md
 - Task 3 — **S-WEB-03 Explorations catalogue** at `/explorations` with category tabs, result count, card grid, load more, locked-stage markers, and loading, empty, error and no-results states.
 - Task 4 — **S-WEB-04 Exploration detail** at `/explorations/:slug` with breadcrumb, lesson header, hero artwork, visitor gate (flag-controlled), full practitioner lesson, related cards, and loading, unpublished and missing states.
 - Task 5 — **S-WEB-05 Meditations catalogue** at `/meditations` with category tabs, free-previews filter, track grid, pagination, preview play affordances, unavailable-track markers, and loading, empty and error states.
+- Task 6 — **S-WEB-06 Meditation detail** at `/meditations/:slug` with track hero, preview badge, audio player (play/pause, seek, volume, buffering), one-minute visitor preview and sign-up prompt, full practitioner playback, preview notice, more-from-stage cards, and loading, not-ready/failed-transcode and missing states.
+
+The player streams a short looped ambience file at `public/audio/meditation-preview.wav`; its timeline uses the seeded track length so preview and completion states can be demonstrated without large audio assets.
 
 Later screens are routed to a clearly labelled placeholder so navigation works while each screen is built.

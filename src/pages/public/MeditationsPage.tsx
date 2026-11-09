@@ -178,7 +178,7 @@ export function MeditationsPage() {
               locked={lockedStageIds.has(item.stageId)}
               lockedLabel="Unlock in your journey"
               unavailable={
-                item.type === 'meditation' && item.transcode === 'failed'
+                item.type === 'meditation' && item.transcode !== 'ready'
               }
             />
           ))}

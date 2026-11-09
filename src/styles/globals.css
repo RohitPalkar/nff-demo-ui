@@ -64,4 +64,49 @@
     white-space: nowrap;
     border-width: 0;
   }
+
+  .nff-range {
+    appearance: none;
+    height: 1.25rem;
+    width: 100%;
+    cursor: pointer;
+    background: transparent;
+  }
+
+  .nff-range::-webkit-slider-runnable-track {
+    height: 4px;
+    border-radius: 999px;
+    background: var(--nff-color-border-strong);
+  }
+
+  .nff-range::-moz-range-track {
+    height: 4px;
+    border-radius: 999px;
+    background: var(--nff-color-border-strong);
+  }
+
+  .nff-range::-webkit-slider-thumb {
+    appearance: none;
+    width: 14px;
+    height: 14px;
+    margin-top: -5px;
+    border: 2px solid var(--nff-color-bg-surface);
+    border-radius: 999px;
+    background: var(--nff-color-bg-brand-default);
+    box-shadow: var(--nff-shadow-1);
+  }
+
+  .nff-range::-moz-range-thumb {
+    width: 14px;
+    height: 14px;
+    border: 2px solid var(--nff-color-bg-surface);
+    border-radius: 999px;
+    background: var(--nff-color-bg-brand-default);
+    box-shadow: var(--nff-shadow-1);
+  }
+
+  .nff-range:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
 }

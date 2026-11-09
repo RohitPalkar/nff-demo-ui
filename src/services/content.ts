@@ -50,6 +50,19 @@ export const CATEGORY_COPY: Record<
   },
 }
 
+const FAILED_MEDITATION_ID = 'med-10'
+
+function withScenarioStatus(item: ContentItem): ContentItem {
+  if (
+    getScenario() === 'transcode-failed' &&
+    item.type === 'meditation' &&
+    item.id === FAILED_MEDITATION_ID
+  ) {
+    return { ...item, transcode: 'failed' }
+  }
+  return item
+}
+
 function publishedContent() {
   return content.filter((item) => item.published)
 }
@@ -168,12 +181,8 @@ export async function getCatalogue(
         return b.updatedAt.localeCompare(a.updatedAt)
       })
 
-    if (type === 'meditation' && getScenario() === 'transcode-failed') {
-      items = items.map((item, index) =>
-        index === 0 && item.type === 'meditation'
-          ? { ...item, transcode: 'failed' as const }
-          : item,
-      )
+    if (type === 'meditation') {
+      items = items.map(withScenarioStatus)
     }
 
     return { items, total: items.length }
@@ -210,9 +219,16 @@ export async function getContentDetail(
 ): Promise<ContentDetail> {
   return mockApi(
     () => {
-      const item = findPublishedContent(type, slug)
-      const related = publishedContent()
-        .filter((entry) => entry.id !== item.id && entry.type === item.type)
+      const item = withScenarioStatus(findPublishedContent(type, slug))
+      const relatedPool = publishedContent().filter(
+        (entry) =>
+          entry.id !== item.id &&
+          entry.type === item.type &&
+          (item.type === 'meditation'
+            ? entry.stageId === item.stageId
+            : true),
+      )
+      const related = relatedPool
         .sort((a, b) => {
           const sameCategory =
             Number(b.category === item.category) -
@@ -221,6 +237,7 @@ export async function getContentDetail(
           return b.updatedAt.localeCompare(a.updatedAt)
         })
         .slice(0, 3)
+        .map(withScenarioStatus)
 
       return { item, related }
     },
