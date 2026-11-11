@@ -8,11 +8,11 @@ import type {
   Exploration,
   Meditation,
   Progress,
-  RoleDefinition,
   Stage,
   UnderstandTopic,
   User,
 } from '@/types'
+import { LIBRARY_IMAGES } from '@/config/libraryImages'
 
 function mulberry32(seed: number) {
   let a = seed
@@ -107,7 +107,7 @@ export const stages: Stage[] = [
 
 const EXPLORATION_TITLES: Record<Category, string[]> = {
   foundations: [
-    'What is NeuroFelicitology?',
+    'What is Meadow?',
     'The three pillars of practice',
     'How the journey unfolds',
     'A gentle introduction to attention',
@@ -316,9 +316,30 @@ const draftExploration: Exploration = {
   body: [PARAGRAPHS[0]!],
 }
 
+/**
+ * Gives every item a card image from its category's pool of four
+ * (src/config/libraryImages.ts). Slots 0-1 are for explorations and 2-3 for
+ * meditations; the rank within category, type and Understand topic picks the
+ * slot, offset by one for "wellbeing". That keeps the four cards in every home
+ * tab (and in each Understand sub-topic) free of repeated images.
+ */
+function assignLibraryImages(items: ContentItem[]) {
+  const ranks = new Map<string, number>()
+  for (const item of items) {
+    const key = `${item.category}:${item.type}:${item.understandTopic ?? ''}`
+    const rank = ranks.get(key) ?? 0
+    ranks.set(key, rank + 1)
+    const offset = item.understandTopic === 'wellbeing' ? 1 : 0
+    const slot = ((rank + offset) % 2) + (item.type === 'meditation' ? 2 : 0)
+    const { src, alt } = LIBRARY_IMAGES[item.category][slot]!
+    item.image = { src, alt }
+  }
+}
+
 export const explorations = [...buildExplorations(), draftExploration]
 export const meditations = buildMeditations()
 export const content: ContentItem[] = [...explorations, ...meditations]
+assignLibraryImages(content)
 
 export const contentById = new Map(content.map((item) => [item.id, item]))
 
@@ -578,39 +599,6 @@ export const emailLogs: EmailLog[] = Array.from({ length: 90 }, (_, index) => {
   }
 })
 
-export const roles: RoleDefinition[] = [
-  {
-    id: 'visitor',
-    label: 'Visitor',
-    description: 'Browses the public web and plays free previews.',
-    capabilities: ['View public pages', 'Preview playback', 'Manage consent'],
-  },
-  {
-    id: 'practitioner',
-    label: 'Practitioner',
-    description: 'Full curriculum and personal progress.',
-    capabilities: ['Full content', 'Progress', 'Email preferences', 'Export data'],
-  },
-  {
-    id: 'editor',
-    label: 'Editor',
-    description: 'Creates and arranges content.',
-    capabilities: ['Create/edit content', 'Upload media', 'Submit for review'],
-  },
-  {
-    id: 'campaign',
-    label: 'Campaign manager',
-    description: 'Runs the daily email programme.',
-    capabilities: ['Campaigns', 'Templates', 'Delivery reports'],
-  },
-  {
-    id: 'admin',
-    label: 'Super admin',
-    description: 'Full oversight and administration.',
-    capabilities: ['Everything', 'Users', 'Analytics', 'Roles', 'Publish'],
-  },
-]
-
 export const scoreWeightsSeed = {
   loginRecency: 20,
   minutesListened: 25,
@@ -627,3 +615,20 @@ export function addMockUser(user: User) {
   userByEmail.set(user.email.toLowerCase(), user)
   return user
 }
+
+// A demo Admin who is not the Super admin, so the Admin / Super admin split can be
+// exercised. Added last and without random numbers, so every seeded value above
+// is unchanged.
+addMockUser({
+  id: 'u-ops-admin',
+  name: 'Imani Okafor',
+  email: 'ops.admin@nff.demo',
+  role: 'admin',
+  status: 'active',
+  verified: true,
+  currentStageId: 'stage-3',
+  joinedAt: daysAgo(200),
+  lastActiveAt: daysAgo(2),
+  engagementScore: 60,
+  minutesListened: 300,
+})

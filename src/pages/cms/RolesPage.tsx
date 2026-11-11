@@ -2,16 +2,7 @@ import { Check, Minus, UserPlus } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { PageHeader } from '@/components/cms/CmsParts'
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog'
+import { ConfirmationDialog, useReturnFocus } from '@/components/admin'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -41,72 +32,46 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useAuth } from '@/features/auth/AuthProvider'
 import { formatDate } from '@/lib/format'
-import { users } from '@/mocks/db'
-import { memberRoles, setMemberRole } from '@/services/cms'
-import type { Role } from '@/types'
+import { attempt, usePermissions } from '@/features/auth/usePermissions'
+import { setUserStatus } from '@/services/cms'
+import { changeMemberRole, previewRemoval, previewRoleChange, removeMember } from '@/services/rbac/teamManagement'
+import { listStaffMembers, type StaffMember } from '@/services/rbac/roleResolution'
+import { assignableRolesFor } from '@/services/rbac/roleManagement'
+import { PERMISSION_DEFINITIONS, PERMISSION_DOMAINS, permissionsInDomain } from '@/services/rbac/permissions'
+import { ROLE_DEFINITIONS, ROLE_IDS, getRoleLabel, type StaffRole } from '@/services/rbac/roles'
 
-type StaffRole = Exclude<Role, 'visitor' | 'practitioner'>
-
-const ROLE_LABEL: Record<StaffRole, string> = {
-  editor: 'Editor',
-  campaign: 'Campaign manager',
-  admin: 'Super admin',
-}
-
-const MATRIX: Array<[string, Record<Role, string>]> = [
-  ['Public pages / catalogue', { visitor: 'View', practitioner: 'View', editor: 'View', campaign: 'View', admin: 'View' }],
-  ['Preview playback', { visitor: 'Yes', practitioner: 'Yes', editor: 'Yes', campaign: '', admin: 'Yes' }],
-  ['Full content + curriculum', { visitor: '', practitioner: 'Own', editor: 'Manage', campaign: '', admin: 'Oversee' }],
-  ['Create/edit content, upload media', { visitor: '', practitioner: '', editor: 'Yes', campaign: '', admin: 'Yes' }],
-  ['Publish', { visitor: '', practitioner: '', editor: 'Flag', campaign: '', admin: 'Yes' }],
-  ['Campaigns, templates, delivery', { visitor: '', practitioner: '', editor: '', campaign: 'Yes', admin: 'Yes' }],
-  ['Users, dashboards, score, roles', { visitor: '', practitioner: '', editor: '', campaign: '', admin: 'Yes' }],
-]
-
-interface Member {
-  id: string
-  name: string
-  email: string
-  role: StaffRole
-  lastActiveAt: string
-}
-
-function initialMembers(): Member[] {
-  const overrides = memberRoles()
-  return users
-    .filter((user) => user.role === 'editor' || user.role === 'campaign' || user.role === 'admin')
-    .map((user) => ({
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      role: (overrides[user.id] ?? user.role) as StaffRole,
-      lastActiveAt: user.lastActiveAt,
-    }))
+const DOMAIN_LABEL: Record<(typeof PERMISSION_DOMAINS)[number], string> = {
+  platform: 'Platform',
+  content: 'Content',
+  learning: 'Learning',
+  people: 'People',
+  insights: 'Insights',
+  campaigns: 'Campaigns',
+  settings: 'Settings',
 }
 
 export function RolesPage() {
-  const { user } = useAuth()
-  const [members, setMembers] = useState<Member[]>(initialMembers)
+  const { user, refresh } = useAuth()
+  const { actor, can } = usePermissions()
+  const [members, setMembers] = useState<StaffMember[]>(listStaffMembers)
   const [pending, setPending] = useState<
-    { kind: 'role'; member: Member; role: StaffRole } | { kind: 'remove'; member: Member } | null
+    { kind: 'role'; member: StaffMember; role: StaffRole } | { kind: 'remove'; member: StaffMember } | null
   >(null)
   const [inviting, setInviting] = useState(false)
   const [inviteEmail, setInviteEmail] = useState('')
-  const [inviteRole, setInviteRole] = useState<StaffRole>('editor')
+  const assignable = assignableRolesFor(actor)
+  const [inviteRole, setInviteRole] = useState<StaffRole>(assignable[0] ?? 'editor')
 
-  if (user?.role !== 'admin') {
-    return (
-      <p role="alert" className="rounded-xl border p-4 nff-body-md">
-        Permission denied. Only a super admin can manage roles.
-      </p>
-    )
-  }
+  const returnInviteFocus = useReturnFocus(inviting)
+  const reload = () => setMembers(listStaffMembers())
+  const canSeeTeam = can('team.view')
+  const canSeeRoles = can('roles.view')
 
-  const admins = members.filter((member) => member.role === 'admin').length
-
-  function requestRole(member: Member, role: StaffRole) {
-    if (member.role === 'admin' && role !== 'admin' && admins <= 1) {
-      toast.error('There must always be at least one super admin.')
+  function requestRole(member: StaffMember, role: StaffRole) {
+    // Say why now, before the confirmation, if the change is not allowed.
+    const result = previewRoleChange(actor, member.id, role)
+    if (!result.ok) {
+      toast.error(result.message)
       return
     }
     setPending({ kind: 'role', member, role })
@@ -115,157 +80,202 @@ export function RolesPage() {
   function confirm() {
     if (!pending) return
     if (pending.kind === 'role') {
-      setMemberRole(pending.member.id, pending.role)
-      setMembers((current) =>
-        current.map((member) =>
-          member.id === pending.member.id ? { ...member, role: pending.role } : member,
-        ),
-      )
-      toast.success(`${pending.member.name} is now ${ROLE_LABEL[pending.role]}.`)
+      const done = attempt(() => changeMemberRole(pending.member.id, pending.role))
+      if (done) {
+        toast.success(`${pending.member.name} is now ${getRoleLabel(pending.role)}.`)
+        // Changing your own role changes your own permissions straight away.
+        if (pending.member.id === user?.id) refresh()
+      }
     } else {
-      setMembers((current) => current.filter((member) => member.id !== pending.member.id))
-      toast.success(`${pending.member.name} was removed from the team.`)
+      const done = attempt(() => removeMember(pending.member.id))
+      if (done) toast.success(`${pending.member.name} was deactivated.`)
     }
+    reload()
     setPending(null)
   }
 
   return (
     <div className="flex flex-col gap-5">
-      <PageHeader title="Roles and permissions" />
+      <PageHeader title="Team & Roles" description="Staff, their roles, and what each role can do." />
 
-      <Tabs defaultValue="members">
+      <Tabs defaultValue={canSeeTeam ? 'members' : 'roles'}>
         <TabsList aria-label="Roles sections">
-          <TabsTrigger value="members">Team members</TabsTrigger>
-          <TabsTrigger value="roles">Roles</TabsTrigger>
+          {canSeeTeam && <TabsTrigger value="members">Team members</TabsTrigger>}
+          {canSeeRoles && <TabsTrigger value="roles">Roles</TabsTrigger>}
         </TabsList>
 
-        <TabsContent value="members" className="flex flex-col gap-3 pt-4">
-          <Button className="w-fit" onClick={() => setInviting(true)}>
-            <UserPlus aria-hidden="true" className="size-4" />
-            Invite member
-          </Button>
-          <div className="rounded-xl border bg-card">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Role</TableHead>
-                  <TableHead>Last login</TableHead>
-                  <TableHead>
-                    <span className="sr-only">Actions</span>
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {members.map((member) => (
-                  <TableRow key={member.id}>
-                    <TableCell className="font-medium">{member.name}</TableCell>
-                    <TableCell>{member.email}</TableCell>
-                    <TableCell>
-                      <Select
-                        value={member.role}
-                        onValueChange={(value) => requestRole(member, value as StaffRole)}
-                      >
-                        <SelectTrigger aria-label={`Role for ${member.name}`} className="w-48">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {(Object.keys(ROLE_LABEL) as StaffRole[]).map((role) => (
-                            <SelectItem key={role} value={role}>
-                              {ROLE_LABEL[role]}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </TableCell>
-                    <TableCell>{formatDate(member.lastActiveAt)}</TableCell>
-                    <TableCell>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        disabled={member.role === 'admin' && admins <= 1}
-                        onClick={() => setPending({ kind: 'remove', member })}
-                      >
-                        Remove
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-          <p className="nff-caption text-muted-foreground">
-            The last super admin cannot be removed or demoted.
-          </p>
-        </TabsContent>
-
-        <TabsContent value="roles" className="pt-4">
-          <div className="overflow-x-auto rounded-xl border bg-card">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Capability</TableHead>
-                  {(['visitor', 'practitioner', 'editor', 'campaign', 'admin'] as Role[]).map((role) => (
-                    <TableHead key={role} className="capitalize">
-                      {role}
+        {canSeeTeam && (
+          <TabsContent value="members" className="flex flex-col gap-3 pt-4">
+            <Button className="w-fit" disabled={!can('team.invite')} onClick={() => setInviting(true)}>
+              <UserPlus aria-hidden="true" className="size-4" />
+              Invite member
+            </Button>
+            <div className="rounded-xl border bg-card">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Role</TableHead>
+                    <TableHead>Last login</TableHead>
+                    <TableHead>
+                      <span className="sr-only">Actions</span>
                     </TableHead>
-                  ))}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {MATRIX.map(([capability, cells]) => (
-                  <TableRow key={capability}>
-                    <TableCell className="font-medium">{capability}</TableCell>
-                    {(['visitor', 'practitioner', 'editor', 'campaign', 'admin'] as Role[]).map((role) => (
-                      <TableCell key={role}>
-                        {cells[role] ? (
-                          <span className="inline-flex items-center gap-1">
-                            <Check aria-hidden="true" className="size-3.5 text-nff-text-success" />
-                            {cells[role]}
-                          </span>
-                        ) : (
-                          <Minus aria-label="No access" className="size-3.5 text-muted-foreground" />
-                        )}
-                      </TableCell>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {members.map((member) => {
+                    const editable = (assignable as readonly string[]).includes(member.role)
+                    const removal = previewRemoval(actor, member.id)
+                    return (
+                      <TableRow key={member.id}>
+                        <TableCell className="font-medium">
+                          {member.name}
+                          {member.id === user?.id && (
+                            <span className="ml-2 nff-caption text-muted-foreground">(you)</span>
+                          )}
+                          {!member.active && (
+                            <span className="ml-2 nff-caption text-muted-foreground">Deactivated</span>
+                          )}
+                        </TableCell>
+                        <TableCell>{member.email}</TableCell>
+                        <TableCell>
+                          {editable && member.active ? (
+                            <Select
+                              value={member.role}
+                              onValueChange={(value) => requestRole(member, value as StaffRole)}
+                            >
+                              <SelectTrigger aria-label={`Role for ${member.name}`} className="w-48">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {assignable.map((role) => (
+                                  <SelectItem key={role} value={role}>
+                                    {getRoleLabel(role)}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          ) : (
+                            <span title="You cannot change roles at or above your own level.">
+                              {getRoleLabel(member.role)}
+                            </span>
+                          )}
+                        </TableCell>
+                        <TableCell>{formatDate(member.lastActiveAt)}</TableCell>
+                        <TableCell>
+                          {member.active ? (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              disabled={!removal.ok}
+                              title={removal.ok ? undefined : removal.message}
+                              onClick={() => setPending({ kind: 'remove', member })}
+                            >
+                              Remove
+                            </Button>
+                          ) : (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              disabled={!can('team.remove') || !editable}
+                              onClick={() => {
+                                if (!attempt(() => setUserStatus(member.id, 'active'))) return
+                                toast.success(`${member.name} was reactivated.`)
+                                reload()
+                              }}
+                            >
+                              Reactivate
+                            </Button>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    )
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+            <p className="nff-caption text-muted-foreground">
+              The last active Super admin cannot be removed or demoted. Admins can assign Editor and Campaign
+              manager only; only a Super admin can grant Admin or Super admin.
+            </p>
+          </TabsContent>
+        )}
+
+        {canSeeRoles && (
+          <TabsContent value="roles" className="pt-4">
+            <div className="overflow-x-auto rounded-xl border bg-card">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Permission</TableHead>
+                    {ROLE_IDS.map((role) => (
+                      <TableHead key={role}>{getRoleLabel(role)}</TableHead>
                     ))}
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-          <p className="mt-2 nff-caption text-muted-foreground">Read-only for now.</p>
-        </TabsContent>
+                </TableHeader>
+                <TableBody>
+                  {PERMISSION_DOMAINS.flatMap((domain) => [
+                    <TableRow key={`domain-${domain}`} className="bg-nff-bg-muted">
+                      <TableCell colSpan={ROLE_IDS.length + 1} className="nff-label-md">
+                        {DOMAIN_LABEL[domain]}
+                      </TableCell>
+                    </TableRow>,
+                    ...permissionsInDomain(domain).map((permission) => (
+                      <TableRow key={permission}>
+                        <TableCell>
+                          <span className="font-medium">{permission}</span>
+                          <span className="block nff-caption text-muted-foreground">
+                            {PERMISSION_DEFINITIONS[permission].description}
+                          </span>
+                        </TableCell>
+                        {ROLE_IDS.map((role) => (
+                          <TableCell key={role}>
+                            {ROLE_DEFINITIONS[role].permissions.includes(permission) ? (
+                              <Check aria-label="Allowed" className="size-3.5 text-nff-text-success" />
+                            ) : (
+                              <Minus aria-label="Not allowed" className="size-3.5 text-muted-foreground" />
+                            )}
+                          </TableCell>
+                        ))}
+                      </TableRow>
+                    )),
+                  ])}
+                </TableBody>
+              </Table>
+            </div>
+            <p className="mt-2 nff-caption text-muted-foreground">
+              Read-only. These defaults are fixed in code in this prototype; editing permissions is not available.
+            </p>
+          </TabsContent>
+        )}
       </Tabs>
 
-      <AlertDialog open={Boolean(pending)} onOpenChange={(open) => !open && setPending(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>
-              {pending?.kind === 'remove'
-                ? `Remove ${pending.member.name}?`
-                : pending
-                  ? `Make ${pending.member.name} ${ROLE_LABEL[pending.role]}?`
-                  : ''}
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              {pending?.kind === 'remove'
-                ? 'They will lose access to the CMS immediately.'
-                : 'Their access changes the next time they load a page.'}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirm}>Confirm</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <ConfirmationDialog
+        open={Boolean(pending)}
+        onOpenChange={(open) => !open && setPending(null)}
+        title={
+          pending?.kind === 'remove'
+            ? `Remove ${pending.member.name}?`
+            : pending
+              ? `Make ${pending.member.name} ${getRoleLabel(pending.role)}?`
+              : ''
+        }
+        description={
+          pending?.kind === 'remove'
+            ? 'Their account is deactivated: they cannot sign in until someone reactivates it.'
+            : 'Their access changes immediately. Their permissions follow the new role.'
+        }
+        onConfirm={confirm}
+      />
 
       <Dialog open={inviting} onOpenChange={setInviting}>
-        <DialogContent>
+        <DialogContent onCloseAutoFocus={returnInviteFocus}>
           <DialogHeader>
             <DialogTitle>Invite member</DialogTitle>
-            <DialogDescription>They will get an email invitation.</DialogDescription>
+            <DialogDescription>
+              Invitations are not sent in this prototype. This records nothing and emails no one.
+            </DialogDescription>
           </DialogHeader>
           <div className="flex flex-col gap-3">
             <div className="flex flex-col gap-1.5">
@@ -284,9 +294,9 @@ export function RolesPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {(Object.keys(ROLE_LABEL) as StaffRole[]).map((role) => (
+                  {assignable.map((role) => (
                     <SelectItem key={role} value={role}>
-                      {ROLE_LABEL[role]}
+                      {getRoleLabel(role)}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -295,9 +305,9 @@ export function RolesPage() {
           </div>
           <DialogFooter>
             <Button
-              disabled={!/^\S+@\S+\.\S+$/.test(inviteEmail)}
+              disabled={!/^\S+@\S+\.\S+$/.test(inviteEmail) || !can('team.invite')}
               onClick={() => {
-                toast.success(`Invitation sent to ${inviteEmail} (demo).`)
+                toast.info('Invitations are not available in this prototype. Nothing was sent.')
                 setInviteEmail('')
                 setInviting(false)
               }}

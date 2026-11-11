@@ -1,3 +1,4 @@
+import { LEARN_HOME } from '@/services/learning/routes'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Loader2 } from 'lucide-react'
 import { useState } from 'react'
@@ -36,7 +37,7 @@ export function LoginPage() {
     setUnverified(false)
     try {
       const user = await login(values.email, values.password)
-      const fallback = user.role === 'practitioner' ? '/journey' : '/cms'
+      const fallback = user.role === 'practitioner' ? LEARN_HOME : '/cms'
       navigate(from ?? fallback, { replace: true })
     } catch (error) {
       const e = error as { code?: string; message?: string }

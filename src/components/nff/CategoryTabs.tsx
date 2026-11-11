@@ -1,9 +1,12 @@
-import { Link } from 'react-router-dom'
+import { ButtonGroup, type ButtonGroupItem } from '@/components/nff/ButtonGroup'
 import { CATEGORY_COPY } from '@/services/content'
-import { cn } from '@/lib/utils'
 import type { Category } from '@/types'
 
-const TABS: Array<{ value: Category; label: string }> = [
+const ALL = 'all'
+type CategoryValue = Category | typeof ALL
+
+const ITEMS: ButtonGroupItem<CategoryValue>[] = [
+  { value: ALL, label: 'All' },
   { value: 'foundations', label: CATEGORY_COPY.foundations.label },
   { value: 'understand', label: CATEGORY_COPY.understand.label },
   { value: 'contemplate', label: CATEGORY_COPY.contemplate.label },
@@ -16,48 +19,14 @@ interface CategoryTabsProps {
   label?: string
 }
 
-export function CategoryTabs({
-  active,
-  hrefFor,
-  label = 'Filter by category',
-}: CategoryTabsProps) {
+/** Catalogue category filter: the shared ButtonGroup in link mode. */
+export function CategoryTabs({ active, hrefFor, label = 'Filter by category' }: CategoryTabsProps) {
   return (
-    <nav aria-label={label}>
-      <ul className="flex gap-1 overflow-x-auto rounded-lg border bg-nff-bg-muted p-1">
-        <li className="shrink-0">
-          <Link
-            to={hrefFor(undefined)}
-            aria-current={active ? undefined : 'page'}
-            className={cn(
-              'inline-flex min-h-11 items-center rounded-md px-4 nff-label-md transition-colors nff-focus-ring',
-              active
-                ? 'text-muted-foreground hover:bg-nff-bg-hover hover:text-foreground'
-                : 'bg-background text-foreground shadow-nff-1',
-            )}
-          >
-            All
-          </Link>
-        </li>
-        {TABS.map((tab) => {
-          const isActive = active === tab.value
-          return (
-            <li key={tab.value} className="shrink-0">
-              <Link
-                to={hrefFor(tab.value)}
-                aria-current={isActive ? 'page' : undefined}
-                className={cn(
-                  'inline-flex min-h-11 items-center rounded-md px-4 nff-label-md transition-colors nff-focus-ring',
-                  isActive
-                    ? 'bg-background text-foreground shadow-nff-1'
-                    : 'text-muted-foreground hover:bg-nff-bg-hover hover:text-foreground',
-                )}
-              >
-                {tab.label}
-              </Link>
-            </li>
-          )
-        })}
-      </ul>
-    </nav>
+    <ButtonGroup
+      label={label}
+      items={ITEMS}
+      value={active ?? ALL}
+      hrefFor={(value) => hrefFor(value === ALL ? undefined : value)}
+    />
   )
 }

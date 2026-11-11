@@ -72,6 +72,22 @@ export async function saveEmailPrefs(userId: string, prefs: EmailPrefs) {
   })
 }
 
+/**
+ * Playback speed the learner prefers. Saved per account and applied when the
+ * player page opens a track. The speeds are the player's own.
+ */
+export const PLAYBACK_SPEEDS = [0.75, 1, 1.25, 1.5] as const
+
+export function getPlaybackSpeed(userId: string): number {
+  const stored = readJson<number | null>(key(userId, 'playback-speed'), null)
+  return PLAYBACK_SPEEDS.find((speed) => speed === stored) ?? 1
+}
+
+export function savePlaybackSpeed(userId: string, speed: number) {
+  if (!PLAYBACK_SPEEDS.some((allowed) => allowed === speed)) return
+  writeJson(key(userId, 'playback-speed'), speed)
+}
+
 export async function unsubscribeWithToken(token: string) {
   return mockApi(
     () => {

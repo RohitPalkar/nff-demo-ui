@@ -4,8 +4,8 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
 import { PageHeader } from '@/components/cms/CmsParts'
-import { EmptyState } from '@/components/nff/EmptyState'
-import { ErrorState } from '@/components/nff/ErrorState'
+import { EmptyState } from '@/components/admin'
+import { ErrorState } from '@/components/admin'
 import { StatusChip } from '@/components/nff/StatusChip'
 import { Button } from '@/components/ui/button'
 import {
@@ -18,11 +18,14 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
+import { attempt, usePermissions } from '@/features/auth/usePermissions'
 import { addStage, getCmsStages, saveStageOrder } from '@/services/cms'
 
 export function CurriculumPage() {
   const queryClient = useQueryClient()
-  const query = useQuery({ queryKey: ['cms', 'stages'], queryFn: getCmsStages })
+  const { can } = usePermissions()
+  const manage = can('learning.manage')
+  const query = useQuery({ queryKey: ['cms', 'stages'], queryFn: () => getCmsStages() })
   const [order, setOrder] = useState<string[] | null>(null)
   const [adding, setAdding] = useState(false)
   const [newTitle, setNewTitle] = useState('')
@@ -75,13 +78,18 @@ export function CurriculumPage() {
         title="Curriculum"
         description="Arrange the order of stages."
         action={
-          <Button className="h-10" onClick={() => setAdding(true)}>
+          <Button className="h-10" disabled={!manage} onClick={() => setAdding(true)}>
             <Plus aria-hidden="true" className="size-4" />
             Add stage
           </Button>
         }
       />
 
+      {!manage && (
+        <p role="status" className="rounded-xl border bg-nff-bg-muted p-3 nff-body-sm text-muted-foreground">
+          You can view the curriculum. Changing it needs an admin.
+        </p>
+      )}
       {dirty && movedLive && (
         <div
           role="alert"
@@ -132,7 +140,7 @@ export function CurriculumPage() {
                     size="icon"
                     className="size-8"
                     aria-label={`Move ${stage.title} up`}
-                    disabled={index === 0}
+                    disabled={index === 0 || !manage}
                     onClick={() => move(index, -1)}
                   >
                     <ArrowUp aria-hidden="true" className="size-4" />
@@ -142,7 +150,7 @@ export function CurriculumPage() {
                     size="icon"
                     className="size-8"
                     aria-label={`Move ${stage.title} down`}
-                    disabled={index === current.length - 1}
+                    disabled={index === current.length - 1 || !manage}
                     onClick={() => move(index, 1)}
                   >
                     <ArrowDown aria-hidden="true" className="size-4" />
@@ -168,7 +176,7 @@ export function CurriculumPage() {
             </Button>
             <Button
               onClick={() => {
-                saveStageOrder(current)
+                if (!attempt(() => saveStageOrder(current))) return
                 void queryClient.invalidateQueries({ queryKey: ['cms', 'stages'] })
                 toast.success('Stage order saved.')
               }}
@@ -194,7 +202,7 @@ export function CurriculumPage() {
             <Button
               disabled={newTitle.trim().length < 2}
               onClick={() => {
-                addStage(newTitle.trim())
+                if (!attempt(() => addStage(newTitle.trim()))) return
                 setNewTitle('')
                 setAdding(false)
                 void queryClient.invalidateQueries({ queryKey: ['cms', 'stages'] })

@@ -3,8 +3,8 @@ import { AlertTriangle, Megaphone, Pause, Play, Plus } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { MetricCard, PageHeader } from '@/components/cms/CmsParts'
-import { EmptyState } from '@/components/nff/EmptyState'
-import { ErrorState } from '@/components/nff/ErrorState'
+import { EmptyState } from '@/components/admin'
+import { ErrorState } from '@/components/admin'
 import { StatusChip, type StatusTone } from '@/components/nff/StatusChip'
 import {
   AlertDialog,
@@ -29,6 +29,7 @@ import {
 } from '@/components/ui/table'
 import { formatDate } from '@/lib/format'
 import { users } from '@/mocks/db'
+import { attempt, usePermissions } from '@/features/auth/usePermissions'
 import { getCampaigns, patchCampaign } from '@/services/cms'
 import type { CampaignState } from '@/types'
 
@@ -40,9 +41,10 @@ const STATE_TONE: Record<CampaignState, StatusTone> = {
 }
 
 export function CampaignsPage() {
+  const { can } = usePermissions()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
-  const query = useQuery({ queryKey: ['cms', 'campaigns'], queryFn: getCampaigns })
+  const query = useQuery({ queryKey: ['cms', 'campaigns'], queryFn: () => getCampaigns() })
 
   if (query.isPending) {
     return (
@@ -68,7 +70,8 @@ export function CampaignsPage() {
   const eligible = users.filter((entry) => entry.status === 'active').length
 
   function toggle(id: string, state: CampaignState) {
-    patchCampaign(id, { state: state === 'paused' ? 'running' : 'paused' })
+    const next = state === 'paused' ? 'running' : 'paused'
+    if (!attempt(() => patchCampaign(id, { state: next }))) return
     void queryClient.invalidateQueries({ queryKey: ['cms', 'campaigns'] })
     toast.success(state === 'paused' ? 'Campaign resumed.' : 'Campaign paused.')
   }
@@ -78,7 +81,7 @@ export function CampaignsPage() {
       <PageHeader
         title="Campaigns"
         action={
-          <Button className="h-10" onClick={() => navigate('/cms/campaigns/new')}>
+          <Button className="h-10" disabled={!can('campaigns.manage')} onClick={() => navigate('/cms/campaigns/new')}>
             <Plus aria-hidden="true" className="size-4" />
             New campaign
           </Button>
@@ -120,7 +123,7 @@ export function CampaignsPage() {
             </div>
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <Button variant="outline">
+                <Button variant="outline" disabled={!can('campaigns.manage') || (daily.state === 'paused' && !can('campaigns.send'))}>
                   {daily.state === 'paused' ? (
                     <Play aria-hidden="true" className="size-4" />
                   ) : (

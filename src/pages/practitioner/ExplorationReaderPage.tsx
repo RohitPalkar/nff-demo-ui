@@ -1,13 +1,14 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { ArrowLeft, ArrowRight, CheckCircle2, FileQuestion } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useLocation, useParams } from 'react-router-dom'
 import { UnavailableState } from '@/components/nff/UnavailableState'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 import { Skeleton } from '@/components/ui/skeleton'
 import { FLAGS } from '@/config/flags'
 import { useAuth } from '@/features/auth/AuthProvider'
+import { useLearnerMode } from '@/features/learn/useLearnerMode'
 import { formatReadingTime } from '@/lib/format'
 import {
   getItemById,
@@ -16,12 +17,31 @@ import {
   saveProgress,
 } from '@/services/content'
 import { itemHref } from './JourneyPage'
+import { lessonHref, moduleHref, pathHref } from '@/services/learning/routes'
+import { LessonVideo } from '@/components/learn/LessonVideo'
+import type { LessonOutline } from '@/services/learning/outline'
 
-export function ExplorationReaderPage() {
-  const { stageId = '', contentId = '' } = useParams()
+interface LessonViewProps {
+  /** Set when rendered by the lesson route; otherwise read from the URL. */
+  stageId?: string
+  contentId?: string
+  /** Set for lessons outside Meadow Journey: their own path's navigation. */
+  outline?: LessonOutline
+}
+
+export function ExplorationReaderPage({
+  stageId: stageIdProp,
+  contentId: contentIdProp,
+  outline,
+}: LessonViewProps = {}) {
+  const { pathname } = useLocation()
+  const params = useParams()
+  const stageId = stageIdProp ?? params.stageId ?? ''
+  const contentId = contentIdProp ?? params.contentId ?? ''
   const { user } = useAuth()
   const queryClient = useQueryClient()
   const [scrolled, setScrolled] = useState(0)
+  const { isPreview } = useLearnerMode()
 
   const progressQuery = useQuery({
     queryKey: ['progress', user?.id],
@@ -47,7 +67,7 @@ export function ExplorationReaderPage() {
   const completed = progress?.completedItemIds.includes(contentId) ?? false
 
   function complete() {
-    if (!progress || !user || completed) return
+    if (!progress || !user || completed || isPreview) return
     saveProgress({
       ...progress,
       completedItemIds: [...progress.completedItemIds, contentId],
@@ -73,8 +93,8 @@ export function ExplorationReaderPage() {
         icon={FileQuestion}
         title="We could not find that lesson"
         description="Head back to your stage to pick something to read."
-        trail={[{ label: 'Journey', to: '/journey' }]}
-        backTo="/journey"
+        trail={[{ label: 'Meadow Journey', to: pathHref() }]}
+        backTo={pathHref()}
         backLabel="Back to journey"
       />
     )
@@ -89,23 +109,30 @@ export function ExplorationReaderPage() {
   }
 
   const position = stage.itemIds.indexOf(contentId)
-  const prev = getItemById(stage.itemIds[position - 1] ?? '')
-  const next = getItemById(stage.itemIds[position + 1] ?? '')
+  const prevItem = getItemById(stage.itemIds[position - 1] ?? '')
+  const nextItem = getItemById(stage.itemIds[position + 1] ?? '')
+  const prevHref = outline ? outline.prev?.href : prevItem && itemHref(prevItem)
+  const nextHref = outline ? outline.next?.href : nextItem && itemHref(nextItem)
+  const backHref = outline?.backHref ?? moduleHref(stage.id)
 
   return (
     <div>
       <div className="sticky top-[var(--nff-layout-header-height)] z-30 border-b bg-background/95 backdrop-blur">
         <div className="nff-content flex h-12 items-center justify-between gap-4">
           <Link
-            to={`/journey/stages/${stage.id}`}
+            to={backHref}
             className="inline-flex items-center gap-1.5 nff-label-md text-muted-foreground hover:text-foreground nff-focus-ring"
           >
             <ArrowLeft aria-hidden="true" className="size-4" />
-            Stage {stage.number}
+            {outline ? outline.backLabel : `Stage ${stage.number}`}
           </Link>
-          <span className="nff-caption text-muted-foreground">
-            Lesson {position + 1} of {stage.itemIds.length}
-          </span>
+          {(!outline || outline.position !== undefined) && (
+            <span className="nff-caption text-muted-foreground">
+              {outline
+                ? `Lesson ${outline.position} of ${outline.total}`
+                : `Lesson ${position + 1} of ${stage.itemIds.length}`}
+            </span>
+          )}
         </div>
         <Progress
           value={scrolled}
@@ -118,13 +145,15 @@ export function ExplorationReaderPage() {
         <div className="nff-reading mx-auto flex flex-col gap-6">
           <header className="flex flex-col gap-3">
             <p className="nff-overline text-nff-text-brand">
-              Stage {stage.number} · {stage.title}
+              {outline ? outline.overline : `Stage ${stage.number} · ${stage.title}`}
             </p>
             <h1 className="nff-heading-h1">{item.title}</h1>
             <p className="nff-label-md text-muted-foreground">
               {formatReadingTime(item.readingTimeMin)}
             </p>
           </header>
+          <LessonVideo itemId={item.id} title={item.title} returnTo={outline ? pathname : lessonHref(item.id)} />
+
           <p className="nff-reading-lead text-nff-text-secondary">
             {item.excerpt}
           </p>
@@ -141,7 +170,11 @@ export function ExplorationReaderPage() {
             aria-live="polite"
             className="mt-4 flex flex-col items-start gap-3 rounded-xl border bg-card p-6"
           >
-            {completed ? (
+            {isPreview ? (
+              <p className="nff-body-md text-muted-foreground">
+                Preview mode: completion is not recorded.
+              </p>
+            ) : completed ? (
               <p className="inline-flex items-center gap-2 nff-label-lg text-nff-text-success">
                 <CheckCircle2 aria-hidden="true" className="size-5" />
                 {justCompleted ? 'Marked as complete. Nice work.' : 'Completed'}
@@ -166,9 +199,9 @@ export function ExplorationReaderPage() {
             aria-label="Lesson navigation"
             className="flex items-center justify-between gap-3 border-t pt-6"
           >
-            {prev ? (
+            {prevHref ? (
               <Button asChild variant="outline" className="h-11">
-                <Link to={itemHref(stage.id, prev)}>
+                <Link to={prevHref}>
                   <ArrowLeft aria-hidden="true" className="size-4" />
                   Previous
                 </Link>
@@ -176,16 +209,16 @@ export function ExplorationReaderPage() {
             ) : (
               <span />
             )}
-            {next ? (
+            {nextHref ? (
               <Button asChild className="h-11">
-                <Link to={itemHref(stage.id, next)}>
+                <Link to={nextHref}>
                   Next
                   <ArrowRight aria-hidden="true" className="size-4" />
                 </Link>
               </Button>
             ) : (
               <Button asChild className="h-11">
-                <Link to={`/journey/stages/${stage.id}`}>Back to stage</Link>
+                <Link to={backHref}>{outline ? `Back to ${outline.backLabel}` : 'Back to stage'}</Link>
               </Button>
             )}
           </nav>

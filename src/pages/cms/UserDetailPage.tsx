@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { MetricCard } from '@/components/cms/CmsParts'
-import { ErrorState } from '@/components/nff/ErrorState'
+import { ErrorState } from '@/components/admin'
 import { StatusChip } from '@/components/nff/StatusChip'
 import { UnavailableState } from '@/components/nff/UnavailableState'
 import {
@@ -20,6 +20,7 @@ import {
 } from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
+import { attempt, usePermissions } from '@/features/auth/usePermissions'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { formatDate } from '@/lib/format'
@@ -30,6 +31,7 @@ import { ACCOUNT_LABEL, ACCOUNT_TONE } from './UsersPage'
 
 export function UserDetailPage() {
   const { id = '' } = useParams()
+  const { can } = usePermissions()
   const query = useQuery({ queryKey: ['cms', 'user', id], queryFn: () => getUser(id) })
   const [override, setOverride] = useState<AccountStatus | null>(
     () => userStatusOverrides()[id] ?? null,
@@ -69,7 +71,7 @@ export function UserDetailPage() {
 
   function toggle() {
     const next: AccountStatus = deactivated ? 'active' : 'deactivated'
-    setUserStatus(person!.id, next)
+    if (!attempt(() => setUserStatus(person!.id, next))) return
     setOverride(next)
     toast.success(deactivated ? 'User reactivated.' : 'User deactivated.')
   }
@@ -84,7 +86,7 @@ export function UserDetailPage() {
         <StatusChip tone={ACCOUNT_TONE[status]} icon={Users}>
           {ACCOUNT_LABEL[status]}
         </StatusChip>
-        {status !== 'pending_deletion' && (
+        {status !== 'pending_deletion' && can('practitioners.manage') && (
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button variant="outline">{deactivated ? 'Reactivate' : 'Deactivate'}</Button>

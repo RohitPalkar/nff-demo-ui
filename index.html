@@ -6,17 +6,128 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
-      content="NeuroFelicitology — a staged curriculum of explorations and guided meditations for a calmer, more connected life."
+      content="Meadow — a staged curriculum of explorations and guided meditations for a calmer, more connected life."
     />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,600;1,7..72,400&family=JetBrains+Mono:wght@400;500&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@300..700&family=JetBrains+Mono:wght@400;500&display=swap"
       rel="stylesheet"
     />
-    <title>NeuroFelicitology</title>
+    <title>Meadow</title>
+    <style>
+      /*
+       * Boot splash. Lives here so it paints before the JS bundle arrives; main.tsx
+       * removes it right after React's first frame. It stays invisible for 150ms,
+       * so fast loads never see it, and there is no minimum display time.
+       * Literal hex values because the design tokens load with the bundle:
+       * ivory-50 #F7F5EF, sage-100 #EAEDE4, sage-200 #D7DDCE, forest-800 #455641,
+       * neutral-900 #252820, neutral-600 #62655D.
+       *
+       * Motion: the sprout draws itself (ground, stem, leaves), then the halo and
+       * disc breathe on an 8s cycle: inhale 3.2s, hold, exhale 3.2s, hold.
+       */
+      #nff-splash {
+        --breath: 8s;
+        --breath-start: 1.3s;
+        --ease-breath: cubic-bezier(0.45, 0, 0.55, 1);
+        position: fixed; inset: 0; z-index: 100;
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        background: #F7F5EF; color: #252820;
+        opacity: 0; animation: nff-splash-in 360ms cubic-bezier(0.2, 0, 0, 1) 150ms forwards;
+        transition: opacity 420ms cubic-bezier(0.4, 0, 0.2, 1), visibility 0s linear 420ms;
+      }
+      #nff-splash.is-done { opacity: 0 !important; visibility: hidden; pointer-events: none; animation: none; }
+
+      .nff-splash__stage {
+        --size: clamp(208px, 52vmin, 300px);
+        position: relative; width: var(--size); height: var(--size);
+        display: grid; place-items: center;
+        transition: transform 420ms cubic-bezier(0.2, 0, 0, 1);
+      }
+      #nff-splash.is-done .nff-splash__stage { transform: scale(1.05); }
+
+      .nff-splash__halo, .nff-splash__disc { position: absolute; border-radius: 50%; }
+      .nff-splash__halo {
+        inset: 0; background: #EAEDE4; opacity: 0.55; transform: scale(0.84);
+        animation: nff-splash-halo var(--breath) var(--ease-breath) var(--breath-start) infinite both;
+      }
+      .nff-splash__disc {
+        inset: 18%; background: #D7DDCE; transform: scale(0.7); opacity: 0;
+        animation:
+          nff-splash-rise 900ms cubic-bezier(0.2, 0, 0, 1) 150ms forwards,
+          nff-splash-disc var(--breath) var(--ease-breath) var(--breath-start) infinite;
+      }
+      .nff-splash__mark {
+        position: relative; width: clamp(56px, 15vmin, 72px); height: auto;
+        opacity: 0; transform: scale(0.92);
+        animation: nff-splash-mark 700ms cubic-bezier(0.2, 0, 0, 1) 250ms forwards;
+      }
+
+      .nff-splash__word {
+        margin-top: clamp(20px, 4vmin, 32px);
+        font-family: 'Outfit', system-ui, sans-serif; font-weight: 500; font-size: clamp(22px, 5.4vmin, 28px);
+        line-height: 1.2; letter-spacing: -0.015em;
+        opacity: 0; transform: translateY(6px);
+        animation: nff-splash-word 800ms cubic-bezier(0.2, 0, 0, 1) 600ms forwards;
+      }
+      .nff-splash__cue {
+        position: relative; height: 20px; width: 12rem; margin-top: 10px;
+        font-family: 'Outfit', system-ui, sans-serif; font-size: 14px; line-height: 20px;
+        color: #62655D; text-align: center;
+      }
+      .nff-splash__cue span { position: absolute; inset: 0; opacity: 0; }
+      .nff-splash__cue .in { animation: nff-splash-cue-in var(--breath) ease-in-out var(--breath-start) infinite both; }
+      .nff-splash__cue .out { animation: nff-splash-cue-out var(--breath) ease-in-out var(--breath-start) infinite both; }
+      .nff-splash__cue .still { display: none; }
+
+      @keyframes nff-splash-in { to { opacity: 1; } }
+      @keyframes nff-splash-rise { to { opacity: 1; transform: scale(0.95); } }
+      @keyframes nff-splash-mark { to { opacity: 1; transform: scale(1); } }
+            @keyframes nff-splash-word { to { opacity: 1; transform: none; } }
+      /* Inhale 0–40%, hold to 50%, exhale to 90%, hold to 100%. */
+      @keyframes nff-splash-halo {
+        0%, 100% { transform: scale(0.84); opacity: 0.55; }
+        40%, 50% { transform: scale(1); opacity: 1; }
+        90% { transform: scale(0.84); opacity: 0.55; }
+      }
+      @keyframes nff-splash-disc {
+        0%, 100% { transform: scale(0.95); }
+        40%, 50% { transform: scale(1); }
+        90% { transform: scale(0.95); }
+      }
+      @keyframes nff-splash-cue-in { 0% { opacity: 0; } 6%, 36% { opacity: 1; } 44%, 100% { opacity: 0; } }
+      @keyframes nff-splash-cue-out { 0%, 48% { opacity: 0; } 54%, 84% { opacity: 1; } 92%, 100% { opacity: 0; } }
+
+      @media (prefers-reduced-motion: reduce) {
+        /* Static composition: same 150ms grace period, then appear and leave without motion. */
+        #nff-splash { animation-duration: 1ms; transition: none; }
+        #nff-splash.is-done .nff-splash__stage { transform: none; }
+        .nff-splash__halo, .nff-splash__disc, .nff-splash__mark, .nff-splash__mark path,
+        .nff-splash__word, .nff-splash__cue span { animation: none; }
+        .nff-splash__halo { opacity: 0.55; transform: scale(0.92); }
+        .nff-splash__disc { opacity: 1; transform: none; }
+        .nff-splash__mark, .nff-splash__word { opacity: 1; transform: none; }
+        .nff-splash__cue .in, .nff-splash__cue .out { display: none; }
+        .nff-splash__cue .still { display: block; opacity: 1; }
+      }
+    </style>
   </head>
   <body>
+    <div id="nff-splash" role="status" aria-label="Loading Meadow">
+      <div class="nff-splash__stage" aria-hidden="true">
+        <span class="nff-splash__halo"></span>
+        <span class="nff-splash__disc"></span>
+        <!-- The Meadow mark, same artwork as BrandLogo (public/brand/meadow-mark.svg). -->
+        <svg class="nff-splash__mark" viewBox="-4.13 0 70.85 70.85"><path fill="#B98268" d="M31.27,0C21.48,0,13.54,7.94,13.54,17.73s7.94,17.73,17.73,17.73,17.73-7.94,17.73-17.73S41.06,0,31.27,0ZM31.29,27.32c-5.31,0-9.61-4.29-9.61-9.6s4.3-9.6,9.61-9.6,9.6,4.3,9.6,9.6-4.3,9.6-9.6,9.6Z"/><rect x="27.19" y="35.49" width="8.16" height="62.54" transform="translate(-35.5 98.02) rotate(-89.99)" fill="#455641"/><path fill="#829078" d="M62.51,38.29c-4.49.35-8.59,1.06-12.26,3.48-11.57,7.61-25.92,7.68-37.58.18-3.75-2.42-7.94-3.46-12.58-3.57l-.06-8.03c5.74.17,11.62,1.35,16.69,4.64,8.91,5.79,19.85,5.93,28.88.16,5.02-3.2,10.67-4.67,16.79-4.8l.1,7.94Z"/><path fill="#829078" d="M62.57,54.5c-4.43.38-8.47,1.28-12.76,2.37-12.33,3.14-24.6,3.14-36.9-.03-4.33-1.11-8.4-1.96-12.87-2.28v-8.02c5.66.26,10.94,1.5,16.47,2.81,10.08,2.39,19.93,2.37,30-.1,5.26-1.29,10.3-2.34,15.91-2.73l.16,7.98Z"/></svg>
+      </div>
+      <span class="nff-splash__word" aria-hidden="true">Meadow</span>
+      <span class="nff-splash__cue" aria-hidden="true">
+        <span class="in">Breathe in</span>
+        <span class="out">Breathe out</span>
+        <span class="still">Loading</span>
+      </span>
+    </div>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

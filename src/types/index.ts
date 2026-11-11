@@ -26,7 +26,13 @@ export type StageProgressStatus =
 
 export type ItemProgressStatus = 'not_started' | 'in_progress' | 'completed'
 
-export type Role = 'visitor' | 'practitioner' | 'editor' | 'campaign' | 'admin'
+export type Role =
+  | 'visitor'
+  | 'practitioner'
+  | 'editor'
+  | 'campaign'
+  | 'admin'
+  | 'super_admin'
 
 export type AccountStatus =
   | 'active'
@@ -53,6 +59,12 @@ export interface Artwork {
   label: string
 }
 
+/** Card image for a content item. Replace `src` with final artwork at any time. */
+export interface ContentImage {
+  src: string
+  alt: string
+}
+
 interface ContentBase {
   id: string
   slug: string
@@ -64,6 +76,7 @@ interface ContentBase {
   stageId: string
   artwork: Artwork
   heroImage?: string
+  image?: ContentImage
   published: boolean
   featured: boolean
   updatedAt: string
@@ -255,3 +268,5 @@ export interface Session {
 export interface ConsentInput {
   analytics: boolean
 }
+
+export * from './learning'

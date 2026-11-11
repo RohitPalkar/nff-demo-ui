@@ -27,16 +27,18 @@ import {
 } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { users } from '@/mocks/db'
+import { attempt, usePermissions } from '@/features/auth/usePermissions'
 import { addCampaign, getTemplates, loadCampaigns } from '@/services/cms'
 
 const STEPS = ['Details', 'Audience', 'Template', 'Schedule', 'Review'] as const
 
 export function CampaignSetupPage() {
+  const { can } = usePermissions()
   const { id = 'new' } = useParams()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const existing = loadCampaigns().find((entry) => entry.id === id)
-  const templates = useQuery({ queryKey: ['cms', 'templates'], queryFn: getTemplates })
+  const templates = useQuery({ queryKey: ['cms', 'templates'], queryFn: () => getTemplates() })
 
   const [step, setStep] = useState(0)
   const [name, setName] = useState(existing?.name ?? '')
@@ -67,7 +69,7 @@ export function CampaignSetupPage() {
 
   function finish() {
     if (!existing) {
-      addCampaign({
+      const saved = attempt(() => addCampaign({
         id: `cmp-${Date.now()}`,
         name: name.trim(),
         state: mode === 'now' ? 'running' : 'scheduled',
@@ -78,7 +80,8 @@ export function CampaignSetupPage() {
         bounced: 0,
         complained: 0,
         failed: 0,
-      })
+      }))
+      if (!saved) return
     }
     void queryClient.invalidateQueries({ queryKey: ['cms', 'campaigns'] })
     toast.success(mode === 'now' ? 'Campaign triggered.' : 'Campaign scheduled.')
@@ -250,7 +253,9 @@ export function CampaignSetupPage() {
         ) : (
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <Button>{mode === 'now' ? 'Trigger now' : 'Schedule'}</Button>
+              <Button disabled={!(mode === 'now' ? can('campaigns.send') && can('campaigns.manage') : can('campaigns.manage'))}>
+                {mode === 'now' ? 'Trigger now' : 'Schedule'}
+              </Button>
             </AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>

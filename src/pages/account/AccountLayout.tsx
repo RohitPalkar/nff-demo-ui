@@ -6,10 +6,12 @@ import { useAuth } from '@/features/auth/AuthProvider'
 import { formatDate } from '@/lib/format'
 import { cancelDeletion, getDeletion } from '@/services/account'
 
+// Same names as the account menu, so each place reads the same.
 const TABS = [
-  { label: 'Profile', to: '/account/profile' },
-  { label: 'Email', to: '/account/email' },
-  { label: 'Privacy', to: '/account/privacy' },
+  { label: 'My Profile', to: '/account/profile' },
+  { label: 'Preferences', to: '/account/preferences' },
+  { label: 'Email Preferences', to: '/account/email' },
+  { label: 'Privacy & Security', to: '/account/privacy' },
 ]
 
 export function AccountLayout() {
@@ -46,16 +48,19 @@ export function AccountLayout() {
 
       <header className="flex flex-col gap-2">
         <h1 className="nff-heading-h1">Account settings</h1>
+        <p className="max-w-2xl nff-body-lg text-nff-text-secondary">
+          Your profile and settings. In this demo they are saved in this browser.
+        </p>
       </header>
 
       <nav aria-label="Account" className="border-b">
-        <ul className="flex gap-1">
+        <ul className="flex gap-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {TABS.map((tab) => (
             <li key={tab.to}>
               <NavLink
                 to={tab.to}
                 className={({ isActive }) =>
-                  `inline-flex min-h-11 items-center border-b-2 px-4 nff-label-md nff-focus-ring ${
+                  `-mb-px inline-flex min-h-11 shrink-0 items-center whitespace-nowrap border-b-2 px-3 nff-label-md transition-colors nff-focus-ring sm:px-4 ${
                     isActive
                       ? 'border-primary text-foreground'
                       : 'border-transparent text-muted-foreground hover:text-foreground'

@@ -3,11 +3,11 @@ import { ArrowLeft, Monitor, Smartphone, Tablet } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
-import { ErrorState } from '@/components/nff/ErrorState'
+import { ErrorState } from '@/components/admin'
 import { UnavailableState } from '@/components/nff/UnavailableState'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
-import { useAuth } from '@/features/auth/AuthProvider'
+import { attempt, usePermissions } from '@/features/auth/usePermissions'
 import { formatDuration } from '@/lib/format'
 import { stages } from '@/mocks/db'
 import { getCmsItem, setCmsStatus } from '@/services/cms'
@@ -20,7 +20,7 @@ const DEVICES = {
 
 export function ContentPreviewPage() {
   const { type = '', id = '' } = useParams()
-  const { user } = useAuth()
+  const { can } = usePermissions()
   const queryClient = useQueryClient()
   const query = useQuery({
     queryKey: ['cms', 'item', id],
@@ -63,7 +63,7 @@ export function ContentPreviewPage() {
     item.type === 'exploration' && audience === 'visitor'
       ? paragraphs.slice(0, 1)
       : paragraphs
-  const canPublish = user?.role === 'admin'
+  const canPublish = can('content.publish') && can('content.approve')
 
   return (
     <div className="flex flex-col gap-4">
@@ -114,7 +114,7 @@ export function ContentPreviewPage() {
             size="sm"
             className="ml-auto"
             onClick={() => {
-              setCmsStatus(item.id, 'published')
+              if (!attempt(() => setCmsStatus(item.id, 'published'))) return
               void queryClient.invalidateQueries({ queryKey: ['cms'] })
               toast.success('Published.')
             }}

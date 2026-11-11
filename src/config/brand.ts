@@ -1,7 +1,7 @@
 export const BRAND = {
-  /** Spelling pending confirmation from NFF. Keep in one place. */
-  productName: 'NeuroFelicitology',
-  shortName: 'NFF',
+  /** Brand name. Keep in one place. */
+  productName: 'Meadow',
+  shortName: 'Meadow',
   tagline: 'A staged practice for a calmer, more connected life.',
-  supportEmail: 'hello@neurofelicitology.example',
+  supportEmail: 'hello@meadow.example',
 } as const

@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
+import { usePermissions } from '@/features/auth/usePermissions'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
@@ -23,6 +24,7 @@ const SAMPLE: Record<string, string> = {
 }
 
 export function TemplateEditorPage() {
+  const { can } = usePermissions()
   const { id = 'new' } = useParams()
   const [name, setName] = useState(id === 'new' ? '' : 'Daily practice email')
   const [subject, setSubject] = useState('Your practice for today, {first_name}')
@@ -65,10 +67,10 @@ export function TemplateEditorPage() {
         title={id === 'new' ? 'New template' : 'Edit template'}
         action={
           <div className="flex gap-2">
-            <Button variant="outline" onClick={() => toast.success('Test email sent to you.')}>
+            <Button variant="outline" disabled={!can('campaigns.manage')} onClick={() => toast.success('Test email sent to you.')}>
               Send test
             </Button>
-            <Button onClick={save}>Save</Button>
+            <Button disabled={!can('campaigns.manage')} onClick={save}>Save</Button>
           </div>
         }
       />
@@ -156,7 +158,7 @@ export function TemplateEditorPage() {
                 {render(cta)}
               </span>
               <p className="border-t pt-3 text-xs text-neutral-500">
-                You receive this because you joined NFF. Unsubscribe.
+                You receive this because you joined Meadow. Unsubscribe.
               </p>
             </article>
           </div>

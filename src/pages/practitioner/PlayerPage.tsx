@@ -9,18 +9,38 @@ import {
   RotateCw,
 } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useLocation, useParams } from 'react-router-dom'
+import { LessonVideo } from '@/components/learn/LessonVideo'
+import type { LessonOutline } from '@/services/learning/outline'
 import { UnavailableState } from '@/components/nff/UnavailableState'
+import { getContentVideo } from '@/services/learning/video'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useAuth } from '@/features/auth/AuthProvider'
 import { SPEEDS, usePlayer } from '@/features/player/PlayerProvider'
 import { formatClock, formatDuration } from '@/lib/format'
+import { getPlaybackSpeed, savePlaybackSpeed } from '@/services/account'
 import { getItemById, getProgress, getStage } from '@/services/content'
 import { itemHref } from './JourneyPage'
+import { lessonHref, moduleHref, pathHref } from '@/services/learning/routes'
 
-export function PlayerPage() {
-  const { stageId = '', contentId = '' } = useParams()
+interface LessonViewProps {
+  /** Set when rendered by the lesson route; otherwise read from the URL. */
+  stageId?: string
+  contentId?: string
+  /** Set for lessons outside Meadow Journey: their own path's navigation. */
+  outline?: LessonOutline
+}
+
+export function PlayerPage({
+  stageId: stageIdProp,
+  contentId: contentIdProp,
+  outline,
+}: LessonViewProps = {}) {
+  const { pathname } = useLocation()
+  const params = useParams()
+  const stageId = stageIdProp ?? params.stageId ?? ''
+  const contentId = contentIdProp ?? params.contentId ?? ''
   const { user } = useAuth()
   const player = usePlayer()
   const [choiceMade, setChoiceMade] = useState(false)
@@ -42,6 +62,15 @@ export function PlayerPage() {
   const needsPrompt =
     !alreadyLoaded && !choiceMade && saved > 30 && !completed
 
+  // Start at the saved playback-speed preference, unless this track is
+  // already playing (then the listener's current speed stands).
+  useEffect(() => {
+    if (user && player.track?.id !== contentId) {
+      player.setSpeed(getPlaybackSpeed(user.id))
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id, contentId])
+
   // Load without a prompt when there is nothing to resume.
   useEffect(() => {
     if (!meditation || !progressQuery.data || alreadyLoaded) return
@@ -56,8 +85,8 @@ export function PlayerPage() {
         icon={FileQuestion}
         title="We could not find that meditation"
         description="Head back to your stage to pick something to play."
-        trail={[{ label: 'Journey', to: '/journey' }]}
-        backTo="/journey"
+        trail={[{ label: 'Meadow Journey', to: pathHref() }]}
+        backTo={pathHref()}
         backLabel="Back to journey"
       />
     )
@@ -72,33 +101,45 @@ export function PlayerPage() {
   }
 
   const position = stage.itemIds.indexOf(contentId)
-  const next = getItemById(stage.itemIds[position + 1] ?? '')
+  const next = outline
+    ? outline.next && getItemById(outline.next.itemId)
+    : getItemById(stage.itemIds[position + 1] ?? '')
+  const nextHref = outline ? outline.next?.href : next && itemHref(next)
+  const backHref = outline?.backHref ?? moduleHref(stage.id)
   const current = alreadyLoaded ? player.position : 0
 
   return (
     <div className="nff-content flex flex-col gap-8 py-8 md:py-12">
       <Link
-        to={`/journey/stages/${stage.id}`}
+        to={backHref}
         className="inline-flex w-fit items-center gap-1.5 nff-label-md text-muted-foreground hover:text-foreground nff-focus-ring"
       >
         <ArrowLeft aria-hidden="true" className="size-4" />
-        Stage {stage.number} · {stage.title}
+        {outline ? outline.overline : `Stage ${stage.number} · ${stage.title}`}
       </Link>
 
       <div className="mx-auto flex w-full max-w-xl flex-col gap-6">
-        <div
-          aria-hidden="true"
-          className="mx-auto flex aspect-square w-full max-w-sm items-center justify-center rounded-2xl border bg-nff-bg-brand-subtle text-nff-text-brand shadow-nff-2"
-        >
-          <span className="nff-display text-7xl font-semibold opacity-40">
-            {meditation.artwork.label}
-          </span>
-        </div>
+        {getContentVideo(meditation.id) ? (
+          <LessonVideo
+            itemId={meditation.id}
+            title={meditation.title}
+            returnTo={outline ? pathname : lessonHref(meditation.id)}
+          />
+        ) : (
+          <div
+            aria-hidden="true"
+            className="mx-auto flex aspect-square w-full max-w-sm items-center justify-center rounded-2xl border bg-nff-bg-brand-subtle text-nff-text-brand shadow-nff-2"
+          >
+            <span className="nff-display text-7xl font-semibold opacity-40">
+              {meditation.artwork.label}
+            </span>
+          </div>
+        )}
 
         <header className="flex flex-col gap-1 text-center">
           <h1 className="nff-heading-h2">{meditation.title}</h1>
           <p className="nff-body-sm text-muted-foreground">
-            Stage {stage.number} · {formatDuration(meditation.durationSec)}
+            {outline ? outline.pathTitle : `Stage ${stage.number}`} · {formatDuration(meditation.durationSec)}
           </p>
         </header>
 
@@ -202,7 +243,10 @@ export function PlayerPage() {
                   size="sm"
                   variant={player.speed === speed ? 'default' : 'outline'}
                   aria-pressed={player.speed === speed}
-                  onClick={() => player.setSpeed(speed)}
+                  onClick={() => {
+                    player.setSpeed(speed)
+                    if (user) savePlaybackSpeed(user.id, speed)
+                  }}
                 >
                   {speed}×
                 </Button>
@@ -217,13 +261,9 @@ export function PlayerPage() {
                 </p>
                 <Button asChild className="h-11">
                   <Link
-                    to={
-                      next
-                        ? itemHref(stage.id, next)
-                        : `/journey/stages/${stage.id}`
-                    }
+                    to={nextHref ?? backHref}
                   >
-                    {next ? 'Next up' : 'Back to stage'}
+                    {nextHref ? 'Next up' : outline ? `Back to ${outline.backLabel}` : 'Back to stage'}
                   </Link>
                 </Button>
               </div>
@@ -231,11 +271,11 @@ export function PlayerPage() {
           </div>
         )}
 
-        {next && (
+        {next && nextHref && (
           <aside className="rounded-xl border bg-nff-bg-surface-sunken p-4">
             <p className="nff-overline text-muted-foreground">Up next</p>
             <Link
-              to={itemHref(stage.id, next)}
+              to={nextHref}
               className="nff-label-lg text-nff-text-link underline"
             >
               {next.title}

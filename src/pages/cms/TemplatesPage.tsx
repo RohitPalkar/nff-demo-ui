@@ -3,10 +3,11 @@ import { Mail, Plus } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { PageHeader } from '@/components/cms/CmsParts'
-import { EmptyState } from '@/components/nff/EmptyState'
-import { ErrorState } from '@/components/nff/ErrorState'
+import { EmptyState } from '@/components/admin'
+import { ErrorState } from '@/components/admin'
 import { StatusChip, type StatusTone } from '@/components/nff/StatusChip'
 import { Button } from '@/components/ui/button'
+import { usePermissions } from '@/features/auth/usePermissions'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
   Table,
@@ -26,8 +27,9 @@ const TONE: Record<string, StatusTone> = {
 }
 
 export function TemplatesPage() {
+  const { can } = usePermissions()
   const navigate = useNavigate()
-  const query = useQuery({ queryKey: ['cms', 'templates'], queryFn: getTemplates })
+  const query = useQuery({ queryKey: ['cms', 'templates'], queryFn: () => getTemplates() })
 
   if (query.isPending) {
     return (
@@ -53,7 +55,7 @@ export function TemplatesPage() {
       <PageHeader
         title="Email templates"
         action={
-          <Button className="h-10" onClick={() => navigate('/cms/templates/new')}>
+          <Button className="h-10" disabled={!can('campaigns.manage')} onClick={() => navigate('/cms/templates/new')}>
             <Plus aria-hidden="true" className="size-4" />
             New template
           </Button>
@@ -107,6 +109,7 @@ export function TemplatesPage() {
                       <Button
                         size="sm"
                         variant="ghost"
+                        disabled={!can('campaigns.manage')}
                         onClick={() => toast.success('Template duplicated.')}
                       >
                         Duplicate

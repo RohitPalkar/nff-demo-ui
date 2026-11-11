@@ -3,14 +3,15 @@ import { FileText, MoreHorizontal, Plus, SearchX } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
+import { attempt, usePermissions } from '@/features/auth/usePermissions'
 import {
   ContentStatusChip,
   PageHeader,
   Pager,
   paginate,
 } from '@/components/cms/CmsParts'
-import { EmptyState } from '@/components/nff/EmptyState'
-import { ErrorState } from '@/components/nff/ErrorState'
+import { EmptyState } from '@/components/admin'
+import { ErrorState } from '@/components/admin'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -42,6 +43,7 @@ import {
   createCmsItem,
   duplicateCmsItem,
   listCmsItems,
+  ownerLabel,
   setCmsStatus,
   type CmsStatus,
 } from '@/services/cms'
@@ -57,6 +59,7 @@ const TABS: Array<{ value: 'all' | CmsStatus; label: string }> = [
 export function ExplorationsListPage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
+  const { can } = usePermissions()
   const query = useQuery({
     queryKey: ['cms', 'explorations'],
     queryFn: () => listCmsItems('exploration'),
@@ -108,10 +111,12 @@ export function ExplorationsListPage() {
         action={
           <Button
             className="h-10"
+            disabled={!can('content.create')}
             onClick={() => {
-              const item = createCmsItem('exploration')
+              let created: ReturnType<typeof createCmsItem> | undefined
+              if (!attempt(() => (created = createCmsItem('exploration')))) return
               refresh()
-              navigate(`/cms/explorations/${item.id}`)
+              navigate(`/cms/explorations/${created!.id}`)
             }}
           >
             <Plus aria-hidden="true" className="size-4" />
@@ -236,8 +241,13 @@ export function ExplorationsListPage() {
                       </TableCell>
                       <TableCell>
                         <ContentStatusChip status={item.status} />
+                        {item.revision && (
+                          <span className="block nff-caption text-muted-foreground">
+                            Revision: {item.revision.status.replace('_', ' ')}
+                          </span>
+                        )}
                       </TableCell>
-                      <TableCell>{item.owner}</TableCell>
+                      <TableCell>{ownerLabel(item)}</TableCell>
                       <TableCell>{formatDate(item.updatedAt)}</TableCell>
                       <TableCell>
                         <DropdownMenu>
@@ -267,8 +277,9 @@ export function ExplorationsListPage() {
                               Preview
                             </DropdownMenuItem>
                             <DropdownMenuItem
+                              disabled={!can('content.create')}
                               onClick={() => {
-                                duplicateCmsItem(item)
+                                if (!attempt(() => duplicateCmsItem(item))) return
                                 refresh()
                                 toast.success('Duplicated as a draft.')
                               }}
@@ -276,9 +287,9 @@ export function ExplorationsListPage() {
                               Duplicate
                             </DropdownMenuItem>
                             <DropdownMenuItem
-                              disabled={item.status !== 'published'}
+                              disabled={item.status !== 'published' || !can('content.unpublish')}
                               onClick={() => {
-                                setCmsStatus(item.id, 'unpublished')
+                                if (!attempt(() => setCmsStatus(item.id, 'unpublished'))) return
                                 refresh()
                                 toast.success('Unpublished.')
                               }}

@@ -1,8 +1,8 @@
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { BarSeries } from '@/components/cms/BarSeries'
-import { MetricCard, PageHeader } from '@/components/cms/CmsParts'
-import { ErrorState } from '@/components/nff/ErrorState'
+import { DataSourceBadge, DataSourceNotice, MetricCard, PageHeader } from '@/components/cms/CmsParts'
+import { ErrorState } from '@/components/admin'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
   Select,
@@ -88,7 +88,7 @@ export function EngagementDashboardPage() {
     <div className="flex flex-col gap-5">
       <PageHeader
         title="Engagement"
-        description="Rolled up nightly · scores weekly"
+        description="Demo figures. Not calculated from learner activity."
         action={
           <Select value={stage} onValueChange={setStage}>
             <SelectTrigger aria-label="Stage segment" className="w-48">
@@ -112,31 +112,48 @@ export function EngagementDashboardPage() {
         </p>
       ) : (
         <>
+          <DataSourceNotice kind="unavailable">
+            Learner activity recorded in the Practitioner app is not aggregated here, and no analytics source is
+            connected. These figures come from seeded sample records or are simulated, and each is labelled.
+            Scores are not recalculated automatically.
+          </DataSourceNotice>
           <section aria-label="Summary" className="grid gap-4 sm:grid-cols-5">
-            <MetricCard label="Active practitioners" value={String(people.filter((p) => p.status === 'active').length)} />
-            <MetricCard label="Completions" value={String(completions)} />
-            <MetricCard label="Repeat plays" value={String(Math.round(plays * 0.4))} />
-            <MetricCard label="Avg logins / week" value="3.4" />
-            <MetricCard label="Avg engagement score" value={String(avg)} />
+            <MetricCard label="Active practitioners" value={String(people.filter((p) => p.status === 'active').length)} source="demo" />
+            <MetricCard label="Completions" value={String(completions)} source="demo" />
+            <MetricCard label="Repeat plays" value={String(Math.round(plays * 0.4))} source="simulated" />
+            <MetricCard label="Avg logins / week" value="3.4" source="demo" />
+            <MetricCard label="Avg engagement score" value={String(avg)} source="demo" />
           </section>
 
           <div className="grid gap-6 lg:grid-cols-3">
             <section className="flex flex-col gap-2">
-              <h2 className="nff-heading-h4">Score distribution</h2>
+              <div className="flex flex-wrap items-center gap-3">
+                <h2 className="nff-heading-h4">Score distribution</h2>
+                <DataSourceBadge kind="demo" />
+              </div>
               <BarSeries label="Score distribution" data={buckets} />
             </section>
             <section className="flex flex-col gap-2">
-              <h2 className="nff-heading-h4">Completions by stage</h2>
+              <div className="flex flex-wrap items-center gap-3">
+                <h2 className="nff-heading-h4">Completions by stage</h2>
+                <DataSourceBadge kind="demo" />
+              </div>
               <BarSeries label="Completions by stage" data={funnel} />
             </section>
             <section className="flex flex-col gap-2">
-              <h2 className="nff-heading-h4">Weekly activity</h2>
+              <div className="flex flex-wrap items-center gap-3">
+                <h2 className="nff-heading-h4">Weekly activity</h2>
+                <DataSourceBadge kind="simulated" />
+              </div>
               <BarSeries label="Weekly activity" data={weekly} />
             </section>
           </div>
 
           <section className="flex flex-col gap-2">
-            <h2 className="nff-heading-h4">Top content</h2>
+            <div className="flex flex-wrap items-center gap-3">
+              <h2 className="nff-heading-h4">Top content</h2>
+              <DataSourceBadge kind="simulated" />
+            </div>
             <div className="rounded-xl border bg-card">
               <Table>
                 <TableHeader>

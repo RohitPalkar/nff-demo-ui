@@ -39,7 +39,7 @@ export function UnsubscribePage() {
             />
             <h1 className="nff-heading-h2">You are unsubscribed</h1>
             <p className="nff-body-md text-muted-foreground">
-              You will no longer receive NFF emails. If this was a mistake you
+              You will no longer receive Meadow emails. If this was a mistake you
               can turn them back on from your account settings.
             </p>
             <div className="flex gap-3">

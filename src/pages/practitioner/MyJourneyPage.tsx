@@ -12,6 +12,7 @@ import { formatDate } from '@/lib/format'
 import { userById } from '@/mocks/db'
 import { getItemById, getJourney, getProgress } from '@/services/content'
 import { itemHref } from './JourneyPage'
+import { pathHref } from '@/services/learning/routes'
 
 type Range = 'week' | 'month' | 'all'
 
@@ -100,7 +101,7 @@ export function MyJourneyPage() {
           Your activity will appear here once you start your first practice.
         </p>
         <Button asChild className="h-11">
-          <Link to="/journey">Begin your journey</Link>
+          <Link to={pathHref()}>Begin your journey</Link>
         </Button>
       </div>
     )
@@ -242,9 +243,7 @@ export function MyJourneyPage() {
       {journey.continueItem && (
         <Button asChild className="h-11 w-fit">
           <Link
-            to={itemHref(
-              journey.continueItem.stage.id,
-              journey.continueItem.item,
+            to={itemHref(journey.continueItem.item,
             )}
           >
             Continue: {journey.continueItem.item.title}

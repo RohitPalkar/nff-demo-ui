@@ -1,273 +1,82 @@
-import {
-  ChevronDown,
-  LogIn,
-  LogOut,
-  Menu,
-  Monitor,
-  Moon,
-  Sun,
-  User as UserIcon,
-} from 'lucide-react'
-import { useTheme } from 'next-themes'
-import { Link, useNavigate } from 'react-router-dom'
+import { ArrowRight } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { BrandLogo } from '@/components/nff/BrandLogo'
-import { ThemeToggle } from '@/components/nff/ThemeToggle'
+import { AccountMenu } from '@/components/nff/header/AccountMenu'
+import { DesktopNav } from '@/components/nff/header/DesktopNav'
+import { MobileNav } from '@/components/nff/header/MobileNav'
+import { usePrimaryCta } from '@/components/nff/header/navConfig'
 import { Button } from '@/components/ui/button'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import {
-  Sheet,
-  SheetClose,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from '@/components/ui/sheet'
-import { BRAND } from '@/config/brand'
 import { useAuth } from '@/features/auth/AuthProvider'
-import { FLAGS } from '@/config/flags'
 import { cn } from '@/lib/utils'
 
-const NAV_ITEMS = [
-  { label: 'Home', href: '/' },
-  { label: 'Foundations', href: '/?tab=foundations' },
-  { label: 'Understand', href: '/?tab=understand' },
-  { label: 'Contemplate', href: '/?tab=contemplate' },
-  { label: 'Explore', href: '/explorations' },
-  { label: 'About', href: '/about/who-we-are' },
-]
-
-function initials(name: string) {
-  return name
-    .split(' ')
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase() ?? '')
-    .join('')
+function useScrolled(threshold = 8) {
+  const [scrolled, setScrolled] = useState(false)
+  useEffect(() => {
+    const update = () => setScrolled(window.scrollY > threshold)
+    update()
+    window.addEventListener('scroll', update, { passive: true })
+    return () => window.removeEventListener('scroll', update)
+  }, [threshold])
+  return scrolled
 }
 
+/** Public header: logo · centred navigation · account actions. */
 export function Header() {
-  const { user, logout } = useAuth()
-  const navigate = useNavigate()
-  const { setTheme } = useTheme()
-
-  const navItems = FLAGS.homeTabsInGlobalNav
-    ? NAV_ITEMS
-    : NAV_ITEMS.filter((item) => !item.href.includes('?tab='))
+  const { user } = useAuth()
+  const scrolled = useScrolled()
+  const cta = usePrimaryCta()
 
   return (
-    <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
-      <div className="nff-content flex h-[var(--nff-layout-header-height)] items-center gap-4">
-        <BrandLogo />
+    <header
+      data-scrolled={scrolled}
+      className={cn(
+        'sticky top-0 z-40 border-b transition-[background-color,border-color,box-shadow] duration-[var(--nff-duration-slow)] ease-[var(--nff-easing-standard)]',
+        scrolled
+          ? 'border-nff-border-default bg-nff-bg-surface/90 shadow-nff-1 backdrop-blur-md supports-[backdrop-filter]:bg-nff-bg-surface/80'
+          : 'border-transparent bg-nff-bg-public',
+      )}
+    >
+      {/* Same horizontal rhythm as the inset page panels below it (hero,
+          sections, footer): px-2/3 outer inset, then px-6/10/14 inside a
+          1440px frame, so the logo lines up with each panel's content. */}
+      <div
+        className={cn(
+          'mx-auto flex max-w-[calc(1440px+1.5rem)] items-center gap-4 px-5 sm:px-[3.25rem] lg:grid lg:grid-cols-[1fr_auto_1fr] lg:px-[4.25rem]',
+          'transition-[height] duration-[var(--nff-duration-slow)] ease-[var(--nff-easing-standard)]',
+          scrolled
+            ? 'h-[var(--nff-layout-header-height)] lg:h-[calc(var(--nff-layout-header-height)-8px)]'
+            : 'h-[var(--nff-layout-header-height)] lg:h-20',
+        )}
+      >
+        <BrandLogo className="justify-self-start" />
 
-        <nav aria-label="Primary" className="hidden lg:block">
-          <ul className="flex items-center gap-1">
-            {navItems.map((item) => (
-              <li key={item.label}>
-                <Link
-                  to={item.href}
-                  className="inline-flex min-h-11 items-center rounded-md px-3 nff-label-md text-muted-foreground transition-colors hover:bg-nff-bg-hover hover:text-foreground nff-focus-ring"
-                >
-                  {item.label}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </nav>
+        <DesktopNav />
 
-        <div className="ml-auto flex items-center gap-2">
-          <div className="hidden sm:block">
-            <ThemeToggle />
-          </div>
-
+        <div className="ml-auto flex items-center gap-1 justify-self-end sm:gap-2">
           {user ? (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  className="h-11 gap-2 px-2"
-                  aria-label="Account menu"
-                >
-                  <span
-                    aria-hidden="true"
-                    className="flex size-8 items-center justify-center rounded-full bg-nff-bg-brand-subtle nff-label-sm text-nff-text-brand"
-                  >
-                    {initials(user.name)}
-                  </span>
-                  <span className="hidden nff-label-md sm:inline">
-                    {user.name.split(' ')[0]}
-                  </span>
-                  <ChevronDown aria-hidden="true" className="size-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuLabel className="flex flex-col gap-0.5">
-                  <span className="nff-label-md">{user.name}</span>
-                  <span className="nff-caption text-muted-foreground">
-                    {user.email}
-                  </span>
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                  <Link to="/account/profile">
-                    <UserIcon aria-hidden="true" />
-                    Profile
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link to="/account/email">Email preferences</Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link to="/account/privacy">Privacy</Link>
-                </DropdownMenuItem>
-                {user.role === 'practitioner' && (
-                  <DropdownMenuItem asChild>
-                    <Link to="/journey">My journey</Link>
-                  </DropdownMenuItem>
-                )}
-                <DropdownMenuSeparator />
-                <DropdownMenuLabel className="nff-caption text-muted-foreground">
-                  Theme
-                </DropdownMenuLabel>
-                <DropdownMenuItem onClick={() => setTheme('light')}>
-                  <Sun aria-hidden="true" />
-                  Light
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setTheme('dark')}>
-                  <Moon aria-hidden="true" />
-                  Dark
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setTheme('system')}>
-                  <Monitor aria-hidden="true" />
-                  System
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  onClick={() => {
-                    logout()
-                    navigate('/')
-                  }}
-                >
-                  <LogOut aria-hidden="true" />
-                  Log out
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <div className="hidden sm:block">
+              <AccountMenu />
+            </div>
           ) : (
-            <>
-              <Button
-                asChild
-                variant="ghost"
-                className="hidden h-11 px-4 sm:inline-flex"
-              >
-                <Link to="/login">
-                  <LogIn aria-hidden="true" className="size-4" />
-                  Log in
-                </Link>
-              </Button>
-              <Button asChild className="h-11 px-4">
-                <Link to="/signup">Sign up</Link>
-              </Button>
-            </>
+            <Link
+              to="/login"
+              className="hidden h-10 items-center whitespace-nowrap rounded-full px-3.5 nff-nav text-[var(--nff-nav-fg)] transition-colors hover:bg-[var(--nff-nav-bg-hover)] hover:text-foreground nff-focus-ring sm:inline-flex"
+            >
+              Log in
+            </Link>
           )}
-
-          <Sheet>
-            <SheetTrigger asChild>
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                className="size-11 lg:hidden"
-                aria-label="Open menu"
-              >
-                <Menu className="size-5" />
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="right" className="w-full max-w-sm">
-              <SheetHeader>
-                <SheetTitle>{BRAND.productName}</SheetTitle>
-                <SheetDescription>Menu</SheetDescription>
-              </SheetHeader>
-              <nav aria-label="Mobile" className="mt-4 flex flex-col gap-1 px-4">
-                {navItems.map((item) => (
-                  <SheetClose asChild key={item.label}>
-                    <Link
-                      to={item.href}
-                      className="inline-flex min-h-11 items-center rounded-md px-3 nff-body-md text-foreground hover:bg-nff-bg-hover nff-focus-ring"
-                    >
-                      {item.label}
-                    </Link>
-                  </SheetClose>
-                ))}
-                <div className="my-2 h-px bg-border" />
-                {user ? (
-                  <>
-                    <SheetClose asChild>
-                      <Link
-                        to="/account/profile"
-                        className="inline-flex min-h-11 items-center rounded-md px-3 nff-body-md hover:bg-nff-bg-hover nff-focus-ring"
-                      >
-                        Profile
-                      </Link>
-                    </SheetClose>
-                    <SheetClose asChild>
-                      <Link
-                        to="/account/email"
-                        className="inline-flex min-h-11 items-center rounded-md px-3 nff-body-md hover:bg-nff-bg-hover nff-focus-ring"
-                      >
-                        Email preferences
-                      </Link>
-                    </SheetClose>
-                    <SheetClose asChild>
-                      <Link
-                        to="/account/privacy"
-                        className="inline-flex min-h-11 items-center rounded-md px-3 nff-body-md hover:bg-nff-bg-hover nff-focus-ring"
-                      >
-                        Privacy
-                      </Link>
-                    </SheetClose>
-                    <Button
-                      variant="outline"
-                      className="mt-2 h-11"
-                      onClick={() => {
-                        logout()
-                        navigate('/')
-                      }}
-                    >
-                      <LogOut aria-hidden="true" className="size-4" />
-                      Log out
-                    </Button>
-                  </>
-                ) : (
-                  <>
-                    <SheetClose asChild>
-                      <Link
-                        to="/login"
-                        className={cn(
-                          'inline-flex min-h-11 items-center rounded-md px-3 nff-body-md hover:bg-nff-bg-hover nff-focus-ring',
-                        )}
-                      >
-                        Log in
-                      </Link>
-                    </SheetClose>
-                    <SheetClose asChild>
-                      <Button asChild className="mt-2 h-11">
-                        <Link to="/signup">Sign up free</Link>
-                      </Button>
-                    </SheetClose>
-                  </>
-                )}
-              </nav>
-            </SheetContent>
-          </Sheet>
+          <Button
+            asChild
+            className={cn('h-10 rounded-full px-4 sm:px-5', user && 'hidden sm:inline-flex')}
+          >
+            <Link to={cta.to} aria-label={cta.label}>
+              <span className="sm:hidden">{cta.short}</span>
+              <span className="hidden sm:inline">{cta.label}</span>
+              <ArrowRight aria-hidden="true" className="hidden size-4 sm:block" />
+            </Link>
+          </Button>
+          <MobileNav />
         </div>
       </div>
     </header>

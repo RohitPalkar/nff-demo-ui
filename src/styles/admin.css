@@ -1,0 +1,169 @@
+/* Admin/CMS design foundation (Phase 2). See docs/admin-design-foundation.md.
+ *
+ * Everything here is scoped to [data-surface="cms"], so the public site and
+ * the Practitioner app are untouched. The Admin shell also sets the attribute
+ * on <body> while it is mounted, so portalled UI (dialogs, menus, sheets,
+ * toasts) uses the same scope.
+ *
+ * It extends the existing token layers (nff-tokens.css); it does not replace
+ * them. The page type scale (h1 28, h2 24, h3 20, h4 18) already lives in the
+ * cms scope there. */
+
+[data-surface="cms"] {
+  /* Palette roles. Values are existing primitives. */
+  --admin-canvas: var(--nff-neutral-50);          /* warm neutral application background */
+  --admin-surface: var(--nff-neutral-0);          /* white working surfaces */
+  --admin-surface-subtle: var(--nff-neutral-25);  /* quiet bands inside a surface */
+  --admin-border: var(--nff-neutral-200);
+  --admin-border-strong: var(--nff-neutral-300);
+  --admin-text: var(--nff-neutral-900);           /* deep charcoal */
+  --admin-text-muted: var(--nff-neutral-600);     /* secondary text, 5.9:1 on white */
+  --admin-primary: var(--nff-forest-900);         /* forest green: the primary action */
+  --admin-nav-active-bg: var(--nff-sage-100);
+
+  /* Shape: controls 8px (radius-md, unchanged), cards and panels 12px, dialogs 16px. */
+  --admin-radius-control: var(--nff-radius-md);
+  --admin-radius-card: var(--nff-radius-lg);
+  --admin-radius-dialog: 16px; /* literal: --nff-radius-xl is remapped to 12px in this scope */
+
+  /* Layout */
+  --admin-sidebar-width: 256px;
+  --admin-sidebar-width-collapsed: 72px;
+  --admin-topbar-height: 56px;
+  --admin-content-max: 1280px;
+  --admin-gutter: 16px;
+
+  /* The CMS canvas is warm neutral; surfaces stay white. */
+  --nff-color-bg-canvas: var(--admin-canvas);
+  --nff-color-bg-muted: var(--nff-neutral-100);
+  --nff-color-bg-surface-sunken: var(--nff-neutral-100);
+  --nff-color-bg-surface-secondary: var(--nff-neutral-100);
+  --nff-color-border-default: var(--admin-border);
+
+  /* Existing pages use `rounded-xl` for cards. In Admin that is 12px, not 16px. */
+  --nff-radius-xl: var(--nff-radius-lg);
+
+  /* The editors' fixed action bars read this; the shell updates it on collapse. */
+  --nff-layout-admin-sidebar: var(--admin-sidebar-width);
+
+  /* Outline buttons get a boundary of at least 3:1 (WCAG 1.4.11). The default
+     border-strong is about 1.4:1 on white. neutral-500 on white is 3.6:1. */
+  --nff-button-outline-border: var(--nff-neutral-500);
+
+  /* The metric size is compact in Admin. */
+  --nff-type-data-metric-size: 1.5rem;
+  --nff-type-data-metric-line-height: 2rem;
+}
+
+@media (min-width: 640px) {
+  [data-surface="cms"] {
+    --admin-gutter: 24px;
+  }
+}
+
+@media (min-width: 1024px) {
+  [data-surface="cms"] {
+    --admin-gutter: 32px;
+  }
+}
+
+/* Dialogs are the only 16px surface. Drawers (inset-y-0) sit on the screen edge and stay square. */
+[data-surface="cms"] [role="alertdialog"],
+[data-surface="cms"] [role="dialog"]:not([class*="inset-y-0"]) {
+  border-radius: var(--admin-radius-dialog);
+}
+
+/* Admin text roles. Sizes come from the existing type tokens. */
+@layer components {
+  [data-surface="cms"] .admin-page-title {
+    font-family: var(--nff-font-sans);
+    font-weight: 600;
+    font-size: var(--nff-type-heading-h2-size);
+    line-height: var(--nff-type-heading-h2-line-height);
+    letter-spacing: -0.01em;
+  }
+  [data-surface="cms"] .admin-section-title {
+    font-family: var(--nff-font-sans);
+    font-weight: 600;
+    font-size: var(--nff-type-heading-h4-size);
+    line-height: var(--nff-type-heading-h4-line-height);
+  }
+  [data-surface="cms"] .admin-nav-group {
+    font-weight: 600;
+    font-size: 0.75rem;
+    line-height: 1rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+}
+
+/* Responsive safety for existing pages. Without it, a wide child (a preview, a tab
+   strip) stretches a grid track or a tab list past the viewport on narrow screens. */
+[data-surface="cms"] #admin-main .grid > * {
+  min-width: 0;
+}
+
+[data-surface="cms"] [data-slot="tabs-list"] {
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+[data-surface="cms"] [data-slot="tabs-list"]::-webkit-scrollbar {
+  display: none;
+}
+[data-surface="cms"] [data-slot="tabs-trigger"] {
+  flex: none;
+}
+
+/* Contrast and focus refinements (Phase 2.1). Admin scope only. */
+
+/* Inactive tab text: the default muted colour is 3.9:1 on the tab track. */
+[data-surface="cms"] [data-slot="tabs-trigger"]:not([data-state="active"]) {
+  color: var(--admin-text-muted);
+}
+
+/* The selected tab is marked by more than a 1.07:1 fill change: a forest underline and weight. */
+[data-surface="cms"] [data-slot="tabs-trigger"][data-state="active"] {
+  color: var(--admin-text);
+  font-weight: 600;
+  box-shadow: inset 0 -2px 0 var(--admin-primary);
+}
+
+/* The audio seek/volume tracks (shared player) are 1.5:1 by default; 3.6:1 here. */
+[data-surface="cms"] .nff-range::-webkit-slider-runnable-track {
+  background: var(--nff-neutral-500);
+}
+[data-surface="cms"] .nff-range::-moz-range-track {
+  background: var(--nff-neutral-500);
+}
+
+/* Focused controls are not hidden behind the sticky top bar or the fixed action bar (WCAG 2.4.11). */
+html:has(body[data-surface="cms"]) {
+  scroll-padding-top: calc(var(--admin-topbar-height, 56px) + 16px);
+  scroll-padding-bottom: 96px;
+}
+
+/* Target size (WCAG 2.5.8: 24px minimum). Visual size is unchanged where it would look wrong;
+   the hit area grows instead. */
+[data-surface="cms"] [data-slot="switch"] {
+  position: relative;
+}
+[data-surface="cms"] [data-slot="switch"]::after {
+  content: "";
+  position: absolute;
+  inset: -4px;
+}
+[data-surface="cms"] .nff-range {
+  height: 1.5rem;
+}
+[data-surface="cms"] button.absolute.right-4.top-4 {
+  /* Dialog and drawer close buttons: a 16px icon gets a 32px target. */
+  padding: 8px;
+  margin: -8px;
+  box-sizing: content-box;
+}
+[data-surface="cms"] #admin-main a.w-fit {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+}

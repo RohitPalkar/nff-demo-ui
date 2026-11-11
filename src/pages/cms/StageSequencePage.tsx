@@ -11,7 +11,7 @@ import {
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
-import { ErrorState } from '@/components/nff/ErrorState'
+import { ErrorState } from '@/components/admin'
 import { UnavailableState } from '@/components/nff/UnavailableState'
 import { Button } from '@/components/ui/button'
 import {
@@ -33,10 +33,11 @@ import {
 } from '@/components/ui/sheet'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Switch } from '@/components/ui/switch'
+import { attempt, usePermissions } from '@/features/auth/usePermissions'
 import { Textarea } from '@/components/ui/textarea'
 import {
   getCmsStages,
-  listAllCmsItems,
+  listCmsItemSummaries,
   saveStageDetails,
   saveStageItems,
 } from '@/services/cms'
@@ -44,8 +45,10 @@ import {
 export function StageSequencePage() {
   const { stageId = '' } = useParams()
   const queryClient = useQueryClient()
-  const stagesQuery = useQuery({ queryKey: ['cms', 'stages'], queryFn: getCmsStages })
-  const itemsQuery = useQuery({ queryKey: ['cms', 'all'], queryFn: listAllCmsItems })
+  const { can } = usePermissions()
+  const manage = can('learning.manage')
+  const stagesQuery = useQuery({ queryKey: ['cms', 'stages'], queryFn: () => getCmsStages() })
+  const itemsQuery = useQuery({ queryKey: ['cms', 'summaries'], queryFn: () => listCmsItemSummaries() })
   const [ids, setIds] = useState<string[] | null>(null)
   const [title, setTitle] = useState('')
   const [intro, setIntro] = useState('')
@@ -146,6 +149,14 @@ export function StageSequencePage() {
         </div>
       )}
 
+      {!manage && (
+        <p role="status" className="rounded-xl border bg-nff-bg-muted p-3 nff-body-sm text-muted-foreground">
+          You can view this stage. Changing the curriculum needs an admin.
+        </p>
+      )}
+
+      {/* A disabled fieldset disables every control inside it, so a viewer cannot edit. */}
+      <fieldset disabled={!manage} className="contents">
       <section
         aria-label="Stage details"
         className="flex flex-col gap-4 rounded-xl border bg-card p-4"
@@ -256,8 +267,9 @@ export function StageSequencePage() {
           </ol>
         )}
       </section>
+      </fieldset>
 
-      {dirty && (
+      {dirty && manage && (
         <div className="fixed inset-x-0 bottom-0 z-30 flex items-center justify-between gap-3 border-t bg-background/95 px-6 py-3 backdrop-blur lg:left-[var(--nff-layout-admin-sidebar)]">
           <span role="status" className="nff-body-sm">
             You have unsaved changes.
@@ -276,8 +288,14 @@ export function StageSequencePage() {
             </Button>
             <Button
               onClick={() => {
-                saveStageItems(stage.id, ids)
-                saveStageDetails(stage.id, { title, intro })
+                if (
+                  !attempt(() => {
+                    saveStageItems(stage.id, ids)
+                    saveStageDetails(stage.id, { title, intro })
+                  })
+                ) {
+                  return
+                }
                 setDirty(false)
                 void queryClient.invalidateQueries({ queryKey: ['cms', 'stages'] })
                 toast.success('Stage saved.')

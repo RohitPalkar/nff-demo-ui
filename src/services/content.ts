@@ -1,12 +1,11 @@
-import { ApiError, mockApi, readJson, writeJson } from '@/mocks/api'
-import {
-  content,
-  contentById,
-  demoProgress,
-  progressByUser,
-  stages,
-} from '@/mocks/db'
+import { ApiError, mockApi } from '@/mocks/api'
+import { content, contentById, stages } from '@/mocks/db'
 import { getScenario } from '@/mocks/scenario'
+import {
+  loadProgress,
+  saveLegacyProgress,
+  toLegacyProgress,
+} from '@/services/learning/progress'
 import type {
   Category,
   CatalogueQuery,
@@ -76,9 +75,10 @@ function takeMix(category: Category, topic?: UnderstandTopic): ContentItem[] {
   const explorations = pool
     .filter((item) => item.type === 'exploration')
     .slice(0, 2)
+  // Two readings and one track: three cards, one row in the home grid.
   const meditations = pool
     .filter((item) => item.type === 'meditation')
-    .slice(0, 2)
+    .slice(0, 1)
   return [...explorations, ...meditations]
 }
 
@@ -139,6 +139,10 @@ export async function getHomeContent(): Promise<HomeContent> {
       featured,
     }
   })
+}
+
+export function getStageNumber(stageId: string): number | undefined {
+  return stages.find((entry) => entry.id === stageId)?.number
 }
 
 export function getStageTitle(stageId: string): string {
@@ -265,16 +269,7 @@ function stageStatus(
 
 export async function getJourney(userId: string): Promise<Journey> {
   return mockApi(() => {
-    const stored = readJson<Progress | null>(`nff.progress.${userId}`, null)
-    const progress =
-      stored ??
-      progressByUser.find((entry) => entry.userId === userId) ??
-      (userId === demoProgress.userId ? demoProgress : undefined) ?? {
-        userId,
-        completedItemIds: [],
-        positionsSec: {},
-        updatedAt: new Date().toISOString(),
-      }
+    const progress = toLegacyProgress(loadProgress(userId))
 
     const completed = new Set(progress.completedItemIds)
     const forceLocked = getScenario() === 'locked-stage'
@@ -335,22 +330,15 @@ export async function getJourney(userId: string): Promise<Journey> {
   })
 }
 
+/**
+ * Learner progress in the shape the existing screens use. Backed by the
+ * versioned store in services/learning/progress.ts (`meadow.progress.v2.*`),
+ * which migrates the legacy `nff.progress.*` record on first read.
+ */
 export async function getProgress(userId: string): Promise<Progress> {
-  const stored = readJson<Progress | null>(`nff.progress.${userId}`, null)
-  return (
-    stored ??
-    progressByUser.find((entry) => entry.userId === userId) ?? {
-      userId,
-      completedItemIds: [],
-      positionsSec: {},
-      updatedAt: new Date().toISOString(),
-    }
-  )
+  return toLegacyProgress(loadProgress(userId))
 }
 
 export function saveProgress(progress: Progress) {
-  writeJson(`nff.progress.${progress.userId}`, {
-    ...progress,
-    updatedAt: new Date().toISOString(),
-  })
+  saveLegacyProgress(progress)
 }

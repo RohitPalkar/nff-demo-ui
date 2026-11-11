@@ -12,6 +12,7 @@ import {
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
+import { attempt, usePermissions } from '@/features/auth/usePermissions'
 import {
   ContentStatusChip,
   MetricCard,
@@ -19,8 +20,8 @@ import {
   Pager,
   paginate,
 } from '@/components/cms/CmsParts'
-import { EmptyState } from '@/components/nff/EmptyState'
-import { ErrorState } from '@/components/nff/ErrorState'
+import { EmptyState } from '@/components/admin'
+import { ErrorState } from '@/components/admin'
 import { StatusChip, type StatusTone } from '@/components/nff/StatusChip'
 import { Button } from '@/components/ui/button'
 import {
@@ -70,6 +71,7 @@ export const TRANSCODE_META: Record<
 export function MeditationsListPage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
+  const { can } = usePermissions()
   const query = useQuery({
     queryKey: ['cms', 'meditations'],
     queryFn: () => listCmsItems('meditation'),
@@ -139,10 +141,12 @@ export function MeditationsListPage() {
         action={
           <Button
             className="h-10"
+            disabled={!can('content.create')}
             onClick={() => {
-              const item = createCmsItem('meditation')
+              let created: ReturnType<typeof createCmsItem> | undefined
+              if (!attempt(() => (created = createCmsItem('meditation')))) return
               refresh()
-              navigate(`/cms/meditations/${item.id}`)
+              navigate(`/cms/meditations/${created!.id}`)
             }}
           >
             <Plus aria-hidden="true" className="size-4" />
@@ -287,6 +291,11 @@ export function MeditationsListPage() {
                         </TableCell>
                         <TableCell>
                           <ContentStatusChip status={item.status} />
+                          {item.revision && (
+                            <span className="block nff-caption text-muted-foreground">
+                              Revision: {item.revision.status.replace('_', ' ')}
+                            </span>
+                          )}
                         </TableCell>
                         <TableCell>{formatDate(item.updatedAt)}</TableCell>
                         <TableCell>

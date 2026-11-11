@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { ArrowRight, Headphones, PlayCircle } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
+import { AccountRegistrationCTA } from '@/components/nff/AccountRegistrationCTA'
 import { CategoryTabs } from '@/components/nff/CategoryTabs'
 import { ContentCard } from '@/components/nff/ContentCard'
 import { EmptyState } from '@/components/nff/EmptyState'
@@ -169,7 +170,7 @@ export function MeditationsPage() {
   } else {
     body = (
       <>
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
           {items.map((item) => (
             <ContentCard
               key={item.id}
@@ -255,6 +256,8 @@ export function MeditationsPage() {
         <h2 className="sr-only">Meditation results</h2>
         {body}
       </section>
+
+      <AccountRegistrationCTA />
     </div>
   )
 }

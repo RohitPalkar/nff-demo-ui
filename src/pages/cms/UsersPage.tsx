@@ -3,8 +3,8 @@ import { SearchX, Users } from 'lucide-react'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { PageHeader, Pager, paginate } from '@/components/cms/CmsParts'
-import { EmptyState } from '@/components/nff/EmptyState'
-import { ErrorState } from '@/components/nff/ErrorState'
+import { EmptyState } from '@/components/admin'
+import { ErrorState } from '@/components/admin'
 import { StatusChip, type StatusTone } from '@/components/nff/StatusChip'
 import { Input } from '@/components/ui/input'
 import {
@@ -47,7 +47,7 @@ function band(score: number) {
 }
 
 export function UsersPage() {
-  const query = useQuery({ queryKey: ['cms', 'users'], queryFn: getUsers })
+  const query = useQuery({ queryKey: ['cms', 'users'], queryFn: () => getUsers() })
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState('all')
   const [stage, setStage] = useState('all')
@@ -98,7 +98,7 @@ export function UsersPage() {
 
   return (
     <div className="flex flex-col gap-5">
-      <PageHeader title="Users" description={`${people.length} practitioners`} />
+      <PageHeader title="Practitioners" description={`${people.length} practitioners`} />
 
       {people.length === 0 ? (
         <EmptyState

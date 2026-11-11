@@ -22,7 +22,8 @@ interface PlayerContextValue {
   playing: boolean
   speed: number
   ended: boolean
-  load: (track: Meditation, stageId: string, startAt?: number) => void
+  /** `autoplay` starts playback as soon as the track is loaded. */
+  load: (track: Meditation, stageId: string, startAt?: number, autoplay?: boolean) => void
   toggle: () => void
   seek: (seconds: number) => void
   skip: (delta: number) => void
@@ -127,14 +128,14 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     if (!('mediaSession' in navigator) || !track) return
     navigator.mediaSession.metadata = new MediaMetadata({
       title: track.title,
-      artist: 'NeuroFelicitology',
+      artist: 'Meadow',
     })
     navigator.mediaSession.setActionHandler('play', () => setPlaying(true))
     navigator.mediaSession.setActionHandler('pause', () => setPlaying(false))
   }, [track])
 
   const load = useCallback(
-    (next: Meditation, nextStage: string, startAt = 0) => {
+    (next: Meditation, nextStage: string, startAt = 0, autoplay = false) => {
       if (track?.id === next.id) return
       setTrack(next)
       setStageId(nextStage)
@@ -142,7 +143,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       lastSaveRef.current = startAt
       completedRef.current = false
       setEnded(false)
-      setPlaying(false)
+      setPlaying(autoplay)
     },
     [track],
   )

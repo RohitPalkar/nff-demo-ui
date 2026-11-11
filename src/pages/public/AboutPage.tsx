@@ -1,148 +1,90 @@
 import { useQuery } from '@tanstack/react-query'
-import { ArrowRight, FileQuestion, ImageOff } from 'lucide-react'
-import { useState } from 'react'
-import { Link, useParams, useSearchParams } from 'react-router-dom'
+import { FileQuestion } from 'lucide-react'
+import { useEffect } from 'react'
+import { useParams, useSearchParams } from 'react-router-dom'
+import { AccountRegistrationCTA } from '@/components/nff/AccountRegistrationCTA'
+import { AboutHowWeDoIt } from '@/components/nff/about/AboutHowWeDoIt'
+import { AboutIntro } from '@/components/nff/about/AboutIntro'
+import { AboutStory } from '@/components/nff/about/AboutStory'
+import { AboutWhatWeDo } from '@/components/nff/about/AboutWhatWeDo'
 import { DetailBreadcrumb } from '@/components/nff/DetailBreadcrumb'
 import { ErrorState } from '@/components/nff/ErrorState'
 import { UnavailableState } from '@/components/nff/UnavailableState'
-import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
-import { cn } from '@/lib/utils'
-import { formatDate } from '@/lib/format'
-import { ABOUT_TOPICS, getAboutPage } from '@/services/about'
-import type { AboutImage } from '@/types'
+import { ABOUT_TOPICS, getAboutContent } from '@/services/about'
 
-const TRAIL = [
-  { label: 'Home', to: '/' },
-  { label: 'About', to: '/about/who-we-are' },
-]
-
-function AboutFigure({
-  image,
-  unavailable = false,
-}: {
-  image: AboutImage
-  unavailable?: boolean
-}) {
-  const [failed, setFailed] = useState(false)
-  const showFallback = failed || unavailable
-
-  return (
-    <figure className="flex flex-col gap-3">
-      {showFallback ? (
-        <div
-          role="img"
-          aria-label="Image unavailable"
-          className="flex aspect-[16/9] w-full flex-col items-center justify-center gap-2 rounded-xl border bg-nff-bg-muted text-muted-foreground"
-        >
-          <ImageOff aria-hidden="true" className="size-6" />
-          <span className="nff-body-sm">Image unavailable</span>
-        </div>
-      ) : (
-        <img
-          src={image.src}
-          alt={image.alt}
-          width={1200}
-          height={675}
-          loading="lazy"
-          onError={() => setFailed(true)}
-          className="aspect-[16/9] w-full rounded-xl border object-cover"
-        />
-      )}
-      <figcaption className="nff-caption text-muted-foreground">
-        {image.caption}
-      </figcaption>
-    </figure>
-  )
-}
-
-function AboutNav({ active }: { active: string }) {
-  return (
-    <nav aria-label="About topics">
-      <ul className="flex w-full max-w-full gap-1 overflow-x-auto rounded-lg border bg-nff-bg-muted p-1 sm:w-fit">
-        {ABOUT_TOPICS.map((topic) => {
-          const isActive = active === topic.slug
-          return (
-            <li key={topic.slug} className="min-w-0 flex-1 sm:flex-none">
-              <Link
-                to={`/about/${topic.slug}`}
-                aria-current={isActive ? 'page' : undefined}
-                className={cn(
-                  'inline-flex min-h-11 w-full items-center justify-center rounded-md px-2 nff-label-md whitespace-nowrap transition-colors nff-focus-ring sm:px-4',
-                  isActive
-                    ? 'bg-background text-foreground shadow-nff-1'
-                    : 'text-muted-foreground hover:bg-nff-bg-hover hover:text-foreground',
-                )}
-              >
-                {topic.label}
-              </Link>
-            </li>
-          )
-        })}
-      </ul>
-    </nav>
-  )
-}
+const TRAIL = [{ label: 'Home', to: '/' }]
 
 function AboutSkeleton() {
   return (
-    <div aria-busy="true" aria-live="polite">
-      <div className="nff-content pt-6 md:pt-8">
+    <div aria-busy="true" aria-live="polite" className="px-2 sm:px-3">
+      <div className="mx-auto max-w-[1440px] px-6 pt-6 sm:px-10 md:pt-8 lg:px-14">
         <span className="nff-visually-hidden">Loading page</span>
-        <Skeleton className="h-4 w-64 max-w-full" />
-      </div>
-      <div className="nff-content py-10 md:py-14">
-        <div className="nff-reading flex flex-col gap-4">
-          <Skeleton className="h-3 w-20" />
-          <Skeleton className="h-12 w-full max-w-sm" />
-          <Skeleton className="h-5 w-full" />
-          <Skeleton className="h-5 w-3/4" />
+        <Skeleton className="h-4 w-32" />
+        <div className="grid gap-10 pt-12 md:pt-16 lg:grid-cols-2 lg:pt-20">
+          <div className="flex flex-col gap-5">
+            <Skeleton className="h-3 w-40" />
+            <Skeleton className="h-16 w-full max-w-md" />
+          </div>
+          <div className="flex flex-col gap-3">
+            <Skeleton className="h-5 w-full" />
+            <Skeleton className="h-5 w-4/5" />
+            <Skeleton className="h-5 w-3/5" />
+          </div>
         </div>
-      </div>
-      <div className="nff-content pb-16">
-        <div className="nff-reading mx-auto flex flex-col gap-6">
-          <Skeleton className="aspect-[16/9] w-full rounded-xl" />
-          {Array.from({ length: 4 }, (_, index) => (
-            <Skeleton key={index} className="h-4 w-full" />
-          ))}
-        </div>
+        <Skeleton className="mt-12 aspect-[4/3] w-full rounded-[24px] sm:aspect-[16/9] md:mt-16 lg:aspect-[12/5]" />
       </div>
     </div>
   )
 }
 
+/**
+ * About (S-WEB-04): one continuous page — Who we are, What we do, How we do
+ * it — then the registration panel. `/about` opens at the top; the older
+ * `/about/:slug` links (footer, home intro) open the same page at that part.
+ * `?image=missing` previews the image fallbacks.
+ */
 export function AboutPage() {
-  const { slug = '' } = useParams()
+  const { slug } = useParams()
   const [params] = useSearchParams()
   const forceMissingImage = params.get('image') === 'missing'
+  const knownSlug = !slug || ABOUT_TOPICS.some((topic) => topic.slug === slug)
 
   const query = useQuery({
-    queryKey: ['about', slug],
-    queryFn: () => getAboutPage(slug),
-    enabled: slug.length > 0,
+    queryKey: ['about', 'all'],
+    queryFn: getAboutContent,
+    enabled: knownSlug,
   })
+  const ready = Boolean(query.data)
+
+  // Arriving on /about/<part>: open at that part. Otherwise start at the top.
+  useEffect(() => {
+    if (!ready) return
+    const target = slug && slug !== ABOUT_TOPICS[0]?.slug ? document.getElementById(slug) : null
+    if (target) target.scrollIntoView({ block: 'start' })
+    else window.scrollTo({ top: 0 })
+  }, [ready, slug])
+
+  if (!knownSlug) {
+    return (
+      <UnavailableState
+        icon={FileQuestion}
+        title="We could not find that page"
+        description="The link may be broken, or the page may have moved. Start from the beginning of the About section."
+        trail={TRAIL}
+        backTo="/about"
+        backLabel="Back to About"
+      />
+    )
+  }
 
   if (query.isPending) return <AboutSkeleton />
 
-  if (query.isError) {
-    const code = (query.error as { code?: string } | null)?.code
-    if (code === 'not_found') {
-      return (
-        <UnavailableState
-          icon={FileQuestion}
-          title="We could not find that page"
-          description="The link may be broken, or the page may have moved. Start from the beginning of the About section."
-          trail={TRAIL}
-          backTo="/about/who-we-are"
-          backLabel="Back to About"
-        />
-      )
-    }
-
+  if (query.isError || !query.data) {
     return (
       <div>
         <div className="nff-content pt-6 md:pt-8">
-          <DetailBreadcrumb trail={TRAIL} current="Unavailable" />
+          <DetailBreadcrumb trail={TRAIL} current="About" />
         </div>
         <div className="nff-content py-16">
           <h1 className="sr-only">Page unavailable</h1>
@@ -160,114 +102,30 @@ export function AboutPage() {
     )
   }
 
-  if (!query.data) {
-    return (
-      <UnavailableState
-        icon={FileQuestion}
-        title="We could not find that page"
-        description="The link may be broken, or the page may have moved. Start from the beginning of the About section."
-        trail={TRAIL}
-        backTo="/about/who-we-are"
-        backLabel="Back to About"
-      />
-    )
-  }
-
-  const page = query.data
-  const topicIndex = ABOUT_TOPICS.findIndex(
-    (topic) => topic.slug === page.slug,
+  const { pages, stages } = query.data
+  const [who, what, how] = ABOUT_TOPICS.map((topic) =>
+    pages.find((page) => page.slug === topic.slug),
   )
-  const nextTopic = ABOUT_TOPICS[(topicIndex + 1) % ABOUT_TOPICS.length]!
-  const image = forceMissingImage
-    ? { ...page.image, src: '/images/about/missing.svg' }
-    : page.image
+  const updatedAt = pages.map((page) => page.updatedAt).sort().at(-1) ?? ''
 
   return (
     <div>
-      <section className="border-b bg-nff-bg-surface-sunken">
-        <div className="nff-content pt-6 md:pt-8">
-          <DetailBreadcrumb trail={TRAIL} current={page.title} />
-        </div>
-        <div className="nff-content py-10 md:py-14">
-          <div className="nff-reading flex flex-col gap-4">
-            <p className="nff-overline text-nff-text-brand">{page.eyebrow}</p>
-            <h1 className="nff-heading-h1 text-foreground">{page.title}</h1>
-            <p className="nff-reading-lead text-nff-text-secondary">
-              {page.lead}
-            </p>
-            <p className="nff-caption text-muted-foreground">
-              Updated {formatDate(page.updatedAt)}
-            </p>
-          </div>
-        </div>
-        <div className="nff-content pb-6">
-          <AboutNav active={page.slug} />
-        </div>
-      </section>
-
-      <article className="nff-content py-12 md:py-16">
-        <div className="nff-reading mx-auto flex flex-col gap-10">
-          <AboutFigure
-            key={image.src}
-            image={image}
-            unavailable={forceMissingImage}
+      {who && (
+        <>
+          <AboutIntro
+            page={who}
+            topics={ABOUT_TOPICS}
+            updatedAt={updatedAt}
+            forceMissingImage={forceMissingImage}
           />
-
-          {page.sections.map((section) => (
-            <section key={section.heading} className="flex flex-col gap-4">
-              <h2 className="nff-heading-h2 text-foreground">
-                {section.heading}
-              </h2>
-              {section.paragraphs.map((paragraph) => (
-                <p
-                  key={paragraph}
-                  className="nff-reading-body text-nff-text-secondary"
-                >
-                  {paragraph}
-                </p>
-              ))}
-            </section>
-          ))}
-        </div>
-      </article>
-
-      <section
-        aria-labelledby="next-topic-heading"
-        className="border-t bg-nff-bg-surface-sunken nff-section-gap"
-      >
-        <div className="nff-content">
-          <div className="nff-reading mx-auto flex flex-col gap-6">
-            <p id="next-topic-heading" className="nff-overline text-nff-text-brand">
-              Next topic
-            </p>
-            <Link
-              to={`/about/${nextTopic.slug}`}
-              className="group flex items-start justify-between gap-4 rounded-xl border bg-card p-6 shadow-nff-1 transition-shadow duration-150 hover:shadow-nff-2 nff-focus-ring"
-            >
-              <div className="flex flex-col gap-1">
-                <span className="nff-heading-h3 text-foreground">
-                  {nextTopic.label}
-                </span>
-                <span className="nff-body-sm text-muted-foreground">
-                  Continue the About section.
-                </span>
-              </div>
-              <ArrowRight
-                aria-hidden="true"
-                className="mt-1 size-5 shrink-0 text-nff-icon-brand transition-transform duration-150 group-hover:translate-x-0.5"
-              />
-            </Link>
-            <div>
-              <Button asChild className="h-11">
-                <Link to="/explorations">
-                  Explore the library
-                  <ArrowRight aria-hidden="true" className="size-4" />
-                </Link>
-              </Button>
-            </div>
-          </div>
-        </div>
-      </section>
+          <AboutStory page={who} />
+        </>
+      )}
+      {what && <AboutWhatWeDo page={what} />}
+      {how && (
+        <AboutHowWeDoIt page={how} stages={stages} forceMissingImage={forceMissingImage} />
+      )}
+      <AccountRegistrationCTA />
     </div>
   )
 }

@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { usePlayer } from '@/features/player/PlayerProvider'
 import { formatClock } from '@/lib/format'
+import { lessonHref } from '@/services/learning/routes'
 
 export function MiniPlayer() {
   const { track, stageId, position, playing, ended, toggle, close } =
@@ -10,8 +11,16 @@ export function MiniPlayer() {
   const location = useLocation()
 
   if (!track || !stageId) return null
-  const fullPath = `/journey/stages/${stageId}/listen/${track.id}`
-  if (location.pathname === fullPath) return null
+  const fullPath = lessonHref(track.id)
+  // Hide on the track's own page: its Meadow lesson, the same item in another
+  // path (`lesson-med-1@key`), or its Library page.
+  const ownPage =
+    location.pathname === fullPath ||
+    location.pathname.endsWith(`/lessons/lesson-${track.id}`) ||
+    location.pathname.includes(`/lessons/lesson-${track.id}@`) ||
+    location.pathname === `/learn/library/audio/${track.slug}` ||
+    location.pathname === `/learn/meditations/${track.slug}`
+  if (ownPage) return null
 
   const percent = Math.min(100, (position / track.durationSec) * 100)
 

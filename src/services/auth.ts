@@ -6,6 +6,7 @@ import {
   writeJson,
 } from '@/mocks/api'
 import { addMockUser, demoCode, userByEmail } from '@/mocks/db'
+import { effectiveRole, effectiveStatus } from '@/services/rbac/roleResolution'
 import type { Role, Session, SessionUser, User } from '@/types'
 
 const SESSION_KEY = 'nff.session'
@@ -14,11 +15,14 @@ const RESEND_KEY = 'nff.resend-at'
 
 const DEMO_PASSWORD = 'practice123'
 
+// `admin@nff.demo` is the designated Super admin (see rbac/roleResolution.ts);
+// `ops.admin@nff.demo` is an ordinary Admin.
 const ROLE_EMAILS: Record<Exclude<Role, 'visitor'>, string> = {
   practitioner: 'practitioner@nff.demo',
   editor: 'editor@nff.demo',
   campaign: 'campaign@nff.demo',
-  admin: 'admin@nff.demo',
+  admin: 'ops.admin@nff.demo',
+  super_admin: 'admin@nff.demo',
 }
 
 function toSessionUser(user: User): SessionUser {
@@ -26,7 +30,9 @@ function toSessionUser(user: User): SessionUser {
     id: user.id,
     name: user.name,
     email: user.email,
-    role: user.role,
+    // The role the permission engine uses: legacy records, bootstrap rule and
+    // role assignments are resolved in one place.
+    role: effectiveRole(user),
     verified: user.verified,
   }
 }
@@ -45,6 +51,9 @@ export function getStoredSession(): Session | null {
   if (!session) return null
   const user = userByEmail.get(session.user.email.toLowerCase())
   if (!user) return null
+  // Deactivated accounts lose their session, whatever is stored in the browser.
+  const status = effectiveStatus(user)
+  if (status === 'deactivated' || status === 'pending_deletion') return null
   return { ...session, user: toSessionUser(user) }
 }
 
@@ -81,7 +90,8 @@ export async function login(
           403,
         )
       }
-      if (user.status === 'pending_deletion' || user.status === 'deactivated') {
+      const status = effectiveStatus(user)
+      if (status === 'pending_deletion' || status === 'deactivated') {
         throw new ApiError(
           'account_unavailable',
           'This account is not available. Contact support.',

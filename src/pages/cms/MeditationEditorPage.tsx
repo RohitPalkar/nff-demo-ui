@@ -3,9 +3,10 @@ import { ArrowLeft, CheckCircle2, Circle, Loader2, UploadCloud, XCircle } from '
 import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
-import { ContentStatusChip } from '@/components/cms/CmsParts'
+import { ContentStatusChip, ReviewFeedback, RevisionNotice, PendingRevisionWarning } from '@/components/cms/CmsParts'
+import { OwnershipPanel } from '@/components/cms/OwnershipPanel'
 import { AudioPlayer } from '@/components/nff/AudioPlayer'
-import { ErrorState } from '@/components/nff/ErrorState'
+import { ErrorState } from '@/components/admin'
 import { UnavailableState } from '@/components/nff/UnavailableState'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -20,12 +21,14 @@ import {
 import { Skeleton } from '@/components/ui/skeleton'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
-import { FLAGS } from '@/config/flags'
-import { useAuth } from '@/features/auth/AuthProvider'
+import { attempt, usePermissions } from '@/features/auth/usePermissions'
 import { formatDuration } from '@/lib/format'
 import { content, stages } from '@/mocks/db'
 import {
+  discardRevision,
   getCmsItem,
+  isLiveStatus,
+  submitRevision,
   saveCmsItem,
   setCmsStatus,
   validateItem,
@@ -51,7 +54,7 @@ const STEP_FOR: Record<TranscodeStatus, number> = {
 
 export function MeditationEditorPage() {
   const { id = '' } = useParams()
-  const { user } = useAuth()
+  const { can } = usePermissions()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const query = useQuery({
@@ -136,9 +139,9 @@ export function MeditationEditorPage() {
       toast.error('Audio must be ready before publishing.')
       return false
     }
-    saveCmsItem(draft)
+    if (!attempt(() => saveCmsItem(draft))) return false
     if (status) {
-      setCmsStatus(draft.id, status)
+      if (!attempt(() => setCmsStatus(draft.id, status))) return false
       setDraft({ ...draft, status })
     }
     void queryClient.invalidateQueries({ queryKey: ['cms'] })
@@ -179,7 +182,8 @@ export function MeditationEditorPage() {
 
   const meta = TRANSCODE_META[draft.transcode]
   const step = STEP_FOR[draft.transcode]
-  const canPublish = user?.role === 'admin' || FLAGS.editorCanPublish
+  const canPublish = can('content.publish')
+  const canSubmit = can('content.submit')
 
   return (
     <div className="flex flex-col gap-5 pb-24">
@@ -201,6 +205,26 @@ export function MeditationEditorPage() {
           Preview
         </Button>
       </header>
+
+      {can('content.publish') && <PendingRevisionWarning item={draft} />}
+      {isLiveStatus(draft.status) && !can('content.publish') && (
+        <RevisionNotice
+          item={draft}
+          canSubmit={canSubmit}
+          onSubmit={() => {
+            if (!persist()) return
+            if (!attempt(() => submitRevision(draft.id))) return
+            void queryClient.invalidateQueries({ queryKey: ['cms'] })
+            toast.success('Revision submitted for review.')
+          }}
+          onDiscard={() => {
+            if (!attempt(() => discardRevision(draft.id))) return
+            void queryClient.invalidateQueries({ queryKey: ['cms'] })
+            toast.success('Revision discarded.')
+          }}
+        />
+      )}
+      {draft.status === 'rejected' && <ReviewFeedback note={draft.rejectionNote} />}
 
       <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
         <div className="flex flex-col gap-6">
@@ -428,14 +452,21 @@ export function MeditationEditorPage() {
               onCheckedChange={(checked) => patch({ preview: checked })}
             />
           </div>
+          {can('content.ownership.manage') && (
+            <OwnershipPanel
+              key={`${draft.ownerId}-${(draft.collaboratorIds ?? []).join()}`}
+              item={draft}
+              onChanged={() => void queryClient.invalidateQueries({ queryKey: ['cms'] })}
+            />
+          )}
         </aside>
       </div>
 
       <div className="fixed inset-x-0 bottom-0 z-30 flex items-center justify-end gap-3 border-t bg-background/95 px-6 py-3 backdrop-blur lg:left-[var(--nff-layout-admin-sidebar)]">
-        <Button variant="outline" onClick={() => persist()}>
+        <Button variant="outline" disabled={!can('content.edit')} onClick={() => persist()}>
           Save draft
         </Button>
-        {(draft.status === 'draft' || draft.status === 'rejected') && (
+        {(draft.status === 'draft' || draft.status === 'rejected') && canSubmit && (
           <Button
             variant="outline"
             onClick={() => persist('in_review', 'Submitted for review.')}

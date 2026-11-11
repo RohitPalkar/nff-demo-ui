@@ -65,7 +65,7 @@ describe('ExplorationsPage', () => {
       screen.getByRole('heading', { name: 'How the mind meets the moment' }),
     ).toBeInTheDocument()
     expect(
-      screen.queryByRole('heading', { name: 'What is NeuroFelicitology?' }),
+      screen.queryByRole('heading', { name: 'What is Meadow?' }),
     ).not.toBeInTheDocument()
   })
 

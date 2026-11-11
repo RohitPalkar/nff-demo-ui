@@ -16,6 +16,7 @@ const ROLE_OPTIONS: Array<{ value: Role; label: string }> = [
   { value: 'editor', label: 'Editor' },
   { value: 'campaign', label: 'Campaign' },
   { value: 'admin', label: 'Admin' },
+  { value: 'super_admin', label: 'Super admin' },
 ]
 
 const OPEN_KEY = 'nff.dev.controlsOpen'

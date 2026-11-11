@@ -12,9 +12,16 @@ import { useAuth } from '@/features/auth/AuthProvider'
 import { formatDuration, formatReadingTime } from '@/lib/format'
 import { getItemById, getJourney, getProgress } from '@/services/content'
 import { itemHref } from './JourneyPage'
+import { LEARN_HOME, moduleHref, pathHref } from '@/services/learning/routes'
 
-export function StageDetailPage() {
-  const { stageId = '' } = useParams()
+interface StageDetailPageProps {
+  /** Set when rendered inside the path page; otherwise read from the URL. */
+  stageId?: string
+}
+
+export function StageDetailPage({ stageId: stageIdProp }: StageDetailPageProps = {}) {
+  const params = useParams()
+  const stageId = stageIdProp ?? params.stageId ?? ''
   const { user } = useAuth()
 
   const query = useQuery({
@@ -56,8 +63,8 @@ export function StageDetailPage() {
   const index = journey.stages.findIndex((stage) => stage.id === stageId)
   const stage = journey.stages[index]
   const trail = [
-    { label: 'Home', to: '/' },
-    { label: 'Journey', to: '/journey' },
+    { label: 'Learn', to: LEARN_HOME },
+    { label: 'Meadow Journey', to: pathHref() },
   ]
 
   if (!stage) {
@@ -67,7 +74,7 @@ export function StageDetailPage() {
         title="We could not find that stage"
         description="Head back to your journey to pick a stage."
         trail={trail}
-        backTo="/journey"
+        backTo={pathHref()}
         backLabel="Back to journey"
       />
     )
@@ -110,7 +117,7 @@ export function StageDetailPage() {
             <>
               {' '}
               <Link
-                to={`/journey/stages/${next.id}`}
+                to={moduleHref(next.id)}
                 className="font-medium underline"
               >
                 Continue to Stage {next.number}
@@ -180,7 +187,7 @@ export function StageDetailPage() {
                   {locked ? (
                     <span>Locked</span>
                   ) : (
-                    <Link to={itemHref(stage.id, item)}>
+                    <Link to={itemHref(item)}>
                       {item.type === 'exploration' ? 'Read' : 'Play'}
                     </Link>
                   )}

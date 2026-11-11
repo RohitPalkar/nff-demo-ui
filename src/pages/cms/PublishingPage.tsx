@@ -2,9 +2,9 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { CheckCircle2, Inbox, XCircle } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
-import { ContentStatusChip, PageHeader } from '@/components/cms/CmsParts'
-import { EmptyState } from '@/components/nff/EmptyState'
-import { ErrorState } from '@/components/nff/ErrorState'
+import { ContentStatusChip, PageHeader, ReviewFeedback, RevisionFields } from '@/components/cms/CmsParts'
+import { EmptyState } from '@/components/admin'
+import { ErrorState } from '@/components/admin'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -26,13 +26,17 @@ import {
 } from '@/components/ui/table'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
-import { FLAGS } from '@/config/flags'
-import { useAuth } from '@/features/auth/AuthProvider'
+import { attempt, usePermissions } from '@/features/auth/usePermissions'
 import { formatDate } from '@/lib/format'
 import {
   checksFor,
+  isRevisionStale,
   listAllCmsItems,
+  ownerLabel,
+  publishRevision,
+  rejectRevision,
   setCmsStatus,
+  workingCopy,
   type CmsItem,
 } from '@/services/cms'
 
@@ -61,15 +65,21 @@ function Check({ ok, label }: { ok: boolean; label: string }) {
 }
 
 export function PublishingPage() {
-  const { user } = useAuth()
+  const { can } = usePermissions()
   const queryClient = useQueryClient()
-  const query = useQuery({ queryKey: ['cms', 'all'], queryFn: listAllCmsItems })
+  const query = useQuery({ queryKey: ['cms', 'all'], queryFn: () => listAllCmsItems() })
   const [tab, setTab] = useState<Tab>('in_review')
-  const [selected, setSelected] = useState<CmsItem | null>(null)
+  const [pick, setPick] = useState<{ item: CmsItem; revision: boolean } | null>(null)
+  const selected = pick?.item ?? null
+  const isRevision = pick?.revision ?? false
   const [comment, setComment] = useState('')
   const [when, setWhen] = useState('')
 
-  const canPublish = user?.role === 'admin' || FLAGS.editorCanPublish
+  // Each action needs the permissions the workflow table asks for.
+  const canApprove = can('content.review') && can('content.approve') && can('content.publish')
+  const canSchedule = can('content.review') && can('content.approve') && can('content.schedule')
+  const canReject = can('content.review') && can('content.reject')
+  const canAct = canApprove || canSchedule || canReject
 
   if (query.isPending) {
     return (
@@ -90,7 +100,16 @@ export function PublishingPage() {
     )
   }
 
-  const rows = query.data.filter((item) => item.status === tab)
+  // Edits to live content wait here as revisions, beside the items themselves.
+  const rows = query.data.flatMap((item) => {
+    const out: Array<{ item: CmsItem; revision: boolean }> = []
+    if (item.status === tab) out.push({ item, revision: false })
+    const pending = item.revision?.status
+    if ((tab === 'in_review' && pending === 'in_review') || (tab === 'rejected' && pending === 'rejected')) {
+      out.push({ item, revision: true })
+    }
+    return out
+  })
 
   function act(
     status: CmsItem['status'],
@@ -98,27 +117,35 @@ export function PublishingPage() {
     extra: Partial<CmsItem> = {},
   ) {
     if (!selected) return
-    setCmsStatus(selected.id, status, extra)
+    const run = () => {
+      if (!isRevision) return setCmsStatus(selected.id, status, extra)
+      // A revision is approved or rejected; the live version is never moved.
+      return status === 'rejected'
+        ? rejectRevision(selected.id, extra.rejectionNote ?? '')
+        : publishRevision(selected.id)
+    }
+    if (!attempt(run)) return
     void queryClient.invalidateQueries({ queryKey: ['cms'] })
     toast.success(message)
-    setSelected(null)
+    setPick(null)
     setComment('')
     setWhen('')
   }
 
-  const checks = selected ? checksFor(selected) : null
+  const shown = selected ? (isRevision ? workingCopy(selected) : selected) : null
+  const checks = shown ? checksFor(shown) : null
   const blocked = checks ? !(checks.artwork && checks.audio && checks.metadata) : false
 
   return (
     <div className="flex flex-col gap-5">
-      <PageHeader title="Publishing" description="Review and release content." />
+      <PageHeader title="Review Queue" description="Review and release content." />
 
-      {!canPublish && (
+      {!canAct && (
         <p
           role="status"
           className="rounded-xl border bg-nff-bg-muted p-4 nff-body-sm"
         >
-          You can review items here, but only an admin can approve or publish.
+          You can follow the review status of your content here. Approving, rejecting and publishing are done by an admin.
         </p>
       )}
 
@@ -145,7 +172,7 @@ export function PublishingPage() {
               <TableRow>
                 <TableHead>Item</TableHead>
                 <TableHead>Type</TableHead>
-                <TableHead>Submitted by</TableHead>
+                <TableHead>Owner</TableHead>
                 <TableHead>Date</TableHead>
                 <TableHead>Checks</TableHead>
                 <TableHead>
@@ -154,15 +181,20 @@ export function PublishingPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {rows.slice(0, 12).map((item) => {
-                const c = checksFor(item)
+              {rows.slice(0, 12).map(({ item, revision }) => {
+                const c = checksFor(revision ? workingCopy(item) : item)
                 return (
-                  <TableRow key={item.id}>
+                  <TableRow key={`${item.id}${revision ? '-revision' : ''}`}>
                     <TableCell className="max-w-xs truncate font-medium">
-                      {item.title}
+                      {revision ? workingCopy(item).title : item.title}
+                      {revision && (
+                        <span className="block nff-caption text-muted-foreground">
+                          Revision of live content
+                        </span>
+                      )}
                     </TableCell>
                     <TableCell className="capitalize">{item.type}</TableCell>
-                    <TableCell>{item.owner}</TableCell>
+                    <TableCell>{ownerLabel(item)}</TableCell>
                     <TableCell>
                       {formatDate(item.scheduledFor ?? item.updatedAt)}
                     </TableCell>
@@ -174,7 +206,7 @@ export function PublishingPage() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Button size="sm" variant="outline" onClick={() => setSelected(item)}>
+                      <Button size="sm" variant="outline" onClick={() => setPick({ item, revision })}>
                         Review
                       </Button>
                     </TableCell>
@@ -186,18 +218,32 @@ export function PublishingPage() {
         </div>
       )}
 
-      <Sheet open={Boolean(selected)} onOpenChange={(open) => !open && setSelected(null)}>
+      <Sheet open={Boolean(selected)} onOpenChange={(open) => !open && setPick(null)}>
         <SheetContent>
           {selected && checks && (
             <>
               <SheetHeader>
-                <SheetTitle>{selected.title}</SheetTitle>
+                <SheetTitle>{shown!.title}</SheetTitle>
                 <SheetDescription>
-                  Submitted by {selected.owner} · {formatDate(selected.updatedAt)}
+                  Owner: {ownerLabel(selected)} · {formatDate(isRevision ? selected.revision!.updatedAt : selected.updatedAt)}
                 </SheetDescription>
               </SheetHeader>
               <div className="flex flex-col gap-4 px-4 pb-4">
-                <ContentStatusChip status={selected.status} />
+                {isRevision ? (
+                  <div role="status" className="flex flex-col gap-3">
+                    <p className="nff-body-sm">
+                      A revision of live content. The live version stays as it is until you approve this.
+                      {isRevisionStale(selected) && ' The live version has changed since this revision was started: approving replaces those fields.'}
+                    </p>
+                    <RevisionFields item={selected} />
+                  </div>
+                ) : (
+                  <ContentStatusChip status={selected.status} />
+                )}
+                {!isRevision && selected.status === 'rejected' && <ReviewFeedback note={selected.rejectionNote} />}
+                {isRevision && selected.revision!.status === 'rejected' && (
+                  <ReviewFeedback note={selected.revision!.rejectionNote} />
+                )}
                 <ul aria-label="Checklist" className="flex flex-col gap-1">
                   <li><Check ok={checks.artwork} label="Artwork present" /></li>
                   <li><Check ok={checks.audio} label="Audio ready" /></li>
@@ -228,14 +274,14 @@ export function PublishingPage() {
                 </div>
                 <div className="flex flex-wrap gap-2">
                   <Button
-                    disabled={!canPublish || blocked}
+                    disabled={!canApprove || blocked}
                     onClick={() => act('published', 'Approved and published.')}
                   >
                     Approve and publish
                   </Button>
                   <Button
                     variant="outline"
-                    disabled={!canPublish || blocked || !when}
+                    disabled={!canSchedule || blocked || !when || isRevision}
                     onClick={() =>
                       act('scheduled', 'Scheduled.', {
                         scheduledFor: new Date(when).toISOString(),
@@ -246,7 +292,7 @@ export function PublishingPage() {
                   </Button>
                   <Button
                     variant="destructive"
-                    disabled={!canPublish}
+                    disabled={!canReject}
                     onClick={() =>
                       act('rejected', 'Rejected.', { rejectionNote: comment })
                     }
@@ -254,9 +300,9 @@ export function PublishingPage() {
                     Reject
                   </Button>
                 </div>
-                {!canPublish && (
-                  <p role="alert" className="nff-caption text-muted-foreground">
-                    Permission denied: only an admin can publish.
+                {!canAct && (
+                  <p className="nff-caption text-muted-foreground">
+                    Only an admin can approve, reject or publish.
                   </p>
                 )}
               </div>

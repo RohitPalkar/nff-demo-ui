@@ -60,12 +60,12 @@ afterEach(() => {
 
 describe('ExplorationDetailPage', () => {
   it('shows the opening excerpt and a sign-up gate to visitors', async () => {
-    renderPage('what-is-neurofelicitology')
+    renderPage('what-is-meadow')
 
     expect(
       await screen.findByRole(
         'heading',
-        { level: 1, name: 'What is NeuroFelicitology?' },
+        { level: 1, name: 'What is Meadow?' },
         { timeout: 3000 },
       ),
     ).toBeInTheDocument()
@@ -81,12 +81,12 @@ describe('ExplorationDetailPage', () => {
 
   it('shows the full lesson to a signed-in practitioner', async () => {
     signInAsPractitioner()
-    renderPage('what-is-neurofelicitology')
+    renderPage('what-is-meadow')
 
     expect(
       await screen.findByRole(
         'heading',
-        { level: 1, name: 'What is NeuroFelicitology?' },
+        { level: 1, name: 'What is Meadow?' },
         { timeout: 3000 },
       ),
     ).toBeInTheDocument()

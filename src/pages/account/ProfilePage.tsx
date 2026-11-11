@@ -78,68 +78,115 @@ export function ProfilePage() {
   }
 
   return (
-    <form onSubmit={save} noValidate className="flex flex-col gap-6">
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="display-name">Display name</Label>
-        <Input
-          id="display-name"
-          value={name}
-          aria-invalid={Boolean(error)}
-          aria-describedby={error ? 'name-error' : undefined}
-          onChange={(event) => setName(event.target.value)}
-        />
-        {error && (
-          <p id="name-error" role="alert" className="nff-body-sm text-nff-text-error">
-            {error}
-          </p>
-        )}
-      </div>
-
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="email">Email</Label>
-        <Input id="email" value={user?.email ?? ''} readOnly disabled />
-      </div>
-
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="timezone">Time zone</Label>
-        <Select value={timeZone} onValueChange={setTimeZone}>
-          <SelectTrigger id="timezone" className="w-full">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {TIME_ZONES.map((zone) => (
-              <SelectItem key={zone} value={zone}>
-                {zone.replace('_', ' ')}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <p className="nff-caption text-muted-foreground">
-          Your daily email arrives at 7:00 in this time zone.
-        </p>
-      </div>
-
-      <div className="sticky bottom-0 -mx-1 flex gap-3 border-t bg-background/95 p-3 backdrop-blur">
-        <Button type="submit" className="h-11" disabled={!dirty || saving}>
-          {saving && (
-            <Loader2 aria-hidden="true" className="size-4 animate-spin" />
-          )}
-          Save changes
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          className="h-11"
-          disabled={!dirty}
-          onClick={() => {
-            setName(query.data.displayName)
-            setTimeZone(query.data.timeZone)
-            setError(null)
-          }}
+    <div className="flex flex-col gap-8">
+      <section
+        aria-labelledby="account-summary"
+        className="flex items-center gap-4 rounded-lg border border-nff-border-default bg-nff-bg-surface p-5"
+      >
+        <span
+          aria-hidden="true"
+          className="flex size-12 shrink-0 items-center justify-center rounded-full bg-[var(--nff-forest-800)] nff-label-md text-[var(--nff-ivory-50)]"
         >
-          Cancel
-        </Button>
-      </div>
-    </form>
+          {initialsOf(user?.name ?? '')}
+        </span>
+        <div className="flex min-w-0 flex-col gap-0.5">
+          <h2 id="account-summary" className="truncate nff-heading-h4 text-foreground">
+            {user?.name}
+          </h2>
+          <p className="truncate nff-body-sm text-nff-text-secondary">{user?.email}</p>
+          <p className="nff-caption text-nff-text-secondary">
+            {ROLE_LABEL[user?.role ?? 'practitioner'] ?? 'Member'} ·{' '}
+            {user?.verified ? 'Email verified' : 'Email not verified'}
+          </p>
+        </div>
+      </section>
+
+      <form onSubmit={save} noValidate aria-labelledby="profile-heading" className="flex flex-col gap-6">
+        <h2 id="profile-heading" className="nff-heading-h3">Profile details</h2>
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="display-name">Display name</Label>
+          <Input
+            id="display-name"
+            value={name}
+            aria-invalid={Boolean(error)}
+            aria-describedby={error ? 'name-error name-help' : 'name-help'}
+            onChange={(event) => setName(event.target.value)}
+          />
+          <p id="name-help" className="nff-caption text-muted-foreground">
+            Saved to your profile. Your greeting and menu still use the name on your sign-in account.
+          </p>
+          {error && (
+            <p id="name-error" role="alert" className="nff-body-sm text-nff-text-error">
+              {error}
+            </p>
+          )}
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="email">Email</Label>
+          <Input id="email" value={user?.email ?? ''} readOnly disabled aria-describedby="email-help" />
+          <p id="email-help" className="nff-caption text-muted-foreground">
+            Your sign-in email. It cannot be changed here.
+          </p>
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="timezone">Time zone</Label>
+          <Select value={timeZone} onValueChange={setTimeZone}>
+            <SelectTrigger id="timezone" className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {TIME_ZONES.map((zone) => (
+                <SelectItem key={zone} value={zone}>
+                  {zone.replace('_', ' ')}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <p className="nff-caption text-muted-foreground">
+            Saved to your profile. Nothing in Meadow uses it yet.
+          </p>
+        </div>
+
+        <div className="sticky bottom-0 -mx-1 flex gap-3 border-t bg-background/95 p-3 backdrop-blur">
+          <Button type="submit" className="h-11" disabled={!dirty || saving}>
+            {saving && (
+              <Loader2 aria-hidden="true" className="size-4 animate-spin" />
+            )}
+            Save changes
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            className="h-11"
+            disabled={!dirty}
+            onClick={() => {
+              setName(query.data.displayName)
+              setTimeZone(query.data.timeZone)
+              setError(null)
+            }}
+          >
+            Cancel
+          </Button>
+        </div>
+      </form>
+    </div>
   )
+}
+
+const ROLE_LABEL: Record<string, string> = {
+  practitioner: 'Practitioner',
+  editor: 'Editor · staff',
+  campaign: 'Campaigns · staff',
+  admin: 'Administrator · staff',
+}
+
+function initialsOf(name: string) {
+  return name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]!.toUpperCase())
+    .join('')
 }

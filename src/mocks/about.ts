@@ -11,7 +11,7 @@ export const aboutPages: AboutPage[] = [
     slug: 'who-we-are',
     title: 'Who we are',
     eyebrow: 'About',
-    lead: 'NeuroFelicitology is a small, independent practice. We write and record gentle, evidence-aware guidance for anyone who wants to understand their mind a little better.',
+    lead: 'Meadow is a small, independent practice. We write and record gentle, evidence-aware guidance for anyone who wants to understand their mind a little better.',
     updatedAt: '2026-10-14',
     image: {
       src: '/images/about/who-we-are.svg',
@@ -28,10 +28,10 @@ export const aboutPages: AboutPage[] = [
         ],
       },
       {
-        heading: 'Where the name comes from',
+        heading: 'Why Meadow',
         paragraphs: [
-          'The word is a deliberate combination rather than a clinical term. “Neuro” points to the mind and the nervous system. “Felicitology” points to the study of wellbeing and human flourishing. Together they describe our subject, not a claim to a new science.',
-          'We use the name with humility. Much of what helps us is old, ordinary and already available: rest, relationship, attention, movement, sleep, kindness. Our work is to make those things easier to understand and easier to begin.',
+          'A meadow is open ground, left to grow at its own pace. Nothing in it is rushed and very little is forced. That is close to what we hope this practice can be: somewhere you can return to, where small things are given room to take root.',
+          'We chose a plain word on purpose. Much of what helps us is old, ordinary and already available: rest, relationship, attention, movement, sleep, kindness. Our work is to make those things easier to understand and easier to begin.',
         ],
       },
       {

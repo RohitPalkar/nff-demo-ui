@@ -9,6 +9,7 @@ import {
 } from 'lucide-react'
 import { Link, useParams } from 'react-router-dom'
 import { ContentCard } from '@/components/nff/ContentCard'
+import { ContentVideo } from '@/components/nff/ContentVideo'
 import { DetailBreadcrumb } from '@/components/nff/DetailBreadcrumb'
 import { ErrorState } from '@/components/nff/ErrorState'
 import { SectionHeading } from '@/components/nff/SectionHeading'
@@ -16,7 +17,8 @@ import { StatusChip } from '@/components/nff/StatusChip'
 import { UnavailableState } from '@/components/nff/UnavailableState'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
-import { FLAGS } from '@/config/flags'
+import { canReadArticleInFull, publicAccessContext } from '@/services/learning/access'
+import { getContentVideo } from '@/services/learning/video'
 import { useAuth } from '@/features/auth/AuthProvider'
 import { formatReadingTime } from '@/lib/format'
 import { cn } from '@/lib/utils'
@@ -75,8 +77,7 @@ export function ExplorationDetailPage() {
     enabled: slug.length > 0,
   })
 
-  const canReadFull =
-    user?.role === 'practitioner' || FLAGS.visitorFullExplorations
+  const canReadFull = canReadArticleInFull(publicAccessContext(user))
 
   if (query.isPending) return <DetailSkeleton />
 
@@ -157,6 +158,7 @@ export function ExplorationDetailPage() {
 
   const related = query.data.related
   const paragraphs = canReadFull ? item.body : item.body.slice(0, 1)
+  const video = getContentVideo(item.id)
 
   return (
     <div>
@@ -188,6 +190,15 @@ export function ExplorationDetailPage() {
         </header>
 
         <div className="nff-content mt-8 md:mt-10">
+          {video ? (
+            <ContentVideo
+              itemId={item.id}
+              title={item.title}
+              video={video}
+              returnTo={`/explorations/${item.slug}`}
+              fullAccess={canReadFull}
+            />
+          ) : (
           <div
             aria-hidden="true"
             className={cn(
@@ -199,6 +210,7 @@ export function ExplorationDetailPage() {
               {item.artwork.label}
             </span>
           </div>
+          )}
         </div>
 
         <div className="nff-content mt-10 md:mt-14">
@@ -284,7 +296,7 @@ export function ExplorationDetailPage() {
                 </Button>
               }
             />
-            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
               {related.map((entry) => (
                 <ContentCard
                   key={entry.id}

@@ -8,7 +8,7 @@ const exploration: Exploration = {
   id: 'exp-test',
   slug: 'what-is-nff',
   type: 'exploration',
-  title: 'What is NeuroFelicitology?',
+  title: 'What is Meadow?',
   excerpt: 'A calm introduction to the ideas behind the practice.',
   category: 'foundations',
   stageId: 'stage-1',
@@ -47,7 +47,7 @@ describe('ContentCard', () => {
     )
 
     expect(
-      screen.getByRole('heading', { name: 'What is NeuroFelicitology?' }),
+      screen.getByRole('heading', { name: 'What is Meadow?' }),
     ).toBeInTheDocument()
     expect(
       screen.getByText('Stage 1', { selector: 'span[aria-hidden="true"]' }),

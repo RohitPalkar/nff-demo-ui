@@ -1,11 +1,11 @@
 import { useState } from 'react'
 import { toast } from 'sonner'
-import { PageHeader } from '@/components/cms/CmsParts'
+import { DataSourceNotice, PageHeader } from '@/components/cms/CmsParts'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Progress } from '@/components/ui/progress'
 import { Slider } from '@/components/ui/slider'
-import { useAuth } from '@/features/auth/AuthProvider'
+import { attempt, usePermissions } from '@/features/auth/usePermissions'
 import { formatDate } from '@/lib/format'
 import {
   loadScoreWeights,
@@ -23,14 +23,14 @@ const LABELS: Record<keyof ScoreWeights, string> = {
 }
 
 export function ScoreSettingsPage() {
-  const { user } = useAuth()
+  const { can } = usePermissions()
   const [weights, setWeights] = useState<ScoreWeights>(loadScoreWeights)
   const [log, setLog] = useState(scoreLog)
 
-  if (user?.role !== 'admin') {
+  if (!can('insights.scores.configure')) {
     return (
       <p role="alert" className="rounded-xl border p-4 nff-body-md">
-        Permission denied. Only a super admin can change score weights.
+        You do not have permission to change score weights.
       </p>
     )
   }
@@ -46,15 +46,15 @@ export function ScoreSettingsPage() {
   return (
     <div className="flex max-w-2xl flex-col gap-5">
       <PageHeader
-        title="Engagement score"
+        title="Score Settings"
         description="Weights must add up to 100."
         action={
           <Button
             disabled={!valid}
             onClick={() => {
-              saveScoreWeights(weights)
+              if (!attempt(() => saveScoreWeights(weights))) return
               setLog(scoreLog())
-              toast.success('Weights saved. Scores recalculate this weekend.')
+              toast.success('Weights saved. Scores are not recalculated automatically in this prototype.')
             }}
           >
             Save
@@ -62,6 +62,10 @@ export function ScoreSettingsPage() {
         }
       />
 
+      <DataSourceNotice kind="unavailable">
+        These weights are stored, but nothing calculates engagement scores from them yet. The scores shown in
+        Users and Engagement are seeded demo values and do not change when you save.
+      </DataSourceNotice>
       <section className="flex flex-col gap-5 rounded-xl border bg-card p-5">
         {(Object.keys(LABELS) as Array<keyof ScoreWeights>).map((key) => (
           <div key={key} className="flex flex-col gap-2">

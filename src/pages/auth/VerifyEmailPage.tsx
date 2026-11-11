@@ -1,3 +1,4 @@
+import { LEARN_HOME } from '@/services/learning/routes'
 import { Loader2, MailCheck } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
@@ -38,7 +39,7 @@ export function VerifyEmailPage() {
     try {
       await verifyEmail(code)
       refresh()
-      navigate('/journey', { replace: true })
+      navigate(LEARN_HOME, { replace: true })
     } catch (e) {
       setError((e as Error).message)
     } finally {

@@ -1,8 +1,8 @@
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { BarSeries } from '@/components/cms/BarSeries'
-import { MetricCard, PageHeader } from '@/components/cms/CmsParts'
-import { ErrorState } from '@/components/nff/ErrorState'
+import { DataSourceBadge, DataSourceNotice, MetricCard, PageHeader } from '@/components/cms/CmsParts'
+import { ErrorState } from '@/components/admin'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
   Select,
@@ -59,8 +59,8 @@ export function VisitorDashboardPage() {
   if (query.isError) {
     return (
       <ErrorState
-        title="Analytics are unavailable"
-        description="We could not reach GA4. Try again in a moment."
+        title="The demo figures could not load"
+        description="Check your connection and try again."
         onRetry={() => void query.refetch()}
       />
     )
@@ -80,7 +80,7 @@ export function VisitorDashboardPage() {
     <div className="flex flex-col gap-5">
       <PageHeader
         title="Visitors"
-        description="Source: GA4, consented visitors only"
+        description="Demo figures. No analytics source is connected."
         action={
           <Select value={range} onValueChange={(value) => setRange(value as Range)}>
             <SelectTrigger aria-label="Date range" className="w-40">
@@ -94,19 +94,24 @@ export function VisitorDashboardPage() {
           </Select>
         }
       />
-      <p role="status" className="rounded-xl border bg-nff-bg-muted p-3 nff-caption text-muted-foreground">
-        Numbers only include visitors who accepted analytics cookies.
-      </p>
+      <DataSourceNotice kind="unavailable">
+        Visitor analytics are not connected: there is no analytics integration and visitor consent is not
+        measured here. Everything below is simulated from fixed example numbers, scaled by the date range, to
+        show how the screen will look. None of it is measured activity.
+      </DataSourceNotice>
 
       <section aria-label="Summary" className="grid gap-4 sm:grid-cols-4">
-        <MetricCard label="Page views" value={scale(11240).toLocaleString()} />
-        <MetricCard label="Preview plays" value={scale(2860).toLocaleString()} />
-        <MetricCard label="Avg session" value="3m 12s" />
-        <MetricCard label="Sign-ups from preview" value={scale(214).toLocaleString()} />
+        <MetricCard label="Page views" value={scale(11240).toLocaleString()} source="simulated" />
+        <MetricCard label="Preview plays" value={scale(2860).toLocaleString()} source="simulated" />
+        <MetricCard label="Avg session" value="3m 12s" source="demo" />
+        <MetricCard label="Sign-ups from preview" value={scale(214).toLocaleString()} source="simulated" />
       </section>
 
       <section aria-labelledby="trend" className="flex flex-col gap-3">
-        <h2 id="trend" className="nff-heading-h4">Page views over time</h2>
+        <div className="flex flex-wrap items-center gap-3">
+          <h2 id="trend" className="nff-heading-h4">Page views over time</h2>
+          <DataSourceBadge kind="simulated" />
+        </div>
         <BarSeries label="Page views" data={trend} />
       </section>
 
@@ -120,7 +125,10 @@ export function VisitorDashboardPage() {
           ['Referral paths', REFERRALS.map(([name, n]) => [name, scale(n)])],
         ].map(([title, rows]) => (
           <section key={title as string} className="flex flex-col gap-2">
-            <h2 className="nff-heading-h4">{title as string}</h2>
+            <div className="flex flex-wrap items-center gap-3">
+              <h2 className="nff-heading-h4">{title as string}</h2>
+              <DataSourceBadge kind="simulated" />
+            </div>
             <div className="rounded-xl border bg-card">
               <Table>
                 <TableHeader>

@@ -13,8 +13,9 @@ import {
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useBlocker, useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
-import { ContentStatusChip } from '@/components/cms/CmsParts'
-import { ErrorState } from '@/components/nff/ErrorState'
+import { ContentStatusChip, ReviewFeedback, RevisionNotice, PendingRevisionWarning } from '@/components/cms/CmsParts'
+import { OwnershipPanel } from '@/components/cms/OwnershipPanel'
+import { ErrorState } from '@/components/admin'
 import { UnavailableState } from '@/components/nff/UnavailableState'
 import {
   AlertDialog,
@@ -47,12 +48,15 @@ import {
 import { Skeleton } from '@/components/ui/skeleton'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
-import { FLAGS } from '@/config/flags'
 import { useAuth } from '@/features/auth/AuthProvider'
+import { attempt, usePermissions } from '@/features/auth/usePermissions'
 import { readJson, writeJson } from '@/mocks/api'
 import { stages } from '@/mocks/db'
 import {
+  discardRevision,
   getCmsItem,
+  isLiveStatus,
+  submitRevision,
   saveCmsItem,
   setCmsStatus,
   validateItem,
@@ -86,6 +90,7 @@ function ago(at: number | null) {
 export function ExplorationEditorPage() {
   const { id = '' } = useParams()
   const { user } = useAuth()
+  const { can } = usePermissions()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const query = useQuery({
@@ -113,7 +118,8 @@ export function ExplorationEditorPage() {
   const save = useCallback(
     (quiet = false) => {
       if (!draft) return
-      const saved = saveCmsItem(draft)
+      let saved!: CmsItem
+      if (!attempt(() => (saved = saveCmsItem(draft)))) return
       const next = [
         { at: saved.updatedAt, author: user?.name ?? 'You', item: saved },
         ...readJson<Version[]>(versionsKey(draft.id), []),
@@ -173,7 +179,7 @@ export function ExplorationEditorPage() {
       return
     }
     save(true)
-    setCmsStatus(draft.id, status)
+    if (!attempt(() => setCmsStatus(draft.id, status))) return
     setDraft({ ...draft, status })
     void queryClient.invalidateQueries({ queryKey: ['cms'] })
     toast.success(message)
@@ -210,7 +216,8 @@ export function ExplorationEditorPage() {
     )
   }
 
-  const canPublish = user?.role === 'admin' || FLAGS.editorCanPublish
+  const canPublish = can('content.publish')
+  const canSubmit = can('content.submit')
   const toolbar = [
     { label: 'Heading 2', icon: Heading2, run: () => linePrefix('## ') },
     { label: 'Heading 3', icon: Heading3, run: () => linePrefix('### ') },
@@ -272,7 +279,13 @@ export function ExplorationEditorPage() {
                     size="sm"
                     variant="outline"
                     onClick={() => {
-                      setDraft({ ...version.item, status: draft.status })
+                      // Restoring brings back content, never review state.
+                      setDraft({
+                        ...version.item,
+                        status: draft.status,
+                        scheduledFor: draft.scheduledFor,
+                        rejectionNote: draft.rejectionNote,
+                      })
                       setDirty(true)
                       toast.success('Version restored. Save to keep it.')
                     }}
@@ -292,6 +305,29 @@ export function ExplorationEditorPage() {
           Preview
         </Button>
       </header>
+
+      {can('content.publish') && <PendingRevisionWarning item={draft} />}
+      {isLiveStatus(draft.status) && !can('content.publish') && (
+        <RevisionNotice
+          item={draft}
+          canSubmit={canSubmit}
+          onSubmit={() => {
+            save(true)
+            if (!attempt(() => submitRevision(draft.id))) return
+            void queryClient.invalidateQueries({ queryKey: ['cms'] })
+            toast.success('Revision submitted for review.')
+          }}
+          onDiscard={() => {
+            if (!attempt(() => discardRevision(draft.id))) return
+            setDirty(false)
+            void queryClient.invalidateQueries({ queryKey: ['cms'] })
+            toast.success('Revision discarded.')
+          }}
+        />
+      )}
+      {draft.status === 'rejected' && (
+        <ReviewFeedback note={draft.rejectionNote} />
+      )}
 
       <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
         <section className="flex flex-col gap-4">
@@ -444,14 +480,21 @@ export function ExplorationEditorPage() {
               onCheckedChange={(checked) => update({ featured: checked })}
             />
           </div>
+          {can('content.ownership.manage') && (
+            <OwnershipPanel
+              key={`${draft.ownerId}-${(draft.collaboratorIds ?? []).join()}`}
+              item={draft}
+              onChanged={() => void queryClient.invalidateQueries({ queryKey: ['cms'] })}
+            />
+          )}
         </aside>
       </div>
 
       <div className="fixed inset-x-0 bottom-0 z-30 flex items-center justify-end gap-3 border-t bg-background/95 px-6 py-3 backdrop-blur lg:left-[var(--nff-layout-admin-sidebar)]">
-        <Button variant="outline" disabled={!dirty} onClick={() => save()}>
+        <Button variant="outline" disabled={!dirty || !can('content.edit')} onClick={() => save()}>
           Save draft
         </Button>
-        {draft.status === 'draft' || draft.status === 'rejected' ? (
+        {(draft.status === 'draft' || draft.status === 'rejected') && canSubmit ? (
           <Button onClick={() => transition('in_review', 'Submitted for review.')}>
             Submit for review
           </Button>

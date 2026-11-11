@@ -1,44 +1,34 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom'
 import { AuthLayout } from '@/app/layouts/AuthLayout'
 import { CmsLayout } from '@/app/layouts/CmsLayout'
-import { PractitionerLayout } from '@/app/layouts/PractitionerLayout'
+import { LearnLayout } from '@/app/layouts/LearnLayout'
 import { PublicLayout } from '@/app/layouts/PublicLayout'
+import { LegacyRedirect } from '@/app/LegacyRedirect'
+import { cmsRoutes } from '@/app/cmsRoutes'
 import { RequireAuth } from '@/app/RequireAuth'
+import { RequireCmsAccess } from '@/app/RequirePermission'
 import { ForgotPasswordPage } from '@/pages/auth/ForgotPasswordPage'
 import { LoginPage } from '@/pages/auth/LoginPage'
 import { ResetPasswordPage } from '@/pages/auth/ResetPasswordPage'
 import { SignUpPage } from '@/pages/auth/SignUpPage'
 import { VerifyEmailPage } from '@/pages/auth/VerifyEmailPage'
-import { ExplorationReaderPage } from '@/pages/practitioner/ExplorationReaderPage'
-import { MyJourneyPage } from '@/pages/practitioner/MyJourneyPage'
-import { JourneyPage } from '@/pages/practitioner/JourneyPage'
-import { PlayerPage } from '@/pages/practitioner/PlayerPage'
-import { StageDetailPage } from '@/pages/practitioner/StageDetailPage'
 import { AccountLayout } from '@/pages/account/AccountLayout'
 import { EmailPreferencesPage } from '@/pages/account/EmailPreferencesPage'
 import { PrivacyPage } from '@/pages/account/PrivacyPage'
+import { PreferencesPage } from '@/pages/account/PreferencesPage'
 import { ProfilePage } from '@/pages/account/ProfilePage'
+import { AccessDeniedPage } from '@/pages/learn/AccessDeniedPage'
+import { LearnHomePage } from '@/pages/learn/LearnHomePage'
+import { LearnMeditationsPage } from '@/pages/learn/LearnMeditationsPage'
+import { MeditationPage } from '@/pages/learn/MeditationPage'
+import { LearnNotFoundPage } from '@/pages/learn/LearnNotFoundPage'
+import { LearnProgressPage } from '@/pages/learn/LearnProgressPage'
+import { LessonPage } from '@/pages/learn/LessonPage'
+import { LibraryPage } from '@/pages/learn/LibraryPage'
+import { MyLearningPage } from '@/pages/learn/MyLearningPage'
+import { PathPage } from '@/pages/learn/PathPage'
+import { ResourcePage } from '@/pages/learn/ResourcePage'
 import { UnsubscribePage } from '@/pages/account/UnsubscribePage'
-import { ContentPreviewPage } from '@/pages/cms/ContentPreviewPage'
-import { CurriculumPage } from '@/pages/cms/CurriculumPage'
-import { PublishingPage } from '@/pages/cms/PublishingPage'
-import { StageSequencePage } from '@/pages/cms/StageSequencePage'
-import { CampaignSetupPage } from '@/pages/cms/CampaignSetupPage'
-import { CampaignsPage } from '@/pages/cms/CampaignsPage'
-import { DeliveryPage } from '@/pages/cms/DeliveryPage'
-import { TemplateEditorPage } from '@/pages/cms/TemplateEditorPage'
-import { TemplatesPage } from '@/pages/cms/TemplatesPage'
-import { EngagementDashboardPage } from '@/pages/cms/EngagementDashboardPage'
-import { RolesPage } from '@/pages/cms/RolesPage'
-import { ScoreSettingsPage } from '@/pages/cms/ScoreSettingsPage'
-import { UserDetailPage } from '@/pages/cms/UserDetailPage'
-import { UsersPage } from '@/pages/cms/UsersPage'
-import { VisitorDashboardPage } from '@/pages/cms/VisitorDashboardPage'
-import { CmsOverviewPage } from '@/pages/cms/CmsOverviewPage'
-import { ExplorationEditorPage } from '@/pages/cms/ExplorationEditorPage'
-import { ExplorationsListPage } from '@/pages/cms/ExplorationsListPage'
-import { MeditationEditorPage } from '@/pages/cms/MeditationEditorPage'
-import { MeditationsListPage } from '@/pages/cms/MeditationsListPage'
 import { PrivacyChoicesPage } from '@/pages/public/PrivacyChoicesPage'
 import { AboutPage } from '@/pages/public/AboutPage'
 import { ExplorationDetailPage } from '@/pages/public/ExplorationDetailPage'
@@ -59,6 +49,7 @@ export const router = createBrowserRouter(
     errorElement: <ServerErrorPage />,
     children: [
       { index: true, element: <HomePage /> },
+      { path: 'about', element: <AboutPage /> },
       { path: 'about/:slug', element: <AboutPage /> },
       { path: 'explorations', element: <ExplorationsPage /> },
       { path: 'explorations/:slug', element: <ExplorationDetailPage /> },
@@ -99,34 +90,39 @@ export const router = createBrowserRouter(
       },
     ],
   },
+  // Old practitioner URLs: redirect into /learn, keeping query and hash.
+  // See services/learning/legacyRoutes.ts for the verified mapping.
+  { path: '/journey', element: <LegacyRedirect /> },
+  { path: '/my-journey', element: <LegacyRedirect /> },
+  { path: '/journey/stages/:stageId', element: <LegacyRedirect /> },
+  { path: '/journey/stages/:stageId/read/:contentId', element: <LegacyRedirect /> },
+  { path: '/journey/stages/:stageId/listen/:contentId', element: <LegacyRedirect /> },
   {
     element: (
       <RequireAuth>
-        <PractitionerLayout />
+        <LearnLayout />
       </RequireAuth>
     ),
     errorElement: <ServerErrorPage />,
     children: [
-      { path: '/journey', element: <JourneyPage /> },
-      {
-        path: '/journey/stages/:stageId',
-        element: <StageDetailPage />,
-      },
-      {
-        path: '/journey/stages/:stageId/read/:contentId',
-        element: <ExplorationReaderPage />,
-      },
-      {
-        path: '/journey/stages/:stageId/listen/:contentId',
-        element: <PlayerPage />,
-      },
-      { path: '/my-journey', element: <MyJourneyPage /> },
+      { path: '/learn', element: <LearnHomePage /> },
+      { path: '/learn/my-learning', element: <MyLearningPage /> },
+      { path: '/learn/library', element: <LibraryPage /> },
+      { path: '/learn/library/:type/:slug', element: <ResourcePage /> },
+      { path: '/learn/meditations', element: <LearnMeditationsPage /> },
+      { path: '/learn/meditations/:slug', element: <MeditationPage /> },
+      { path: '/learn/progress', element: <LearnProgressPage /> },
+      { path: '/learn/paths/:pathSlug', element: <PathPage /> },
+      { path: '/learn/paths/:pathSlug/lessons/:lessonId', element: <LessonPage /> },
+      { path: '/learn/access-denied', element: <AccessDeniedPage /> },
+      { path: '/learn/*', element: <LearnNotFoundPage /> },
       {
         path: '/account',
         element: <AccountLayout />,
         children: [
           { index: true, element: <Navigate to="profile" replace /> },
           { path: 'profile', element: <ProfilePage /> },
+          { path: 'preferences', element: <PreferencesPage /> },
           { path: 'email', element: <EmailPreferencesPage /> },
           { path: 'privacy', element: <PrivacyPage /> },
         ],
@@ -136,34 +132,14 @@ export const router = createBrowserRouter(
   {
     path: '/cms',
     element: (
-      <RequireAuth roles={['editor', 'campaign', 'admin']}>
-        <CmsLayout />
+      <RequireAuth>
+        <RequireCmsAccess>
+          <CmsLayout />
+        </RequireCmsAccess>
       </RequireAuth>
     ),
     errorElement: <ServerErrorPage />,
-    children: [
-      { index: true, element: <CmsOverviewPage /> },
-      { path: 'explorations', element: <ExplorationsListPage /> },
-      { path: 'explorations/:id', element: <ExplorationEditorPage /> },
-      { path: 'meditations', element: <MeditationsListPage /> },
-      { path: 'meditations/:id', element: <MeditationEditorPage /> },
-      { path: 'curriculum', element: <CurriculumPage /> },
-      { path: 'curriculum/stages/:stageId', element: <StageSequencePage /> },
-      { path: 'publishing', element: <PublishingPage /> },
-      { path: 'preview/:type/:id', element: <ContentPreviewPage /> },
-      { path: 'campaigns', element: <CampaignsPage /> },
-      { path: 'campaigns/:id', element: <CampaignSetupPage /> },
-      { path: 'templates', element: <TemplatesPage /> },
-      { path: 'templates/:id', element: <TemplateEditorPage /> },
-      { path: 'delivery', element: <DeliveryPage /> },
-      { path: 'users', element: <UsersPage /> },
-      { path: 'users/:id', element: <UserDetailPage /> },
-      { path: 'analytics/visitors', element: <VisitorDashboardPage /> },
-      { path: 'analytics/engagement', element: <EngagementDashboardPage /> },
-      { path: 'settings/score', element: <ScoreSettingsPage /> },
-      { path: 'roles', element: <RolesPage /> },
-      { path: '*', element: <ComingSoonPage title="Not found" /> },
-    ],
+    children: cmsRoutes,
   },
   ],
   {

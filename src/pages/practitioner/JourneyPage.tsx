@@ -16,6 +16,7 @@ import { useAuth } from '@/features/auth/AuthProvider'
 import { pluralise } from '@/lib/format'
 import { getJourney } from '@/services/content'
 import type { ContentItem, StageProgressStatus } from '@/types'
+import { lessonHref, moduleHref } from '@/services/learning/routes'
 
 const STATUS: Record<
   StageProgressStatus,
@@ -27,10 +28,8 @@ const STATUS: Record<
   locked: { label: 'Locked', tone: 'neutral', icon: Lock },
 }
 
-export function itemHref(stageId: string, item: ContentItem) {
-  return `/journey/stages/${stageId}/${
-    item.type === 'exploration' ? 'read' : 'listen'
-  }/${item.id}`
+export function itemHref(item: ContentItem) {
+  return lessonHref(item.id)
 }
 
 export function JourneyPage() {
@@ -66,14 +65,12 @@ export function JourneyPage() {
   }
 
   const journey = query.data
-  const first = user?.name.split(' ')[0] ?? 'there'
   const allDone = journey.stagesCompleted === journey.totalStages
 
   return (
     <div className="nff-content flex flex-col gap-8 py-8 md:py-12">
       <header className="flex flex-col gap-2">
-        <p className="nff-overline text-nff-text-brand">Your journey</p>
-        <h1 className="nff-heading-h1 text-foreground">Welcome back, {first}</h1>
+        <h1 className="nff-heading-h1 text-foreground">Meadow Journey</h1>
       </header>
 
       {journey.continueItem && (
@@ -96,9 +93,7 @@ export function JourneyPage() {
           </div>
           <Button asChild className="h-11 w-fit">
             <Link
-              to={itemHref(
-                journey.continueItem.stage.id,
-                journey.continueItem.item,
+              to={itemHref(journey.continueItem.item,
               )}
             >
               Resume
@@ -184,7 +179,7 @@ export function JourneyPage() {
                     {locked ? (
                       <span>Open</span>
                     ) : (
-                      <Link to={`/journey/stages/${stage.id}`}>Open</Link>
+                      <Link to={moduleHref(stage.id)}>Open</Link>
                     )}
                   </Button>
                 </div>

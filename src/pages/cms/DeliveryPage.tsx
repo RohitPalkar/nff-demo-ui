@@ -2,8 +2,8 @@ import { useQuery } from '@tanstack/react-query'
 import { BarChart3 } from 'lucide-react'
 import { useState } from 'react'
 import { MetricCard, PageHeader } from '@/components/cms/CmsParts'
-import { EmptyState } from '@/components/nff/EmptyState'
-import { ErrorState } from '@/components/nff/ErrorState'
+import { EmptyState } from '@/components/admin'
+import { ErrorState } from '@/components/admin'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
   Select,
@@ -21,22 +21,16 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { FLAGS } from '@/config/flags'
-import { useAuth } from '@/features/auth/AuthProvider'
+import { usePermissions } from '@/features/auth/usePermissions'
 import { formatDate } from '@/lib/format'
 import { campaigns, userById } from '@/mocks/db'
 import { getDelivery } from '@/services/cms'
 
 type Tab = 'sends' | 'bounces' | 'complaints' | 'suppression'
 
-function mask(email: string) {
-  const [local = '', domain = ''] = email.split('@')
-  return `${local[0] ?? ''}***@${domain}`
-}
-
 export function DeliveryPage() {
-  const { user } = useAuth()
-  const query = useQuery({ queryKey: ['cms', 'delivery'], queryFn: getDelivery })
+  const { can } = usePermissions()
+  const query = useQuery({ queryKey: ['cms', 'delivery'], queryFn: () => getDelivery() })
   const [range, setRange] = useState('30')
   const [campaign, setCampaign] = useState('all')
   const [tab, setTab] = useState<Tab>('sends')
@@ -69,7 +63,9 @@ export function DeliveryPage() {
   const count = (status: string) => logs.filter((log) => log.status === status).length
   const total = logs.length
   const pct = (n: number) => (total === 0 ? '0%' : `${((n / total) * 100).toFixed(1)}%`)
-  const masked = user?.role === 'campaign' && FLAGS.recipientDetailMasked
+  // Recipients are shown only with an explicit permission; the data is also
+  // redacted at the service (getDelivery) for everyone without it.
+  const masked = !can('campaigns.recipients.view')
 
   const perDay = new Map<string, number>()
   logs.forEach((log) => {
@@ -91,7 +87,7 @@ export function DeliveryPage() {
 
   return (
     <div className="flex flex-col gap-5">
-      <PageHeader title="Delivery reports" />
+      <PageHeader title="Delivery" />
       <p
         role="status"
         className="rounded-xl border bg-nff-bg-muted p-3 nff-caption text-muted-foreground"
@@ -193,7 +189,7 @@ export function DeliveryPage() {
                   const email = userById.get(log.userId)?.email ?? 'unknown@example.com'
                   return (
                     <TableRow key={log.id}>
-                      <TableCell>{masked ? mask(email) : email}</TableCell>
+                      <TableCell>{masked ? 'Hidden' : email}</TableCell>
                       <TableCell>
                         {campaigns.find((entry) => entry.id === log.campaignId)?.name}
                       </TableCell>

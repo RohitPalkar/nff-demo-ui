@@ -8,6 +8,7 @@ import {
 } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
+import { AccountRegistrationCTA } from '@/components/nff/AccountRegistrationCTA'
 import { CategoryTabs } from '@/components/nff/CategoryTabs'
 import { ContentCard } from '@/components/nff/ContentCard'
 import { EmptyState } from '@/components/nff/EmptyState'
@@ -175,7 +176,7 @@ export function ExplorationsPage() {
   } else {
     body = (
       <>
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
           {items.map((item) => (
             <ContentCard
               key={item.id}
@@ -294,6 +295,8 @@ export function ExplorationsPage() {
         <h2 className="sr-only">Exploration results</h2>
         {body}
       </section>
+
+      <AccountRegistrationCTA />
     </div>
   )
 }

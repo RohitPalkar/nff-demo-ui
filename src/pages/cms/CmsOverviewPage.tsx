@@ -1,13 +1,21 @@
 import { useQuery } from '@tanstack/react-query'
 import { AlertTriangle } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import { ContentStatusChip, MetricCard, PageHeader } from '@/components/cms/CmsParts'
-import { ErrorState } from '@/components/nff/ErrorState'
+import {
+  ContentStatusChip,
+  DataSourceBadge,
+  MetricCard,
+  PageHeader,
+} from '@/components/cms/CmsParts'
+import { ErrorState } from '@/components/admin'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useAuth } from '@/features/auth/AuthProvider'
+import { usePermissions } from '@/features/auth/usePermissions'
 import { formatDate } from '@/lib/format'
 import { users } from '@/mocks/db'
-import { listAllCmsItems, loadCampaigns } from '@/services/cms'
+import type { DataSourceKind } from '@/services/dataSources'
+import { listAllCmsItems, loadCampaigns, ownerLabel } from '@/services/cms'
+import { getRoleLabel } from '@/services/rbac/roles'
 
 function greeting() {
   const hour = new Date().getHours()
@@ -16,20 +24,18 @@ function greeting() {
   return 'Good evening'
 }
 
-const ROLE_LABEL = {
-  editor: 'Content editor',
-  campaign: 'Campaign manager',
-  admin: 'Super admin',
-} as const
-
 export function CmsOverviewPage() {
   const { user } = useAuth()
+  const { can } = usePermissions()
+  const canSeeContent = can('content.view')
+  // A campaign manager has no content permission, so nothing is requested for them.
   const query = useQuery({
     queryKey: ['cms', 'overview'],
-    queryFn: listAllCmsItems,
+    queryFn: () => listAllCmsItems(),
+    enabled: canSeeContent,
   })
 
-  if (query.isPending) {
+  if (canSeeContent && query.isPending) {
     return (
       <div aria-busy="true" className="flex flex-col gap-4">
         <Skeleton className="h-10 w-72" />
@@ -41,7 +47,7 @@ export function CmsOverviewPage() {
       </div>
     )
   }
-  if (query.isError) {
+  if (canSeeContent && query.isError) {
     return (
       <ErrorState
         title="We could not load the overview"
@@ -51,8 +57,13 @@ export function CmsOverviewPage() {
     )
   }
 
-  const items = query.data
-  const role = user?.role === 'campaign' || user?.role === 'admin' ? user.role : 'editor'
+  const items = query.data ?? []
+  // The flavour of the page follows what the person can do, not their role name.
+  const view = can('practitioners.view')
+    ? 'admin'
+    : !canSeeContent && can('campaigns.view')
+      ? 'campaign'
+      : 'editor'
   const drafts = items.filter((item) => item.status === 'draft').length
   const review = items.filter((item) => item.status === 'in_review')
   const processing = items.filter(
@@ -71,38 +82,41 @@ export function CmsOverviewPage() {
     : '—'
   const activeUsers = users.filter((entry) => entry.status === 'active').length
 
-  const cards =
-    role === 'campaign'
+  // Every figure here comes from seeded records (plus changes made in this
+  // browser), so each says so. There is no engagement source, so that card
+  // shows no value rather than the invented figure it used to.
+  const cards: Array<{ label: string; value: string; hint?: string; source: DataSourceKind }> =
+    view === 'campaign'
       ? [
-          { label: 'Next send', value: 'Tonight 07:00' },
-          { label: 'Last-send delivery rate', value: rate },
-          { label: 'Paused campaigns', value: String(paused.length) },
+          { label: 'Next send', value: 'Tonight 07:00', hint: 'Example schedule; nothing is sent', source: 'demo' },
+          { label: 'Last-send delivery rate', value: rate, source: 'demo' },
+          { label: 'Paused campaigns', value: String(paused.length), source: 'demo' },
         ]
-      : role === 'admin'
+      : view === 'admin'
         ? [
-            { label: 'Active users', value: String(activeUsers) },
-            { label: 'Awaiting review', value: String(review.length) },
-            { label: 'Engagement trend', value: '+4.2%', hint: 'vs last month' },
+            { label: 'Active users', value: String(activeUsers), source: 'demo' },
+            { label: 'Awaiting review', value: String(review.length), source: 'demo' },
+            { label: 'Engagement trend', value: '—', hint: 'No analytics source is connected', source: 'unavailable' },
           ]
         : [
-            { label: 'Drafts', value: String(drafts) },
-            { label: 'In review', value: String(review.length) },
-            { label: 'Processing', value: String(processing) },
+            { label: 'Drafts', value: String(drafts), source: 'demo' },
+            { label: 'In review', value: String(review.length), source: 'demo' },
+            { label: 'Processing', value: String(processing), source: 'demo' },
           ]
 
   const alerts: string[] = []
-  if (failed.length > 0)
+  if (failed.length > 0 && canSeeContent)
     alerts.push(`${failed.length} meditation${failed.length > 1 ? 's' : ''} failed transcoding.`)
-  if (paused.length > 0 && role !== 'editor')
+  if (paused.length > 0 && can('campaigns.view'))
     alerts.push(`${paused.length} campaign${paused.length > 1 ? 's are' : ' is'} paused.`)
-  if (review.length > 0 && role !== 'campaign')
+  if (review.length > 0 && canSeeContent)
     alerts.push(`${review.length} item${review.length > 1 ? 's are' : ' is'} awaiting review.`)
 
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
         title={`${greeting()}, ${user?.name.split(' ')[0] ?? ''}`}
-        description={ROLE_LABEL[role]}
+        description={getRoleLabel(user?.role)}
       />
 
       {alerts.length > 0 && (
@@ -128,7 +142,7 @@ export function CmsOverviewPage() {
         ))}
       </section>
 
-      {role !== 'campaign' && (
+      {canSeeContent && (
         <section aria-labelledby="tasks" className="flex flex-col gap-3">
           <h2 id="tasks" className="nff-heading-h3">
             My tasks
@@ -158,29 +172,34 @@ export function CmsOverviewPage() {
         </section>
       )}
 
-      <section aria-labelledby="activity" className="flex flex-col gap-3">
-        <h2 id="activity" className="nff-heading-h3">
-          Recent activity
-        </h2>
-        <ul className="flex flex-col divide-y rounded-xl border bg-card">
-          {[...items]
-            .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
-            .slice(0, 6)
-            .map((item) => (
-              <li
-                key={item.id}
-                className="flex items-center justify-between gap-3 p-3"
-              >
-                <span className="nff-body-sm">
-                  <strong>{item.owner}</strong> updated {item.title}
-                </span>
-                <span className="nff-caption text-muted-foreground">
-                  {formatDate(item.updatedAt)}
-                </span>
-              </li>
-            ))}
-        </ul>
-      </section>
+      {canSeeContent && (
+        <section aria-labelledby="activity" className="flex flex-col gap-3">
+          <div className="flex flex-wrap items-center gap-3">
+            <h2 id="activity" className="nff-heading-h3">
+              Recent activity
+            </h2>
+            <DataSourceBadge kind="demo" />
+          </div>
+          <ul className="flex flex-col divide-y rounded-xl border bg-card">
+            {[...items]
+              .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
+              .slice(0, 6)
+              .map((item) => (
+                <li
+                  key={item.id}
+                  className="flex items-center justify-between gap-3 p-3"
+                >
+                  <span className="nff-body-sm">
+                    <strong>{item.title || 'Untitled'}</strong> updated · {ownerLabel(item)}
+                  </span>
+                  <span className="nff-caption text-muted-foreground">
+                    {formatDate(item.updatedAt)}
+                  </span>
+                </li>
+              ))}
+          </ul>
+        </section>
+      )}
     </div>
   )
 }

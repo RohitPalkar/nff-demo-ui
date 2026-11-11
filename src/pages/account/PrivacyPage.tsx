@@ -1,4 +1,4 @@
-import { Download, Loader2, Trash2 } from 'lucide-react'
+import { Download, Loader2, LogOut, Trash2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useNavigate, useOutletContext } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -85,6 +85,39 @@ export function PrivacyPage() {
 
   return (
     <div className="flex flex-col gap-10">
+      <section aria-labelledby="security-heading" className="flex flex-col gap-4">
+        <div className="flex flex-col gap-1">
+          <h2 id="security-heading" className="nff-heading-h3">
+            Sign-in and security
+          </h2>
+          <p className="nff-body-md text-muted-foreground">
+            How you sign in to Meadow.
+          </p>
+        </div>
+        <div className="flex flex-col gap-4 rounded-lg border bg-card p-5">
+          <dl className="grid gap-3 sm:grid-cols-[10rem_1fr]">
+            <dt className="nff-label-md text-muted-foreground">Sign-in email</dt>
+            <dd className="min-w-0 break-words nff-body-md">{user?.email}</dd>
+            <dt className="nff-label-md text-muted-foreground">Email address</dt>
+            <dd className="nff-body-md">{user?.verified ? 'Verified' : 'Not verified yet'}</dd>
+          </dl>
+          <p className="nff-body-sm text-muted-foreground">
+            Changing your password and managing signed-in devices are not available in this demo.
+          </p>
+          <Button
+            variant="outline"
+            className="h-11 w-fit"
+            onClick={() => {
+              logout()
+              navigate('/login', { replace: true })
+            }}
+          >
+            <LogOut aria-hidden="true" className="size-4" />
+            Log out
+          </Button>
+        </div>
+      </section>
+
       <section aria-labelledby="export-heading" className="flex flex-col gap-4">
         <div className="flex flex-col gap-1">
           <h2 id="export-heading" className="nff-heading-h3">
@@ -96,7 +129,7 @@ export function PrivacyPage() {
           </p>
         </div>
 
-        <div className="flex flex-col gap-3 rounded-xl border bg-card p-5">
+        <div className="flex flex-col gap-3 rounded-lg border bg-card p-5">
           {status.state === 'none' && (
             <Button
               className="h-11 w-fit"
@@ -137,7 +170,7 @@ export function PrivacyPage() {
 
       <section
         aria-labelledby="delete-heading"
-        className="flex flex-col gap-4 rounded-xl border border-nff-border-error p-5"
+        className="flex flex-col gap-4 rounded-lg border border-nff-border-error p-5"
       >
         <div className="flex flex-col gap-1">
           <h2 id="delete-heading" className="nff-heading-h3 text-nff-text-error">
@@ -147,6 +180,9 @@ export function PrivacyPage() {
             Deleting your account erases your profile, progress and email data.
             You have {FLAGS.deletionGraceDays} days to change your mind before
             it is permanent.
+          </p>
+          <p className="nff-body-sm text-muted-foreground">
+            In this demo, scheduling is saved in this browser and nothing is erased.
           </p>
         </div>
 
@@ -227,17 +263,6 @@ export function PrivacyPage() {
             </AlertDialog>
           </>
         )}
-
-        <Button
-          variant="ghost"
-          className="h-11 w-fit"
-          onClick={() => {
-            logout()
-            navigate('/')
-          }}
-        >
-          Log out
-        </Button>
       </section>
     </div>
   )

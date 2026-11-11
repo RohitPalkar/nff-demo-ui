@@ -1,5 +1,6 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
+import { Info } from 'lucide-react'
 import { toast } from 'sonner'
 import { ErrorState } from '@/components/nff/ErrorState'
 import {
@@ -99,17 +100,26 @@ export function EmailPreferencesPage() {
 
   return (
     <div className="flex flex-col gap-6">
+      <p
+        role="note"
+        className="flex items-start gap-3 rounded-lg border border-nff-border-default bg-nff-bg-surface p-4 nff-body-sm text-nff-text-secondary"
+      >
+        <Info aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-nff-text-brand" />
+        Email sending is not connected in this demo. Your choices are saved in this browser, but no emails
+        are sent.
+      </p>
+
       {prefs.unsubscribedAll && (
         <p
           role="status"
-          className="rounded-xl border bg-nff-bg-muted p-4 nff-body-md"
+          className="rounded-lg border bg-nff-bg-muted p-4 nff-body-md"
         >
           You are unsubscribed from all emails. Turn the daily email back on to
           resume.
         </p>
       )}
 
-      <section className="flex items-center justify-between gap-4 rounded-xl border bg-card p-5">
+      <section className="flex items-center justify-between gap-4 rounded-lg border bg-card p-5">
         <div className="flex flex-col gap-1">
           <h2 id="daily-label" className="nff-heading-h4">
             Daily email
@@ -153,7 +163,7 @@ export function EmailPreferencesPage() {
         </Select>
       </div>
 
-      <ul className="flex flex-col divide-y rounded-xl border bg-card">
+      <ul className="flex flex-col divide-y rounded-lg border bg-card">
         {TYPES.map((type) => (
           <li
             key={type.key}
@@ -183,10 +193,6 @@ export function EmailPreferencesPage() {
         ))}
       </ul>
 
-      <p className="nff-caption text-muted-foreground">
-        Changes apply from tonight&rsquo;s send.
-      </p>
-
       <AlertDialog>
         <AlertDialogTrigger asChild>
           <Button variant="outline" className="h-11 w-fit">
@@ -197,7 +203,7 @@ export function EmailPreferencesPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Unsubscribe from all emails?</AlertDialogTitle>
             <AlertDialogDescription>
-              You will stop receiving every NFF email, including the daily
+              You will stop receiving every Meadow email, including the daily
               practice note. You can turn them back on at any time.
             </AlertDialogDescription>
           </AlertDialogHeader>
