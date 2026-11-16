@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { cn } from '@/lib/utils'
 
@@ -53,6 +53,7 @@ export function ButtonGroup<T extends string>(props: ButtonGroupProps<T>) {
   const { items, value, label, size = 'md', className } = props
   const trackRef = useRef<HTMLDivElement>(null)
   const moved = useRef(false)
+  const [indicatorStyle, setIndicatorStyle] = useState<React.CSSProperties>({})
 
   useEffect(() => {
     const track = trackRef.current
@@ -61,6 +62,19 @@ export function ButtonGroup<T extends string>(props: ButtonGroupProps<T>) {
     const left = current.offsetLeft - (track.clientWidth - current.offsetWidth) / 2
     track.scrollTo({ left, behavior: moved.current ? 'smooth' : 'auto' })
     moved.current = true
+  }, [value])
+
+  // Update indicator position when selection changes
+  useEffect(() => {
+    const track = trackRef.current
+    const current = track?.querySelector<HTMLElement>('[data-selected="true"]')
+    if (track && current) {
+      setIndicatorStyle({
+        width: current.offsetWidth,
+        left: current.offsetLeft,
+        opacity: 1,
+      })
+    }
   }, [value])
 
   const isLinks = 'hrefFor' in props && props.hrefFor !== undefined
@@ -111,8 +125,14 @@ export function ButtonGroup<T extends string>(props: ButtonGroupProps<T>) {
     >
       <div
         ref={trackRef}
-        className="inline-flex max-w-full gap-1 overflow-x-auto rounded-full bg-[rgb(255_255_255/0.55)] p-1 ring-1 ring-nff-border-default [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="relative inline-flex max-w-full gap-1 overflow-x-auto rounded-full bg-[var(--nff-bg-surface)] p-1 ring-1 ring-nff-border-default shadow-nff-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
+        {/* Animated indicator for selected tab */}
+        <div
+          className="absolute bottom-0 h-0.5 bg-[var(--nff-accent-active)] rounded-full transition-all duration-[var(--nff-duration-base)] ease-[var(--nff-easing-standard)]"
+          style={indicatorStyle}
+          aria-hidden="true"
+        />
         {children}
       </div>
     </Root>
