@@ -94,13 +94,13 @@ export function LearnHomePage() {
             )}
           >
             {upNext.length > 0 && (
-              <HomeSection id="home-up-next">
+              <HomeSection id="home-up-next" className="rounded-2xl bg-[var(--nff-bg-brand-subtle)] p-6 sm:p-8">
                 <HomeSectionHeader
                   id="home-up-next"
                   title="Up next"
                   description={
                     assigned.length > 1
-                      ? 'The next unfinished lesson in each of your paths.'
+                      ? 'Your next lessons across all paths, in order.'
                       : 'The next lessons you have not finished, in path order.'
                   }
                 />

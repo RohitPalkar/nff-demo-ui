@@ -12,8 +12,14 @@ const STATUS_LABEL: Record<PathStatus, string> = {
   complete: 'Complete',
 }
 
+const STATUS_COLOR: Record<PathStatus, string> = {
+  'not-started': 'bg-[var(--nff-slate-100)] text-[var(--nff-slate-700)]',
+  'in-progress': 'bg-[var(--nff-forest-100)] text-[var(--nff-forest-900)]',
+  complete: 'bg-[var(--nff-sage-100)] text-[var(--nff-sage-800)]',
+}
+
 export function LearningPathCard({ entry }: { entry: AssignedPath }) {
-  const { path, href, moduleCount, lessonCount, completedCount, percent, status } = entry
+  const { path, href, moduleCount, lessonCount, completedCount, percent, status, nextLesson } = entry
   const assignedLine = entry.preview
     ? 'Preview: not assigned to you'
     : SOW_SCOPE.assignmentDates && entry.assignedAt
@@ -27,7 +33,7 @@ export function LearningPathCard({ entry }: { entry: AssignedPath }) {
           <p className="nff-caption text-nff-text-secondary">
             Learning path · {pluralise(moduleCount, 'module')} · {pluralise(lessonCount, 'lesson')}
           </p>
-          <span className="rounded-sm bg-[var(--nff-sage-100)] px-2 py-0.5 nff-label-sm text-[var(--nff-forest-900)]">
+          <span className={cn('rounded-sm px-2 py-0.5 nff-label-sm', STATUS_COLOR[status])}>
             {STATUS_LABEL[status]}
           </span>
         </div>
@@ -42,6 +48,12 @@ export function LearningPathCard({ entry }: { entry: AssignedPath }) {
               label={`${completedCount} of ${lessonCount} lessons complete`}
               ariaLabel={`${path.title} progress`}
             />
+          )}
+          {nextLesson && (
+            <div className="flex items-center gap-2 text-[var(--nff-forest-700)]">
+              <span className="nff-caption">Next:</span>
+              <span className="nff-label-md truncate">{nextLesson.title}</span>
+            </div>
           )}
           {assignedLine && <p className="nff-caption text-nff-text-secondary">{assignedLine}</p>}
         </div>

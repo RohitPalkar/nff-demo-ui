@@ -27,7 +27,7 @@ import {
   lessonIdForItem,
 } from './catalogue'
 import { isPreviewRole } from './previewRoles'
-import { isLessonComplete, isSupportedAudioProgress, pathCompletion } from './progress'
+import { isLessonComplete, isSupportedAudioProgress, pathCompletion, countsTowardCompletion } from './progress'
 import {
   LEARN_LIBRARY,
   pathLessonHref,
@@ -76,6 +76,8 @@ export interface AssignedPath {
   dueAt?: string
   /** Staff preview: listed because they can inspect it, not assigned. */
   preview: boolean
+  /** The next available lesson in this path. */
+  nextLesson?: { title: string; href: string }
 }
 
 export interface UpNextLesson extends HomeLesson {
@@ -299,13 +301,35 @@ export function listAssignedPaths(
         Boolean(entry.path) && isFull(canAccessPath(ctx, entry.path)),
     )
     .sort((a, b) => a.meta.assignedAt.localeCompare(b.meta.assignedAt) || catalogueOrder(a.path) - catalogueOrder(b.path))
-    .map(({ path, meta }) => summarisePath(path, store, { ...meta, preview: false }))
+    .map(({ path, meta }) => ({
+      ...summarisePath(path, store, { ...meta, preview: false }),
+      nextLesson: findNextLesson(path, ctx, store),
+    }))
 
   if (assigned.length > 0 || !isPreviewRole(ctx.user?.role)) return assigned
 
   return getLearningCatalogue()
     .paths.filter((path) => path.status === 'published' && isFull(canAccessPath(ctx, path)))
-    .map((path) => summarisePath(path, store, { preview: true }))
+    .map((path) => ({
+      ...summarisePath(path, store, { preview: true }),
+      nextLesson: findNextLesson(path, ctx, store),
+    }))
+}
+
+/** Find the first incomplete, accessible lesson in a path. */
+function findNextLesson(
+  path: LearningPath,
+  ctx: AccessContext,
+  store: LearningProgressStore,
+): { title: string; href: string } | undefined {
+  const requiredLessons = getLessonsOf(path.id).filter(countsTowardCompletion)
+  const nextLesson = requiredLessons.find(
+    (lesson) => !isLessonComplete(lesson, store) && isFull(canAccessLesson(ctx, lesson))
+  )
+  if (!nextLesson) return undefined
+  const itemId = itemIdForLesson(nextLesson.id)
+  const item = itemId ? content.find((entry) => entry.id === itemId) : undefined
+  return item ? { title: item.title, href: pathLessonHref(path.slug, nextLesson.id) } : undefined
 }
 
 // ---------------------------------------------------------------------------

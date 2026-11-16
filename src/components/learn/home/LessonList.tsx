@@ -13,12 +13,16 @@ function LessonRow({
   overline,
   title,
   meta,
+  duration,
+  type,
 }: {
   href: string
   thumb: UpNextLesson['item']
   overline: string
   title: string
   meta: string
+  duration?: string
+  type?: 'article' | 'audio'
 }) {
   return (
     <li>
@@ -28,9 +32,30 @@ function LessonRow({
       >
         <Thumb item={thumb} className="size-14 shrink-0 rounded-sm" />
         <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-          <p className="truncate nff-caption text-nff-text-secondary">{overline}</p>
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="truncate nff-caption text-nff-text-secondary">{overline}</p>
+            {type && (
+              <span className={cn(
+                'rounded-sm px-1.5 py-0.5 nff-caption',
+                type === 'audio' ? 'bg-[var(--nff-forest-100)] text-[var(--nff-forest-900)]' : 'bg-[var(--nff-sage-100)] text-[var(--nff-sage-800)]'
+              )}>
+                {type === 'audio' ? 'Audio' : 'Article'}
+              </span>
+            )}
+          </div>
           <p className="line-clamp-2 nff-label-md text-foreground">{title}</p>
-          <p className="nff-caption text-nff-text-secondary">{meta}</p>
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="nff-caption text-nff-text-secondary">{meta}</p>
+            {duration && (
+              <span className="nff-caption text-nff-text-secondary flex items-center gap-1">
+                <svg className="size-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="12" cy="12" r="10" />
+                  <polyline points="12 6 12 12 16 14" />
+                </svg>
+                {duration}
+              </span>
+            )}
+          </div>
         </div>
         <ChevronRight
           aria-hidden="true"
@@ -46,16 +71,25 @@ const LIST = cn(HOME_CARD, 'divide-y divide-nff-border-default overflow-hidden')
 export function UpNextList({ items }: { items: UpNextLesson[] }) {
   return (
     <ol className={LIST}>
-      {items.map((entry) => (
-        <LessonRow
-          key={entry.lessonId}
-          href={entry.href}
-          thumb={entry.item}
-          overline={entry.moduleLabel}
-          title={entry.item.title}
-          meta={itemMeta(entry.item)}
-        />
-      ))}
+      {items.map((entry) => {
+        const isAudio = entry.kind === 'audio'
+        const item = entry.item as { durationSec?: number; readingTimeMin?: number }
+        const duration = isAudio
+          ? `${Math.round((item.durationSec ?? 0) / 60)} min`
+          : `${item.readingTimeMin ?? 0} min read`
+        return (
+          <LessonRow
+            key={entry.lessonId}
+            href={entry.href}
+            thumb={entry.item}
+            overline={entry.moduleLabel}
+            title={entry.item.title}
+            meta={itemMeta(entry.item)}
+            duration={duration}
+            type={isAudio ? 'audio' : 'article'}
+          />
+        )
+      })}
     </ol>
   )
 }
@@ -71,16 +105,25 @@ const RECENT_VERB: Record<RecentKind, string> = {
 export function RecentLearningList({ items }: { items: RecentLesson[] }) {
   return (
     <ul className={LIST}>
-      {items.map((entry) => (
-        <LessonRow
-          key={entry.lessonId}
-          href={entry.href}
-          thumb={entry.item}
-          overline={entry.moduleLabel}
-          title={entry.item.title}
-          meta={`${RECENT_VERB[entry.kind]} ${formatDate(entry.at)}`}
-        />
-      ))}
+      {items.map((entry) => {
+        const isAudio = entry.item.type === 'meditation'
+        const item = entry.item as { durationSec?: number; readingTimeMin?: number }
+        const duration = isAudio
+          ? `${Math.round((item.durationSec ?? 0) / 60)} min`
+          : `${item.readingTimeMin ?? 0} min read`
+        return (
+          <LessonRow
+            key={entry.lessonId}
+            href={entry.href}
+            thumb={entry.item}
+            overline={entry.moduleLabel}
+            title={entry.item.title}
+            meta={`${RECENT_VERB[entry.kind]} ${formatDate(entry.at)}`}
+            duration={duration}
+            type={isAudio ? 'audio' : 'article'}
+          />
+        )
+      })}
     </ul>
   )
 }
