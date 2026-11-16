@@ -126,7 +126,8 @@ describe('/cms route enforcement', () => {
     signIn('editor@nff.demo')
     open('/cms/curriculum')
     expect(await screen.findByText(/Changing it needs an admin/)).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /Add stage/ })).toBeDisabled()
+    // A role sees only what it can do: no Add stage button at all.
+    expect(screen.queryByRole('button', { name: /Add stage/ })).not.toBeInTheDocument()
   })
 
   it('denies a Campaign manager content administration, and shows only campaign sections', async () => {

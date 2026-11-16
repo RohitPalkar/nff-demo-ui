@@ -37,10 +37,11 @@ const PRACTICE_LINKS: FooterLink[] = PRACTICE_ITEMS.filter(({ key }) =>
 const ABOUT_LINKS: FooterLink[] = ABOUT_ITEMS
 
 const LEGAL_LINKS: FooterLink[] = [
-  { label: 'Privacy', href: '/privacy' },
-  { label: 'Terms', href: '/terms' },
+  { label: 'Privacy policy', href: '/privacy' },
+  { label: 'Terms of use', href: '/terms' },
+  { label: 'Cookie policy', href: '/cookies' },
   { label: 'Accessibility', href: '/accessibility' },
-  { label: 'Cookie preferences', href: '/cookie-preferences' },
+  { label: 'Your privacy choices', href: '/cookie-preferences' },
 ]
 
 function useAccountLinks(): FooterLink[] {

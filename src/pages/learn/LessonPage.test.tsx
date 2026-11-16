@@ -14,6 +14,16 @@ import { MEADOW_JOURNEY_ID, getLessonsOf, getModulesOf, lessonIdForItem } from '
 import { progressKey } from '@/services/learning/progress'
 import type { Meditation } from '@/types'
 
+// These tests cover features switched off for SOW v1.3 (config/sowScope.ts).
+// Run them with every feature on, so the code stays ready to switch back.
+vi.mock('@/config/sowScope', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/config/sowScope')>()
+  return {
+    SOW_SCOPE: Object.fromEntries(Object.keys(actual.SOW_SCOPE).map((key) => [key, true])),
+  }
+})
+
+
 const FUTURE = { v7_startTransition: true, v7_relativeSplatPath: true }
 const modules = () => getModulesOf(MEADOW_JOURNEY_ID).map((m) => getLessonsOf(m.id).map((l) => l.id.replace('lesson-', '')))
 const allItems = () => modules().flat()

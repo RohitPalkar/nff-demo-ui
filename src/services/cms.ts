@@ -18,6 +18,7 @@ import { changeMemberRole, assertCanSetStatus } from '@/services/rbac/teamManage
 import { USER_STATUS_KEY, listStaffMembers, readRoleAssignments } from '@/services/rbac/roleResolution'
 import { canAccessContent } from '@/services/rbac/contentAccess'
 import { emitAuditEvent } from '@/services/rbac/audit'
+import { CMS_ITEMS_KEY } from '@/services/previewAccess'
 import type { StaffRole } from '@/services/rbac/roles'
 import type {
   Campaign,
@@ -112,7 +113,8 @@ export function ownerLabel(item: Pick<CmsItem, 'ownerId'>): string {
   return item.ownerId ? (userById.get(item.ownerId)?.name ?? 'Unknown account') : 'Unassigned'
 }
 
-const ITEMS_KEY = 'nff.cms.items'
+/** Shared with services/previewAccess.ts, which reads the live free-preview setting for the public site. */
+const ITEMS_KEY = CMS_ITEMS_KEY
 
 /**
  * Seeded "scheduled" items need a date. Computed once per page load so it is
@@ -331,8 +333,15 @@ export function saveCmsItem(item: CmsItem, actor?: ActorInput): CmsItem {
   )
 }
 
-export function createCmsItem(type: 'exploration' | 'meditation', actor?: ActorInput): CmsItem {
+/** A new draft. `init` sets a title and stage up front (the curriculum's "create and add" flow). */
+export function createCmsItem(
+  type: 'exploration' | 'meditation',
+  actor?: ActorInput,
+  init: Partial<Pick<CmsItem, 'title' | 'stageId'>> = {},
+): CmsItem {
   const id = `new-${type}-${Date.now()}`
+  const title = init.title?.trim() ?? ''
+  const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
   return authorizeAction(
     actor,
     'content.create',
@@ -341,12 +350,12 @@ export function createCmsItem(type: 'exploration' | 'meditation', actor?: ActorI
       writeItem({
         id,
         type,
-        slug: '',
-        title: '',
+        slug,
+        title,
         excerpt: '',
         body: '',
         category: 'foundations',
-        stageId: stages[0]!.id,
+        stageId: init.stageId ?? stages[0]!.id,
         status: 'draft',
         owner: userById.get(a.id)?.name ?? a.id,
         createdBy: a.id,
@@ -386,6 +395,40 @@ export function duplicateCmsItem(item: CmsItem, actor?: ActorInput): CmsItem {
         owner: userById.get(a.id)?.name ?? a.id,
         collaboratorIds: [],
       })
+    },
+  )
+}
+
+// Audio lock ------------------------------------------------------------------
+
+/**
+ * Lock or unlock meditations: `preview: true` makes the track a free preview
+ * visitors can hear without an account; `false` locks it to members. This is a
+ * publishing decision about the live record, so it needs `content.publish`
+ * and never becomes a draft revision. The public site reads it through
+ * services/previewAccess.ts. Returns how many items changed.
+ */
+export function setMeditationAccess(ids: readonly string[], preview: boolean, actor?: ActorInput): number {
+  return authorizeAction(
+    actor,
+    ['content.edit', 'content.publish'],
+    {
+      action: 'content.access',
+      resourceType: 'content',
+      resourceId: ids.length === 1 ? ids[0]! : `${ids.length} meditations`,
+      metadata: { preview, count: ids.length },
+    },
+    (a) => {
+      let changed = 0
+      for (const id of ids) {
+        const item = allItems().find((entry) => entry.id === id)
+        if (!item || item.type !== 'meditation') continue
+        requireAccess(a, item, 'content.access')
+        if (item.preview === preview) continue
+        writeItem({ ...item, preview })
+        changed += 1
+      }
+      return changed
     },
   )
 }
@@ -565,9 +608,9 @@ export const STATUS_LABEL: Record<CmsStatus, string> = {
 export function validateItem(item: CmsItem): Record<string, string> {
   const errors: Record<string, string> = {}
   if (item.title.trim().length < 3) errors.title = 'Add a title of at least 3 characters.'
-  if (!item.slug.trim()) errors.slug = 'Add a slug.'
-  else if (!/^[a-z0-9-]+$/.test(item.slug)) errors.slug = 'Use lowercase letters, numbers and hyphens.'
-  if (item.excerpt.trim().length < 10) errors.excerpt = 'Add a short excerpt.'
+  if (!item.slug.trim()) errors.slug = 'Add a web address, for example morning-calm.'
+  else if (!/^[a-z0-9-]+$/.test(item.slug)) errors.slug = 'Use only lowercase letters, numbers and hyphens, for example morning-calm.'
+  if (item.excerpt.trim().length < 10) errors.excerpt = 'Write at least 10 characters so people know what this is about.'
   return errors
 }
 
@@ -592,18 +635,20 @@ export interface CmsStage {
   intro: string
   itemIds: string[]
   published: boolean
+  /** Items in this stage that do not block the next stage. Everything else is required. */
+  optionalItemIds?: string[]
 }
 
 const NEW_STAGES_KEY = 'nff.cms.new-stages'
 
-export function addStage(title: string, actor?: ActorInput): CmsStage {
+export function addStage(title: string, actor?: ActorInput, intro = ''): CmsStage {
   const extra = readJson<CmsStage[]>(NEW_STAGES_KEY, [])
   const stage: CmsStage = {
     id: `stage-new-${Date.now()}`,
     number: stages.length + extra.length + 1,
     title,
     description: 'A new stage.',
-    intro: '',
+    intro,
     itemIds: [],
     published: false,
   }
@@ -620,13 +665,18 @@ export function addStage(title: string, actor?: ActorInput): CmsStage {
 
 export function saveStageDetails(
   id: string,
-  patch: Partial<Pick<CmsStage, 'title' | 'intro'>>,
+  patch: Partial<Pick<CmsStage, 'title' | 'intro' | 'published' | 'optionalItemIds'>>,
   actor?: ActorInput,
 ) {
   authorizeAction(
     actor,
     'learning.manage',
-    { action: 'learning.manage', resourceType: 'stage', resourceId: id, metadata: { change: 'details' } },
+    {
+      action: 'learning.manage',
+      resourceType: 'stage',
+      resourceId: id,
+      metadata: { change: 'published' in patch ? (patch.published ? 'go-live' : 'take-offline') : 'details' },
+    },
     () => {
       const stored = readJson<Record<string, typeof patch>>('nff.cms.stage-details', {})
       stored[id] = { ...stored[id], ...patch }

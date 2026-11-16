@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import { CheckCircle2, Cookie } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { PrivacyChoicesPanel } from '@/components/nff/PrivacyChoicesPanel'
@@ -52,7 +53,11 @@ export function PrivacyChoicesPage() {
         <p className="nff-body-lg text-nff-text-secondary">
           Essential cookies keep the site working. Analytics cookies help us
           improve the practice, and are off unless you switch them on. You can
-          change your mind at any time.
+          change your mind at any time. See the{' '}
+          <Link to="/cookies" className="font-medium text-nff-text-link underline underline-offset-4">
+            cookie policy
+          </Link>{' '}
+          for the full list.
         </p>
       </header>
 
@@ -62,7 +67,12 @@ export function PrivacyChoicesPage() {
           aria-live="polite"
           className="rounded-xl border bg-nff-bg-surface-sunken p-4"
         >
-          {current ? (
+          {current?.source === 'gpc' ? (
+            <p className="nff-body-md">
+              Your browser is sending a <strong>Global Privacy Control</strong> signal, so
+              analytics are <strong>off</strong>. You can still turn them on below.
+            </p>
+          ) : current ? (
             <p className="flex items-start gap-2 nff-body-md">
               {updated && (
                 <CheckCircle2

@@ -101,8 +101,8 @@ export function ProfilePage() {
         </div>
       </section>
 
-      <form onSubmit={save} noValidate aria-labelledby="profile-heading" className="flex flex-col gap-6">
-        <h2 id="profile-heading" className="nff-heading-h3">Profile details</h2>
+      <form onSubmit={save} noValidate aria-labelledby="profile-heading" className="grid gap-6 lg:grid-cols-2 lg:gap-x-8">
+        <h2 id="profile-heading" className="nff-heading-h3 lg:col-span-2">Profile details</h2>
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="display-name">Display name</Label>
           <Input
@@ -149,7 +149,7 @@ export function ProfilePage() {
           </p>
         </div>
 
-        <div className="sticky bottom-0 -mx-1 flex gap-3 border-t bg-background/95 p-3 backdrop-blur">
+        <div className="sticky bottom-0 -mx-1 flex gap-3 border-t bg-background/95 p-3 backdrop-blur lg:col-span-2">
           <Button type="submit" className="h-11" disabled={!dirty || saving}>
             {saving && (
               <Loader2 aria-hidden="true" className="size-4 animate-spin" />

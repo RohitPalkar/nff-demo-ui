@@ -45,7 +45,7 @@ export function LearnProgressPage() {
   const data = query.data
 
   return (
-    <div className="mx-auto flex max-w-[1440px] flex-col gap-10 px-4 py-8 sm:px-6 md:gap-12 md:py-12 lg:px-10 [&>*]:max-w-[1120px]">
+    <div className="mx-auto flex max-w-[1440px] flex-col gap-10 px-4 py-8 sm:px-6 md:gap-12 md:py-12 lg:px-10">
       <header className="flex flex-col gap-2">
         <h1 className="nff-heading-h1 text-foreground">Your Progress</h1>
         <p className="max-w-2xl nff-body-lg text-nff-text-secondary">
@@ -58,7 +58,7 @@ export function LearnProgressPage() {
       {isPreview && (
         <p
           role="note"
-          className="flex max-w-3xl items-start gap-3 rounded-lg border border-nff-border-default bg-nff-bg-surface p-4 nff-body-sm text-nff-text-secondary"
+          className="flex items-start gap-3 rounded-lg border border-nff-border-default bg-nff-bg-surface p-4 nff-body-sm text-nff-text-secondary"
         >
           <Eye aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-nff-text-brand" />
           Preview mode. Progress belongs to each learner, so none is shown, and nothing you open here is
@@ -108,12 +108,14 @@ export function LearnProgressPage() {
           </HomeSection>
 
           {!data.isPreview && (
-            <div className="grid gap-10 md:gap-12 lg:grid-cols-2 lg:gap-10">
+            // Wide list of completed lessons beside a narrow, sticky activity
+            // timeline, so neither column leaves a large empty area.
+            <div className="grid items-start gap-10 md:gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(320px,380px)] lg:gap-10">
               <HomeSection id="progress-history">
                 <HomeSectionHeader
                   id="progress-history"
                   title="Completed lessons"
-                  description="Newest first, with the date when one was recorded."
+                  description="Grouped by stage, or newest first."
                 />
                 {data.history.dated.length + data.history.undated.length > 0 ? (
                   <LearningHistory
@@ -131,7 +133,10 @@ export function LearnProgressPage() {
                 )}
               </HomeSection>
 
-              <HomeSection id="progress-activity">
+              <HomeSection
+                id="progress-activity"
+                className="rounded-lg border border-nff-border-default bg-nff-bg-surface p-5 lg:sticky lg:top-24"
+              >
                 <HomeSectionHeader
                   id="progress-activity"
                   title="Recent activity"
@@ -140,10 +145,10 @@ export function LearnProgressPage() {
                 {data.timeline.length > 0 ? (
                   <ActivityTimeline events={data.timeline} />
                 ) : (
-                  <HomeEmptyState
-                    title="No activity recorded yet"
-                    description="When you start or complete a lesson, it appears here with the time it happened."
-                  />
+                  <p className="nff-body-sm text-nff-text-secondary">
+                    No activity recorded yet. When you start or complete a lesson, it appears here with the time it
+                    happened.
+                  </p>
                 )}
               </HomeSection>
             </div>

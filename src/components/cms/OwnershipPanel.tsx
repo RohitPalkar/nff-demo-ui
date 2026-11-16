@@ -40,7 +40,7 @@ export function OwnershipPanel({ item, onChanged }: { item: CmsItem; onChanged: 
             save({ ownerId: value === NONE ? null : value })
           }}
         >
-          <SelectTrigger id="content-owner" className="w-full">
+          <SelectTrigger id="content-owner" className="w-full data-[size=default]:h-11">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>

@@ -1,4 +1,5 @@
 import { CONTENT_VIDEOS } from '@/config/contentVideos'
+import { SOW_SCOPE } from '@/config/sowScope'
 import type { VideoMedia } from '@/types'
 import { getResource } from './catalogue'
 
@@ -7,6 +8,8 @@ import { getResource } from './catalogue'
  * (the learning model) wins over the demo config.
  */
 export function getContentVideo(itemId: string): VideoMedia | undefined {
+  // Video is out of scope in SOW v1.3 (see config/sowScope.ts).
+  if (!SOW_SCOPE.video) return undefined
   return getResource(itemId)?.video ?? CONTENT_VIDEOS[itemId]
 }
 

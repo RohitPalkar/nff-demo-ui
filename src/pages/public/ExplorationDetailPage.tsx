@@ -168,7 +168,7 @@ export function ExplorationDetailPage() {
 
       <article className="pb-16 md:pb-24">
         <header className="nff-content pt-8 md:pt-12">
-          <div className="nff-reading flex flex-col gap-5">
+          <div className="nff-reading mx-auto flex flex-col gap-5">
             <Link
               to={`/explorations?tab=${item.category}`}
               className="inline-flex w-fit items-center gap-1.5 nff-overline text-nff-text-brand hover:text-nff-text-link-hover nff-focus-ring"

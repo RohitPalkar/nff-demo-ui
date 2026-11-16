@@ -196,6 +196,8 @@ export interface ConsentRecord {
   analytics: boolean
   updatedAt: string
   policyVersion: string
+  /** 'gpc': applied from the browser's Global Privacy Control signal, not a saved choice. */
+  source?: 'user' | 'gpc'
 }
 
 export interface HomeTab {

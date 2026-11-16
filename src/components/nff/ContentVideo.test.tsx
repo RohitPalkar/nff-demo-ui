@@ -2,7 +2,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { act, createEvent, fireEvent, render, screen } from '@testing-library/react'
 import type { ReactNode } from 'react'
 import { MemoryRouter } from 'react-router-dom'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { ContentVideo } from '@/components/nff/ContentVideo'
 import { LibraryContentCard } from '@/components/nff/LibraryContentCard'
 import { CONTENT_VIDEOS } from '@/config/contentVideos'
@@ -11,6 +11,16 @@ import { PlayerProvider } from '@/features/player/PlayerProvider'
 import { VideoProvider } from '@/features/video/VideoProvider'
 import { getContentVideo, itemIdForVideoProgress, videoProgressId } from '@/services/learning/video'
 import type { VideoMedia } from '@/types'
+
+// These tests cover features switched off for SOW v1.3 (config/sowScope.ts).
+// Run them with every feature on, so the code stays ready to switch back.
+vi.mock('@/config/sowScope', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/config/sowScope')>()
+  return {
+    SOW_SCOPE: Object.fromEntries(Object.keys(actual.SOW_SCOPE).map((key) => [key, true])),
+  }
+})
+
 
 const READY: VideoMedia = {
   availability: 'ready',

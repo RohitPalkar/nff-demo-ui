@@ -96,47 +96,70 @@ describe('page behaviour follows permissions', () => {
     expect(screen.queryByText('Recent activity')).not.toBeInTheDocument()
   })
 
-  it('Publishing: an Editor can follow status but cannot act; an Admin can', async () => {
+  it('Publishing: an Editor can follow status but cannot act; an Admin decides, and sending back needs feedback', async () => {
     const user = userEvent.setup()
     // The Editor sees their own items only: create one in review as them.
     const own = createCmsItem('exploration', { id: 'u-editor', role: 'editor' })
     setCmsStatus(own.id, 'in_review', {}, { id: 'u-editor', role: 'editor' })
     renderPage(<PublishingPage />, EMAIL.editor)
     expect(await screen.findByText(/done by an admin/, {}, T)).toBeInTheDocument()
-    await user.click((await screen.findAllByRole('button', { name: 'Review' }))[0]!)
-    expect(await screen.findByRole('button', { name: 'Approve and publish' })).toBeDisabled()
-    expect(screen.getByRole('button', { name: 'Reject' })).toBeDisabled()
-    expect(screen.getByRole('button', { name: 'Schedule' })).toBeDisabled()
+    await user.click((await screen.findAllByRole('button', { name: /^Review / }))[0]!)
+    expect(await screen.findByText(/Approving, scheduling and sending back are done by an admin/)).toBeInTheDocument()
+    expect(screen.queryByRole('radiogroup')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Approve and publish/ })).not.toBeInTheDocument()
 
     cleanup()
     renderPage(<PublishingPage />, EMAIL.admin)
     await screen.findByRole('heading', { name: 'Review Queue' }, T)
     expect(screen.queryByText(/done by an admin/)).not.toBeInTheDocument()
-    await user.click((await screen.findAllByRole('button', { name: 'Review' }))[0]!)
-    expect(await screen.findByRole('button', { name: 'Reject' })).toBeEnabled()
+    await user.click((await screen.findAllByRole('button', { name: /^Review / }))[0]!)
+    const decision = await screen.findByRole('radiogroup')
+    await user.click(within(decision).getByRole('radio', { name: /Send back/ }))
+    const send = screen.getByRole('button', { name: 'Send back to author' })
+    expect(send).toBeDisabled()
+    await user.type(screen.getByLabelText('Feedback for the author'), 'Please tighten the opening.')
+    expect(send).toBeEnabled()
   })
 
-  it('Roles: an Admin can change Editors but not Admins or Super admins; a Super admin can change Admins', async () => {
+  it('Publishing: each row says plainly whether it is ready, instead of three stacked checks', async () => {
+    renderPage(<PublishingPage />, EMAIL.admin)
+    const table = await screen.findByRole('table', { name: 'Review queue' }, T)
+    const badges = within(table).getAllByText(/^(Ready to publish|Needs .+)$/)
+    expect(badges.length).toBeGreaterThan(0)
+    expect(within(table).queryByText('Audio ready')).not.toBeInTheDocument()
+  })
+
+  it('Team: an Admin edits Editors through a dialog, and only views Admins and Super admins', async () => {
+    const user = userEvent.setup()
     renderPage(<RolesPage />, EMAIL.admin)
-    expect(await screen.findByRole('combobox', { name: 'Role for Rowan Ellis' })).toBeInTheDocument()
-    expect(screen.queryByRole('combobox', { name: 'Role for Adeola Bankole' })).not.toBeInTheDocument()
-    expect(screen.queryByRole('combobox', { name: 'Role for Imani Okafor' })).not.toBeInTheDocument()
-    const adeola = screen.getByText('Adeola Bankole').closest('tr')!
-    expect(within(adeola).getByText('Super admin')).toBeInTheDocument()
-    expect(within(adeola).getByRole('button', { name: 'Remove' })).toBeDisabled()
+    await user.click(await screen.findByRole('button', { name: 'Edit Rowan Ellis' }, T))
+    const dialog = await screen.findByRole('dialog')
+    expect(within(dialog).getByRole('combobox', { name: 'Role for Rowan Ellis' })).toBeInTheDocument()
+    await user.click(within(dialog).getByRole('button', { name: 'Cancel' }))
+
+    expect(screen.queryByRole('button', { name: 'Edit Adeola Bankole' })).not.toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'View Adeola Bankole' }))
+    const view = await screen.findByRole('dialog')
+    expect(within(view).queryByRole('combobox')).not.toBeInTheDocument()
+    expect(within(view).getByText(/Only a Super admin can change an Admin or a Super admin/)).toBeInTheDocument()
+    expect(within(view).getByRole('button', { name: /Deactivate/ })).toBeDisabled()
+    await user.click(within(view).getAllByRole('button', { name: 'Close' })[0]!)
+    expect(await screen.findByRole('button', { name: 'View Imani Okafor' })).toBeInTheDocument()
 
     cleanup()
     renderPage(<RolesPage />, EMAIL.superAdmin)
-    expect(await screen.findByRole('combobox', { name: 'Role for Imani Okafor' })).toBeInTheDocument()
-    // The only Super admin is you: removal is refused.
-    expect(within(screen.getByText('Adeola Bankole').closest('tr')!).getByRole('button', { name: 'Remove' })).toBeDisabled()
+    expect(await screen.findByRole('button', { name: 'Edit Imani Okafor' }, T)).toBeInTheDocument()
+    // The only Super admin is you: deactivating yourself is refused.
+    await user.click(screen.getByRole('button', { name: 'Edit Adeola Bankole' }))
+    expect(within(await screen.findByRole('dialog')).getByRole('button', { name: /Deactivate/ })).toBeDisabled()
   })
 
-  it('Roles: the matrix is read from the registry, with Admin and Super admin as separate columns', async () => {
+  it('Roles: the comparison is read from the registry, with Admin and Super admin as separate columns', async () => {
     const user = userEvent.setup()
     renderPage(<RolesPage />, EMAIL.superAdmin)
-    await user.click(await screen.findByRole('tab', { name: 'Roles' }))
-    const table = await screen.findByRole('table')
+    await user.click(await screen.findByRole('tab', { name: 'Roles & permissions' }, T))
+    await user.click(await screen.findByRole('button', { name: 'Compare all roles' }))
+    const table = await screen.findByRole('table', { name: 'Permissions by role' })
     const headers = within(table).getAllByRole('columnheader').map((header) => header.textContent)
     expect(headers).toEqual(expect.arrayContaining(['Admin', 'Super admin']))
     expect(within(table).getByText('roles.manage')).toBeInTheDocument()

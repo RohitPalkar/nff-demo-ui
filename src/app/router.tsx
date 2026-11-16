@@ -1,3 +1,4 @@
+import { SOW_SCOPE } from '@/config/sowScope'
 import { createBrowserRouter, Navigate } from 'react-router-dom'
 import { AuthLayout } from '@/app/layouts/AuthLayout'
 import { CmsLayout } from '@/app/layouts/CmsLayout'
@@ -37,6 +38,9 @@ import { HomePage } from '@/pages/public/HomePage'
 import { MeditationDetailPage } from '@/pages/public/MeditationDetailPage'
 import { MeditationsPage } from '@/pages/public/MeditationsPage'
 import { ComingSoonPage } from '@/pages/system/ComingSoonPage'
+import { CookiePolicyPage } from '@/pages/public/legal/CookiePolicyPage'
+import { PrivacyPolicyPage } from '@/pages/public/legal/PrivacyPolicyPage'
+import { TermsPage } from '@/pages/public/legal/TermsPage'
 import { ForbiddenPage } from '@/pages/system/ForbiddenPage'
 import { NotFoundPage } from '@/pages/system/NotFoundPage'
 import { ServerErrorPage } from '@/pages/system/ServerErrorPage'
@@ -55,8 +59,10 @@ export const router = createBrowserRouter(
       { path: 'explorations/:slug', element: <ExplorationDetailPage /> },
       { path: 'meditations', element: <MeditationsPage /> },
       { path: 'meditations/:slug', element: <MeditationDetailPage /> },
-      { path: 'privacy', element: <ComingSoonPage title="Privacy" /> },
-      { path: 'terms', element: <ComingSoonPage title="Terms" /> },
+      // Sample legal pages (SOW §3.1 #9); NFF's counsel supplies the final text.
+      { path: 'privacy', element: <PrivacyPolicyPage /> },
+      { path: 'terms', element: <TermsPage /> },
+      { path: 'cookies', element: <CookiePolicyPage /> },
       {
         path: 'accessibility',
         element: <ComingSoonPage title="Accessibility" />,
@@ -80,14 +86,13 @@ export const router = createBrowserRouter(
         element: <VerifyEmailPage />,
       },
       { path: '/login', element: <LoginPage /> },
-      {
-        path: '/forgot-password',
-        element: <ForgotPasswordPage />,
-      },
-      {
-        path: '/reset-password',
-        element: <ResetPasswordPage />,
-      },
+      // Password reset is not in SOW v1.3 (OTP sign-in, no passwords).
+      ...(SOW_SCOPE.passwordReset
+        ? [
+            { path: '/forgot-password', element: <ForgotPasswordPage /> },
+            { path: '/reset-password', element: <ResetPasswordPage /> },
+          ]
+        : []),
     ],
   },
   // Old practitioner URLs: redirect into /learn, keeping query and hash.
@@ -122,7 +127,10 @@ export const router = createBrowserRouter(
         children: [
           { index: true, element: <Navigate to="profile" replace /> },
           { path: 'profile', element: <ProfilePage /> },
-          { path: 'preferences', element: <PreferencesPage /> },
+          // Playback preferences are not in SOW v1.3 (profile is name, time zone, email).
+          ...(SOW_SCOPE.playbackPreferences
+            ? [{ path: 'preferences', element: <PreferencesPage /> }]
+            : []),
           { path: 'email', element: <EmailPreferencesPage /> },
           { path: 'privacy', element: <PrivacyPage /> },
         ],

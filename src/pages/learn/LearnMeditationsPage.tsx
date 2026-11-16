@@ -10,6 +10,7 @@ import {
 } from '@/components/learn/library/LibraryControls'
 import { FeaturedResource, LibraryEmptyState } from '@/components/learn/library/ResourceGrid'
 import { MeditationContinueCard, MeditationGrid } from '@/components/learn/meditations/MeditationCards'
+import { SOW_SCOPE } from '@/config/sowScope'
 import { MeditationsHeader } from '@/components/learn/meditations/MeditationsHeader'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useAuth } from '@/features/auth/AuthProvider'
@@ -37,7 +38,8 @@ const PAGE_SIZE = 24
 export function LearnMeditationsPage() {
   const { user } = useAuth()
   const [params, setParams] = useSearchParams()
-  const q = params.get('q') ?? ''
+  // Search is not in SOW v1.3; ignore a ?q= left in an old link.
+  const q = SOW_SCOPE.librarySearch ? (params.get('q') ?? '') : ''
   const category = parseCategory(params.get('category'))
   const readyOnly = params.get('ready') === '1'
   const sort = parseLibrarySort(params.get('sort'))
@@ -116,7 +118,8 @@ export function LearnMeditationsPage() {
               <h2 id="meditations-continue" className="nff-heading-h3 text-foreground">
                 Continue listening
               </h2>
-              <ul className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {/* auto-fit: one or two saved meditations stretch across the row instead of leaving an empty column (at most three, see continueListening). */}
+              <ul className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-[repeat(auto-fit,minmax(18rem,1fr))]">
                 {view.resume.map((entry) => (
                   <li key={entry.item.id}>
                     <MeditationContinueCard entry={entry} />

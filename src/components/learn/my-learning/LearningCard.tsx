@@ -1,3 +1,4 @@
+import { SOW_SCOPE } from '@/config/sowScope'
 import { ArrowRight, Check, Route } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { LearnProgress } from '@/components/learn/home/homeParts'
@@ -75,10 +76,10 @@ export function LearningCard({ item }: { item: MyLearningItem }) {
     item.lastAccessedAt ? `Last accessed ${formatDate(item.lastAccessedAt)}` : null,
     item.preview
       ? 'Preview: not assigned to you'
-      : item.assignedAt
+      : SOW_SCOPE.assignmentDates && item.assignedAt
         ? `Assigned ${formatDate(item.assignedAt)}`
         : null,
-    item.dueAt ? `Due ${formatDate(item.dueAt)}` : null,
+    SOW_SCOPE.assignmentDates && item.dueAt ? `Due ${formatDate(item.dueAt)}` : null,
   ].filter(Boolean)
 
   return (

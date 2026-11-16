@@ -1,5 +1,6 @@
 import { DEMO_PATHS, type DemoPathConfig } from '@/config/demoPaths'
 import { content, stages } from '@/mocks/db'
+import { withCmsPreview } from '@/services/previewAccess'
 import type {
   ContentItem,
   Lesson,
@@ -47,7 +48,7 @@ export function buildResource(item: ContentItem): Resource {
     status: item.published ? 'published' : 'draft',
     previewable: isReading
       ? true
-      : item.preview && item.transcode === 'ready',
+      : withCmsPreview(item).preview && item.transcode === 'ready',
   }
 }
 

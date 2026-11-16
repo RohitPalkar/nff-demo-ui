@@ -61,10 +61,14 @@ describe('Progress page', () => {
       expect.stringMatching(/^\/learn\/paths\/meadow-journey\/lessons\//),
     )
 
-    // Seeded completions carry no date, and say so.
+    // Seeded completions carry no date, and say so (once, plus per row for screen readers).
     const history = screen.getByRole('region', { name: 'Completed lessons' })
-    expect(within(history).getAllByText(/date not recorded/).length).toBeGreaterThan(0)
+    expect(within(history).getAllByText(/date not recorded/i).length).toBeGreaterThan(0)
+    // Grouped by stage by default; "Newest first" re-orders in place.
+    expect(within(history).getByRole('button', { name: 'By stage' })).toHaveAttribute('aria-pressed', 'true')
     await user.click(within(history).getByRole('button', { name: `Show all ${done} completed lessons` }))
+    expect(within(history).getAllByRole('link')).toHaveLength(done)
+    await user.click(within(history).getByRole('button', { name: 'Newest first' }))
     expect(within(history).getAllByRole('link')).toHaveLength(done)
 
     expect(screen.getByRole('region', { name: 'Recent activity' })).toHaveTextContent('No activity recorded yet')

@@ -38,7 +38,7 @@ export function PathOverviewPage({ path }: { path: LearningPath }) {
   }
 
   return (
-    <div className="mx-auto flex max-w-[1120px] flex-col gap-8 px-4 py-8 sm:px-6 md:gap-10 md:py-12 lg:px-10">
+    <div className="mx-auto flex max-w-[1440px] flex-col gap-8 px-4 py-8 sm:px-6 md:gap-10 md:py-12 lg:px-10">
       <LearningPathHeader data={data} />
       <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_320px] lg:gap-10">
         <div className="lg:order-last lg:sticky lg:top-[calc(var(--nff-layout-header-height,64px)+24px)]">

@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { content } from '@/mocks/db'
 import { canAccessLesson, canAccessResource, isFull, type AccessContext } from '@/services/learning/access'
 import { getAccessContext } from '@/services/learning/accessContext'
@@ -16,6 +16,16 @@ import { buildMyLearning } from '@/services/learning/myLearning'
 import { buildPathPage } from '@/services/learning/pathPage'
 import { pathCompletion } from '@/services/learning/progress'
 import { PROGRESS_STORE_VERSION, type LearningProgressStore, type Role } from '@/types'
+
+// These tests cover features switched off for SOW v1.3 (config/sowScope.ts).
+// Run them with every feature on, so the code stays ready to switch back.
+vi.mock('@/config/sowScope', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/config/sowScope')>()
+  return {
+    SOW_SCOPE: Object.fromEntries(Object.keys(actual.SOW_SCOPE).map((key) => [key, true])),
+  }
+})
+
 
 const learner = { id: 'u-demo', role: 'practitioner' as Role }
 const NOW = '2026-11-10T09:00:00.000Z'

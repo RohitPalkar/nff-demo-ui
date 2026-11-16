@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { NavLink, Outlet } from 'react-router-dom'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
+import { SOW_SCOPE } from '@/config/sowScope'
 import { useAuth } from '@/features/auth/AuthProvider'
 import { formatDate } from '@/lib/format'
 import { cancelDeletion, getDeletion } from '@/services/account'
@@ -9,7 +10,10 @@ import { cancelDeletion, getDeletion } from '@/services/account'
 // Same names as the account menu, so each place reads the same.
 const TABS = [
   { label: 'My Profile', to: '/account/profile' },
-  { label: 'Preferences', to: '/account/preferences' },
+  // Not in SOW v1.3 (see config/sowScope.ts).
+  ...(SOW_SCOPE.playbackPreferences
+    ? [{ label: 'Preferences', to: '/account/preferences' }]
+    : []),
   { label: 'Email Preferences', to: '/account/email' },
   { label: 'Privacy & Security', to: '/account/privacy' },
 ]
@@ -74,7 +78,7 @@ export function AccountLayout() {
         </ul>
       </nav>
 
-      <div className="max-w-2xl">
+      <div>
         <Outlet context={{ deletion, onDeletionChange: setDeletion }} />
       </div>
     </div>

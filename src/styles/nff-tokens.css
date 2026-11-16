@@ -115,6 +115,8 @@
   --nff-neutral-500: #85877F;
   --nff-neutral-600: #62655D;
   --nff-neutral-700: #555950;
+  /* AAA text tone: 7:1 on every light surface (ivory-100, sage-100). */
+  --nff-neutral-750: #474A42;
   --nff-neutral-800: #3C3F37;
   --nff-neutral-900: #252820;
   --nff-neutral-950: #171914;
@@ -150,41 +152,43 @@
   --nff-color-bg-selected: var(--nff-sage-100);
   --nff-color-bg-disabled: var(--nff-neutral-100);
   --nff-color-bg-brand-default: var(--nff-forest-800);
-  --nff-color-bg-brand-hover: var(--nff-forest-700);
-  --nff-color-bg-brand-pressed: var(--nff-forest-900);
+  --nff-color-bg-brand-hover: var(--nff-forest-900);
+  --nff-color-bg-brand-pressed: var(--nff-forest-950);
   --nff-color-bg-brand-subtle: var(--nff-sage-100);
   --nff-color-bg-brand-subtle-hover: var(--nff-sage-200);
   --nff-color-bg-secondary-default: var(--nff-sage-100);
   --nff-color-bg-secondary-hover: var(--nff-sage-200);
-  --nff-color-bg-secondary-pressed: var(--nff-sage-300);
+  --nff-color-bg-secondary-pressed: var(--nff-sage-200);
   --nff-color-bg-accent-default: var(--nff-clay-500);
   --nff-color-bg-accent-subtle: var(--nff-clay-50);
-  --nff-color-bg-success-default: var(--nff-success-600);
+  --nff-color-bg-success-default: var(--nff-success-700);
   --nff-color-bg-success-subtle: var(--nff-success-50);
-  --nff-color-bg-warning-default: var(--nff-warning-600);
+  --nff-color-bg-warning-default: var(--nff-warning-700);
   --nff-color-bg-warning-subtle: var(--nff-warning-50);
-  --nff-color-bg-error-default: var(--nff-error-600);
+  --nff-color-bg-error-default: var(--nff-error-700);
   --nff-color-bg-error-subtle: var(--nff-error-50);
-  --nff-color-bg-info-default: var(--nff-info-600);
+  --nff-color-bg-info-default: var(--nff-info-700);
   --nff-color-bg-info-subtle: var(--nff-info-50);
-  --nff-color-bg-error-hover: var(--nff-error-700);
+  --nff-color-bg-error-hover: var(--nff-error-800);
   /* Text — all ≥4.5:1 on ivory, white, sage-100 and CMS grey (see docs). */
   --nff-color-text-primary: var(--nff-neutral-900);
-  --nff-color-text-secondary: var(--nff-neutral-700);
-  --nff-color-text-tertiary: var(--nff-neutral-600);
+  /* WCAG 2.2 AAA (1.4.6): every text token below is 7:1 or more on the
+     light surfaces it sits on (white, ivory-50/100, sage-50/100, clay-50). */
+  --nff-color-text-secondary: var(--nff-neutral-800);
+  --nff-color-text-tertiary: var(--nff-neutral-750);
   --nff-color-text-disabled: var(--nff-neutral-400);
-  --nff-color-text-placeholder: var(--nff-neutral-600);
+  --nff-color-text-placeholder: var(--nff-neutral-750);
   --nff-color-text-inverse: var(--nff-ivory-50);
   --nff-color-text-on-brand: var(--nff-neutral-0);
   --nff-color-text-on-status: var(--nff-neutral-0);
-  --nff-color-text-brand: var(--nff-forest-800);
-  --nff-color-text-accent: var(--nff-clay-700);
-  --nff-color-text-link-default: var(--nff-forest-800);
-  --nff-color-text-link-hover: var(--nff-forest-900);
-  --nff-color-text-success: var(--nff-success-700);
-  --nff-color-text-warning: var(--nff-warning-700);
-  --nff-color-text-error: var(--nff-error-700);
-  --nff-color-text-info: var(--nff-info-700);
+  --nff-color-text-brand: var(--nff-forest-900);
+  --nff-color-text-accent: var(--nff-clay-800);
+  --nff-color-text-link-default: var(--nff-forest-900);
+  --nff-color-text-link-hover: var(--nff-forest-950);
+  --nff-color-text-success: var(--nff-success-800);
+  --nff-color-text-warning: var(--nff-warning-800);
+  --nff-color-text-error: var(--nff-error-800);
+  --nff-color-text-info: var(--nff-info-800);
   --nff-color-icon-primary: var(--nff-neutral-900);
   --nff-color-icon-secondary: var(--nff-neutral-700);
   --nff-color-icon-disabled: var(--nff-neutral-400);
@@ -592,10 +596,10 @@
   --nff-color-bg-hover: rgb(247 245 239 / 0.08);
   --nff-color-bg-pressed: rgb(247 245 239 / 0.14);
   --nff-color-text-primary: var(--nff-ivory-50);                /* 9.39:1 */
-  --nff-color-text-secondary: var(--nff-sage-300);              /* 5.74:1 */
-  --nff-color-text-tertiary: var(--nff-sage-300);
+  --nff-color-text-secondary: var(--nff-sage-200);              /* 7.38:1, AAA */
+  --nff-color-text-tertiary: var(--nff-sage-200);
   --nff-color-text-brand: var(--nff-sage-100);
-  --nff-color-text-accent: var(--nff-clay-200);                 /* 6.20:1 */
+  --nff-color-text-accent: var(--nff-clay-100);                 /* 7:1+ on forest-900, AAA */
   --nff-color-text-link-default: var(--nff-ivory-50);
   --nff-color-text-link-hover: var(--nff-sage-100);
   --nff-color-icon-brand: var(--nff-sage-200);

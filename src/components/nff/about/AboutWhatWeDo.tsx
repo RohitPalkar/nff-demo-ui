@@ -66,7 +66,7 @@ function FormatCard({ format, index }: { format: Format; index: number }) {
       </span>
       <div className="flex flex-col gap-2">
         <h4 className="nff-title-section text-[var(--nff-ivory-50)]">{format.title}</h4>
-        <p className="nff-body-md text-pretty text-[var(--nff-sage-100)]">{format.text}</p>
+        <p className="nff-body-md text-pretty text-[var(--nff-ivory-50)]">{format.text}</p>
       </div>
       <Link
         to={format.to}

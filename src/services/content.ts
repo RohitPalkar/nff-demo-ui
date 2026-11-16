@@ -1,6 +1,7 @@
 import { ApiError, mockApi } from '@/mocks/api'
 import { content, contentById, stages } from '@/mocks/db'
 import { getScenario } from '@/mocks/scenario'
+import { withCmsPreview } from '@/services/previewAccess'
 import {
   loadProgress,
   saveLegacyProgress,
@@ -62,8 +63,9 @@ function withScenarioStatus(item: ContentItem): ContentItem {
   return item
 }
 
+/** Published items, with the audio lock (free preview or members only) an admin set in the CMS. */
 function publishedContent() {
-  return content.filter((item) => item.published)
+  return content.filter((item) => item.published).map(withCmsPreview)
 }
 
 function takeMix(category: Category, topic?: UnderstandTopic): ContentItem[] {
@@ -207,7 +209,7 @@ function findPublishedContent(type: ContentType, slug: string): ContentItem {
       404,
     )
   }
-  return item
+  return withCmsPreview(item)
 }
 
 export async function getContentBySlug(

@@ -9,6 +9,7 @@ import {
   LibrarySort,
   type ActiveFilter,
 } from '@/components/learn/library/LibraryControls'
+import { SOW_SCOPE } from '@/config/sowScope'
 import { LibrarySearch } from '@/components/learn/library/LibrarySearch'
 import { FeaturedResource, LibraryEmptyState, ResourceGrid } from '@/components/learn/library/ResourceGrid'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -38,7 +39,8 @@ const PAGE_SIZE = 24
 export function LibraryPage() {
   const { user } = useAuth()
   const [params, setParams] = useSearchParams()
-  const q = params.get('q') ?? ''
+  // Search is not in SOW v1.3; ignore a ?q= left in an old link.
+  const q = SOW_SCOPE.librarySearch ? (params.get('q') ?? '') : ''
   const category = parseCategory(params.get('category'))
   const format = parseFormat(params.get('format'))
   const sort = parseLibrarySort(params.get('sort'))
@@ -99,7 +101,9 @@ export function LibraryPage() {
             Discover learning resources, practices and ideas to explore at your own pace.
           </p>
         </div>
-        <LibrarySearch value={q} onSearch={(value) => update({ q: value })} />
+        {SOW_SCOPE.librarySearch && (
+          <LibrarySearch value={q} onSearch={(value) => update({ q: value })} />
+        )}
       </header>
 
       {!view ? (

@@ -1,3 +1,4 @@
+import { SOW_SCOPE } from '@/config/sowScope'
 import { Link } from 'react-router-dom'
 import { formatDate, pluralise } from '@/lib/format'
 import { cn } from '@/lib/utils'
@@ -15,7 +16,7 @@ export function LearningPathCard({ entry }: { entry: AssignedPath }) {
   const { path, href, moduleCount, lessonCount, completedCount, percent, status } = entry
   const assignedLine = entry.preview
     ? 'Preview: not assigned to you'
-    : entry.assignedAt
+    : SOW_SCOPE.assignmentDates && entry.assignedAt
       ? `Assigned ${formatDate(entry.assignedAt)}${entry.dueAt ? ` · Due ${formatDate(entry.dueAt)}` : ''}`
       : null
 

@@ -42,7 +42,7 @@ export function Header() {
           1440px frame, so the logo lines up with each panel's content. */}
       <div
         className={cn(
-          'mx-auto flex max-w-[calc(1440px+1.5rem)] items-center gap-4 px-5 sm:px-[3.25rem] lg:grid lg:grid-cols-[1fr_auto_1fr] lg:px-[4.25rem]',
+          'mx-auto flex max-w-[calc(1440px+1.5rem)] items-center gap-4 px-6 sm:px-[3.25rem] lg:grid lg:grid-cols-[1fr_auto_1fr] lg:px-[4.25rem]',
           'transition-[height] duration-[var(--nff-duration-slow)] ease-[var(--nff-easing-standard)]',
           scrolled
             ? 'h-[var(--nff-layout-header-height)] lg:h-[calc(var(--nff-layout-header-height)-8px)]'

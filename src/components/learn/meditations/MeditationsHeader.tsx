@@ -1,3 +1,4 @@
+import { SOW_SCOPE } from '@/config/sowScope'
 import { LibrarySearch } from '@/components/learn/library/LibrarySearch'
 import type { MeditationEntry } from '@/services/learning/meditations'
 
@@ -24,12 +25,14 @@ export function MeditationsHeader({
             Find a little space to pause, listen and return to your practice.
           </p>
         </div>
-        <LibrarySearch
-          value={query}
-          onSearch={onSearch}
-          label="Search meditations"
-          placeholder="Search meditations"
-        />
+        {SOW_SCOPE.librarySearch && (
+          <LibrarySearch
+            value={query}
+            onSearch={onSearch}
+            label="Search meditations"
+            placeholder="Search meditations"
+          />
+        )}
       </div>
       {image && (
         <img

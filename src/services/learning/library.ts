@@ -1,3 +1,4 @@
+import { SOW_SCOPE } from '@/config/sowScope'
 import { resolveVideoState } from '@/features/video/videoState'
 import { content } from '@/mocks/db'
 import { CATEGORY_COPY } from '@/services/content'
@@ -20,7 +21,10 @@ import { getContentVideo } from './video'
  */
 
 export type LibraryFormat = 'article' | 'audio' | 'video'
-export const LIBRARY_FORMATS: readonly LibraryFormat[] = ['article', 'audio', 'video']
+// The video format is out of scope in SOW v1.3 (see config/sowScope.ts).
+export const LIBRARY_FORMATS: readonly LibraryFormat[] = SOW_SCOPE.video
+  ? ['article', 'audio', 'video']
+  : ['article', 'audio']
 
 export const FORMAT_LABEL: Record<LibraryFormat, string> = {
   article: 'Article',

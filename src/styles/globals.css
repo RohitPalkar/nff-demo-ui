@@ -44,15 +44,55 @@
 }
 
 @layer utilities {
+  /*
+   * The one page frame for the public site. Same edges as the inset panels
+   * (home sections, "Begin today", footer) and the header: 24px on phones,
+   * then 12px outer inset + 40/56px inside a 1440px frame. So content on any
+   * page lines up with the panels above and below it.
+   * Was max 1200px with 80px margins, which left catalogue grids narrower
+   * than the panels.
+   */
   .nff-content {
     width: 100%;
-    max-width: var(--nff-layout-content-max);
+    max-width: calc(1440px + 1.5rem);
     margin-inline: auto;
-    padding-inline: var(--nff-layout-margin);
+    padding-inline: 1.5rem; /* phone: same edge as the "Begin today" panel and the logo */
+  }
+
+  @media (min-width: 640px) {
+    .nff-content {
+      padding-inline: 3.25rem; /* 12 + 40 */
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .nff-content {
+      padding-inline: 4.25rem; /* 12 + 56 */
+    }
   }
 
   .nff-reading {
     max-width: var(--nff-layout-reading-measure);
+  }
+
+  /*
+   * WCAG 2.2 AAA 2.5.5 Target Size (Enhanced): every control accepts a
+   * pointer over at least 44x44px, whatever size it is drawn at. An invisible
+   * ::before grows the hit area around the centre; the control looks the same.
+   * :where() keeps `position: relative` at zero specificity, so a component's
+   * own absolute/fixed/sticky positioning still wins.
+   */
+  :where(.nff-target) {
+    position: relative;
+  }
+  .nff-target::before {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: max(100%, var(--nff-size-touch-target-min, 44px));
+    height: max(100%, var(--nff-size-touch-target-min, 44px));
+    transform: translate(-50%, -50%);
   }
 
   .nff-section-gap {

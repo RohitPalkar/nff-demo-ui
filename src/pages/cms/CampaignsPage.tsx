@@ -1,9 +1,10 @@
+import { SOW_SCOPE } from '@/config/sowScope'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { AlertTriangle, Megaphone, Pause, Play, Plus } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { MetricCard, PageHeader } from '@/components/cms/CmsParts'
-import { EmptyState } from '@/components/admin'
+import { CellStack, DataTable, EmptyState } from '@/components/admin'
 import { ErrorState } from '@/components/admin'
 import { StatusChip, type StatusTone } from '@/components/nff/StatusChip'
 import {
@@ -19,14 +20,6 @@ import {
 } from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
 import { formatDate } from '@/lib/format'
 import { users } from '@/mocks/db'
 import { attempt, usePermissions } from '@/features/auth/usePermissions'
@@ -81,10 +74,14 @@ export function CampaignsPage() {
       <PageHeader
         title="Campaigns"
         action={
-          <Button className="h-10" disabled={!can('campaigns.manage')} onClick={() => navigate('/cms/campaigns/new')}>
-            <Plus aria-hidden="true" className="size-4" />
-            New campaign
-          </Button>
+          // SOW v1.3: one daily campaign only. "New campaign" is offered only
+          // to create that one campaign, unless additional campaigns are in scope.
+          (SOW_SCOPE.additionalCampaigns || !daily) && (
+            <Button className="h-10" disabled={!can('campaigns.manage')} onClick={() => navigate('/cms/campaigns/new')}>
+              <Plus aria-hidden="true" className="size-4" />
+              New campaign
+            </Button>
+          )
         }
       />
 
@@ -161,51 +158,79 @@ export function CampaignsPage() {
             <MetricCard label="Failed" value={String(daily.failed)} />
           </section>
 
-          <div className="rounded-xl border bg-card">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>State</TableHead>
-                  <TableHead>Schedule</TableHead>
-                  <TableHead>Audience</TableHead>
-                  <TableHead>Last run</TableHead>
-                  <TableHead>
-                    <span className="sr-only">Actions</span>
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {campaigns.map((campaign) => (
-                  <TableRow key={campaign.id}>
-                    <TableCell className="font-medium">
-                      <Link
-                        to={`/cms/campaigns/${campaign.id}`}
-                        className="text-nff-text-link hover:underline"
-                      >
+          <DataTable
+            caption="Campaigns"
+            noun="campaign"
+            rows={campaigns}
+            getRowId={(campaign) => campaign.id}
+            columns={[
+              {
+                id: 'name',
+                header: 'Name',
+                primary: true,
+                sortValue: (campaign) => campaign.name,
+                cell: (campaign) => (
+                  <CellStack
+                    title={
+                      <Link to={`/cms/campaigns/${campaign.id}`} className="nff-target hover:underline nff-focus-ring">
                         {campaign.name}
                       </Link>
-                    </TableCell>
-                    <TableCell>
-                      <StatusChip tone={STATE_TONE[campaign.state]} icon={Megaphone}>
-                        <span className="capitalize">{campaign.state}</span>
-                      </StatusChip>
-                    </TableCell>
-                    <TableCell>{campaign.schedule}</TableCell>
-                    <TableCell>{campaign.audience}</TableCell>
-                    <TableCell>
-                      {campaign.lastRunAt ? formatDate(campaign.lastRunAt) : '—'}
-                    </TableCell>
-                    <TableCell>
-                      <Button asChild size="sm" variant="outline">
-                        <Link to={`/cms/campaigns/${campaign.id}`}>Edit</Link>
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+                    }
+                    meta={campaign.audience}
+                  />
+                ),
+              },
+              {
+                id: 'state',
+                header: 'State',
+                sortValue: (campaign) => campaign.state,
+                cell: (campaign) => (
+                  <StatusChip tone={STATE_TONE[campaign.state]} icon={Megaphone}>
+                    <span className="capitalize">{campaign.state}</span>
+                  </StatusChip>
+                ),
+              },
+              { id: 'schedule', header: 'Schedule', cell: (campaign) => campaign.schedule },
+              {
+                id: 'sent',
+                header: 'Last send',
+                align: 'end',
+                sortValue: (campaign) => campaign.sent,
+                cell: (campaign) => <span className="tabular-nums">{campaign.sent.toLocaleString()}</span>,
+              },
+              {
+                id: 'last',
+                header: 'Last run',
+                sortValue: (campaign) => campaign.lastRunAt ?? '',
+                cell: (campaign) => <span className="tabular-nums">{campaign.lastRunAt ? formatDate(campaign.lastRunAt) : '—'}</span>,
+              },
+              {
+                id: 'actions',
+                header: 'Actions',
+                hideHeader: true,
+                cell: (campaign) => (
+                  <Button asChild size="sm" variant="outline">
+                    <Link to={`/cms/campaigns/${campaign.id}`} aria-label={`${can('campaigns.manage') ? 'Edit' : 'Open'} ${campaign.name}`}>
+                      {can('campaigns.manage') ? 'Edit' : 'Open'}
+                    </Link>
+                  </Button>
+                ),
+              },
+            ]}
+            search={{ placeholder: 'Search campaigns', text: (campaign) => [campaign.name, campaign.audience] }}
+            filters={[
+              {
+                id: 'state',
+                label: 'State',
+                options: (['running', 'paused', 'scheduled', 'draft'] as const).map((value) => ({
+                  value,
+                  label: value[0]!.toUpperCase() + value.slice(1),
+                })),
+                predicate: (campaign, value) => campaign.state === value,
+              },
+            ]}
+            empty={{ icon: Megaphone, title: 'No campaigns yet', description: 'Create a campaign to start the daily email.' }}
+          />
         </>
       )}
     </div>

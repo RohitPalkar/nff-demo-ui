@@ -1,3 +1,4 @@
+import { SOW_SCOPE } from '@/config/sowScope'
 import { ArrowRight } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { LearnProgress } from '@/components/learn/home/homeParts'
@@ -93,13 +94,13 @@ export function LearningPathProgress({
           <dt className="nff-caption text-nff-text-secondary">How it unlocks</dt>
           <dd className="text-foreground">{UNLOCK_NOTE[data.unlock]}</dd>
         </div>
-        {data.assignedAt && (
+        {SOW_SCOPE.assignmentDates && data.assignedAt && (
           <div className="flex flex-col gap-0.5">
             <dt className="nff-caption text-nff-text-secondary">Assigned</dt>
             <dd className="text-foreground">{formatDate(data.assignedAt)}</dd>
           </div>
         )}
-        {data.dueAt && (
+        {SOW_SCOPE.assignmentDates && data.dueAt && (
           <div className="flex flex-col gap-0.5">
             <dt className="nff-caption text-nff-text-secondary">Due</dt>
             <dd className="text-foreground">{formatDate(data.dueAt)}</dd>

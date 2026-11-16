@@ -60,6 +60,7 @@ export function SortableHead({
   const Icon = !isActive ? ChevronsUpDown : direction === 'asc' ? ArrowUp : ArrowDown
   return (
     <TableHead
+      scope="col"
       aria-sort={isActive ? (direction === 'asc' ? 'ascending' : 'descending') : 'none'}
       className={className}
     >

@@ -8,101 +8,108 @@ import { z } from 'zod'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useAuth } from '@/features/auth/AuthProvider'
-import { DEMO_PASSWORD } from '@/services/auth'
-import { AuthCard, Field, FormAlert, PasswordInput } from './AuthCard'
+import { requestSignInCode } from '@/services/auth'
+import { AuthCard, Field, FormAlert, authLink } from './AuthCard'
+import { AuthHighlights } from './AuthHighlights'
+import { CodeStep } from './CodeStep'
 
 const schema = z.object({
-  email: z.string().email('Enter a valid email address.'),
-  password: z.string().min(1, 'Enter your password.'),
+  email: z.string().trim().email('Enter a valid email address.'),
 })
 type Values = z.infer<typeof schema>
 
+/**
+ * Log in with an email address and a one-time code (SOW v1.3 §3.2 #2 and
+ * §3.3 #1). Practitioners and staff use the same screen; staff land in the
+ * CMS. No passwords and no social sign-in in this phase.
+ */
 export function LoginPage() {
-  const { login } = useAuth()
+  const { signInWithCode } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
+  const state = location.state as { from?: string; email?: string } | null
+  const [sentTo, setSentTo] = useState<string | null>(null)
   const [formError, setFormError] = useState<string | null>(null)
-  const [unverified, setUnverified] = useState(false)
+  const [noAccount, setNoAccount] = useState<string | null>(null)
   const {
     register,
     handleSubmit,
+    getValues,
     formState: { errors, isSubmitting },
-  } = useForm<Values>({ resolver: zodResolver(schema) })
+  } = useForm<Values>({
+    resolver: zodResolver(schema),
+    defaultValues: { email: state?.email ?? '' },
+  })
 
-  const from =
-    (location.state as { from?: string } | null)?.from ?? undefined
-
-  async function onSubmit(values: Values) {
+  async function sendCode(values: Values) {
     setFormError(null)
-    setUnverified(false)
+    setNoAccount(null)
     try {
-      const user = await login(values.email, values.password)
-      const fallback = user.role === 'practitioner' ? LEARN_HOME : '/cms'
-      navigate(from ?? fallback, { replace: true })
+      const { email } = await requestSignInCode(values.email)
+      setSentTo(email)
     } catch (error) {
       const e = error as { code?: string; message?: string }
-      if (e.code === 'unverified') setUnverified(true)
+      if (e.code === 'no_account') setNoAccount(values.email.trim())
       setFormError(e.message ?? 'Something went wrong. Please try again.')
     }
   }
 
+  if (sentTo) {
+    return (
+      <CodeStep
+        email={sentTo}
+        submitLabel="Log in"
+        onChangeEmail={() => setSentTo(null)}
+        onVerify={async (code) => {
+          const user = await signInWithCode(sentTo, code)
+          const fallback = user.role === 'practitioner' ? LEARN_HOME : '/cms'
+          navigate(state?.from ?? fallback, { replace: true })
+        }}
+      />
+    )
+  }
+
   return (
     <AuthCard
-      title="Welcome back"
-      description="Log in to pick up where you left off."
-      footer={
-        <>
-          New here?{' '}
-          <Link to="/signup" className="text-nff-text-link underline">
+      title="Log in"
+      description={
+        <p>
+          New to Meadow?{' '}
+          <Link to="/signup" state={{ email: getValues('email') }} className={authLink}>
             Create a free account
           </Link>
-        </>
+        </p>
       }
+      footer={<AuthHighlights heading="Pick up where you left off" />}
     >
-      <form
-        onSubmit={handleSubmit(onSubmit)}
-        noValidate
-        className="flex flex-col gap-4"
-      >
+      <form onSubmit={handleSubmit(sendCode)} noValidate className="flex flex-col gap-4">
         <FormAlert message={formError} />
-        {unverified && (
-          <Link to="/verify-email" className="nff-body-sm text-nff-text-link underline">
-            Go to email verification
+        {noAccount && (
+          <Link to="/signup" state={{ email: noAccount }} className={`-mt-1 w-fit nff-body-sm ${authLink}`}>
+            Create an account with {noAccount}
           </Link>
         )}
-        <Field label="Email" error={errors.email?.message}>
+        <Field label="Email address" error={errors.email?.message}>
           {(props) => (
             <Input
               {...props}
               type="email"
               autoComplete="email"
+              placeholder="you@example.com"
+              className="h-12 rounded-xl px-4 text-base md:text-base"
               {...register('email')}
             />
           )}
         </Field>
-        <Field label="Password" error={errors.password?.message}>
-          {(props) => (
-            <PasswordInput
-              {...props}
-              autoComplete="current-password"
-              {...register('password')}
-            />
-          )}
-        </Field>
-        <Link
-          to="/forgot-password"
-          className="w-fit nff-body-sm text-nff-text-link underline"
-        >
-          Forgot password?
-        </Link>
-        <Button type="submit" className="h-11" disabled={isSubmitting}>
-          {isSubmitting && (
-            <Loader2 aria-hidden="true" className="size-4 animate-spin" />
-          )}
-          Log in
+        <Button type="submit" className="h-12 rounded-full text-base" disabled={isSubmitting}>
+          {isSubmitting && <Loader2 aria-hidden="true" className="size-4 animate-spin" />}
+          Continue
         </Button>
-        <p className="nff-caption text-muted-foreground">
-          Demo: practitioner@nff.demo / {DEMO_PASSWORD}
+        <p className="text-center nff-body-sm text-muted-foreground">
+          We’ll email you a 6-digit code. No password needed.
+        </p>
+        <p className="text-center nff-caption text-muted-foreground">
+          Demo: practitioner@nff.demo or editor@nff.demo
         </p>
       </form>
     </AuthCard>

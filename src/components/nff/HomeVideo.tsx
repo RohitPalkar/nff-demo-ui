@@ -2,6 +2,7 @@ import { ArrowRight } from 'lucide-react'
 import type { CSSProperties } from 'react'
 import { ResourceVideo } from '@/components/nff/ResourceVideo'
 import { LANDING_VIDEO, type LandingVideo } from '@/config/landingVideo'
+import { SOW_SCOPE } from '@/config/sowScope'
 import { useRevealOnce } from '@/lib/useRevealOnce'
 
 const delay = (ms: number) => ({ '--nff-delay': `${ms}ms` }) as CSSProperties
@@ -23,7 +24,10 @@ interface HomeVideoProps {
  * Playing it pauses audio, leaving the page while it plays hands it to the
  * mini-player, and signed-in viewers resume where they stopped.
  */
-export function HomeVideo({ entry = LANDING_VIDEO }: HomeVideoProps) {
+export function HomeVideo({
+  // Video is out of scope in SOW v1.3 (see config/sowScope.ts).
+  entry = SOW_SCOPE.video ? LANDING_VIDEO : null,
+}: HomeVideoProps) {
   if (!entry) return null
   return <HomeVideoSection entry={entry} />
 }

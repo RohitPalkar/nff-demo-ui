@@ -18,16 +18,20 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { useAuth } from '@/features/auth/AuthProvider'
+import { SOW_SCOPE } from '@/config/sowScope'
 
 const itemClass =
   'cursor-pointer rounded-md px-2.5 py-2 nff-label-md focus:bg-nff-bg-hover'
 
 const ACCOUNT_LINKS = [
   { label: 'My Profile', to: '/account/profile', icon: UserIcon },
-  { label: 'Preferences', to: '/account/preferences', icon: SlidersHorizontal },
+  // Not in SOW v1.3 (see config/sowScope.ts).
+  ...(SOW_SCOPE.playbackPreferences
+    ? [{ label: 'Preferences', to: '/account/preferences', icon: SlidersHorizontal }]
+    : []),
   { label: 'Email Preferences', to: '/account/email', icon: Mail },
   { label: 'Privacy & Security', to: '/account/privacy', icon: Shield },
-] as const
+]
 
 /**
  * Avatar menu. Identity comes from the signed-in session. Radix supplies

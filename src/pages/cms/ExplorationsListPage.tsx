@@ -1,88 +1,45 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { FileText, MoreHorizontal, Plus, SearchX } from 'lucide-react'
+import { FileText, MoreHorizontal, Plus, Star } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
-import { attempt, usePermissions } from '@/features/auth/usePermissions'
-import {
-  ContentStatusChip,
-  PageHeader,
-  Pager,
-  paginate,
-} from '@/components/cms/CmsParts'
-import { EmptyState } from '@/components/admin'
-import { ErrorState } from '@/components/admin'
+import { CellStack, ConfirmationDialog, DataTable, ErrorState, LoadingState, type DataTableColumn } from '@/components/admin'
+import { CATEGORY_OPTIONS, ContentStatusChip, PageHeader, ReadinessBadge, displayTitle } from '@/components/cms/CmsParts'
+import { SOW_SCOPE } from '@/config/sowScope'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Input } from '@/components/ui/input'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import { Skeleton } from '@/components/ui/skeleton'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { attempt, usePermissions } from '@/features/auth/usePermissions'
 import { formatDate } from '@/lib/format'
 import { stages } from '@/mocks/db'
-import {
-  createCmsItem,
-  duplicateCmsItem,
-  listCmsItems,
-  ownerLabel,
-  setCmsStatus,
-  type CmsStatus,
-} from '@/services/cms'
+import { createCmsItem, duplicateCmsItem, listCmsItems, ownerLabel, setCmsStatus, type CmsItem } from '@/services/cms'
 
-const TABS: Array<{ value: 'all' | CmsStatus; label: string }> = [
-  { value: 'all', label: 'All' },
-  { value: 'draft', label: 'Draft' },
-  { value: 'in_review', label: 'In review' },
-  { value: 'published', label: 'Published' },
-  { value: 'scheduled', label: 'Scheduled' },
-]
+const STAGE_OPTIONS = stages.map((entry) => ({ value: entry.id, label: `Stage ${entry.number} · ${entry.title}` }))
 
 export function ExplorationsListPage() {
+  const [unpublishing, setUnpublishing] = useState<CmsItem | null>(null)
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const { can } = usePermissions()
-  const query = useQuery({
-    queryKey: ['cms', 'explorations'],
-    queryFn: () => listCmsItems('exploration'),
-  })
-  const [tab, setTab] = useState<'all' | CmsStatus>('all')
-  const [search, setSearch] = useState('')
-  const [stage, setStage] = useState('all')
-  const [category, setCategory] = useState('all')
-  const [page, setPage] = useState(1)
+  const query = useQuery({ queryKey: ['cms', 'explorations'], queryFn: () => listCmsItems('exploration') })
 
   function refresh() {
     void queryClient.invalidateQueries({ queryKey: ['cms'] })
   }
 
-  if (query.isPending) {
-    return (
-      <div aria-busy="true" className="flex flex-col gap-4">
-        <span className="nff-visually-hidden">Loading explorations</span>
-        <Skeleton className="h-10 w-64" />
-        <Skeleton className="h-64 w-full rounded-xl" />
-      </div>
-    )
+  function create() {
+    let created: CmsItem | undefined
+    if (!attempt(() => (created = createCmsItem('exploration')))) return
+    refresh()
+    navigate(`/cms/explorations/${created!.id}`)
   }
+
+  if (query.isPending) return <LoadingState label="Loading explorations" rows={6} />
   if (query.isError) {
     return (
       <ErrorState
@@ -93,221 +50,161 @@ export function ExplorationsListPage() {
     )
   }
 
-  const all = query.data
-  const filtered = all.filter(
-    (item) =>
-      (tab === 'all' || item.status === tab) &&
-      (stage === 'all' || item.stageId === stage) &&
-      (category === 'all' || item.category === category) &&
-      item.title.toLowerCase().includes(search.trim().toLowerCase()),
-  )
-  const paged = paginate(filtered, page)
+  const columns: Array<DataTableColumn<CmsItem>> = [
+    {
+      id: 'title',
+      header: 'Title',
+      primary: true,
+      sortValue: (item) => displayTitle(item),
+      cell: (item) => (
+        <CellStack
+          title={
+            <Link to={`/cms/explorations/${item.id}`} className="nff-target hover:underline nff-focus-ring">
+              {displayTitle(item)}
+              {item.featured && <Star aria-label="Featured on home" className="ml-1.5 inline size-3.5 fill-current text-nff-text-warning" />}
+            </Link>
+          }
+          meta={<span className="capitalize">{item.category}</span>}
+        />
+      ),
+    },
+    {
+      id: 'stage',
+      header: 'Stage',
+      sortValue: (item) => stages.find((entry) => entry.id === item.stageId)?.number ?? 99,
+      cell: (item) => stages.find((entry) => entry.id === item.stageId)?.title ?? '—',
+    },
+    {
+      id: 'status',
+      header: 'Status',
+      sortValue: (item) => item.status,
+      cell: (item) => (
+        <div className="flex flex-col items-end gap-0.5 md:items-start">
+          <ContentStatusChip status={item.status} />
+          {item.revision && <span className="nff-caption text-[var(--admin-text-muted)]">Revision {item.revision.status.replace('_', ' ')}</span>}
+        </div>
+      ),
+    },
+    { id: 'ready', header: 'Readiness', cell: (item) => <ReadinessBadge item={item} /> },
+    ...(SOW_SCOPE.contentOwnership
+      ? [{ id: 'owner', header: 'Owner', sortValue: (item: CmsItem) => ownerLabel(item), cell: (item: CmsItem) => ownerLabel(item) }]
+      : []),
+    {
+      id: 'updated',
+      header: 'Updated',
+      sortValue: (item) => item.updatedAt,
+      cell: (item) => <span className="tabular-nums">{formatDate(item.updatedAt)}</span>,
+    },
+    {
+      id: 'actions',
+      header: 'Actions',
+      hideHeader: true,
+      cell: (item) => (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon" className="size-8" aria-label={`Actions for ${displayTitle(item)}`}>
+              <MoreHorizontal aria-hidden="true" className="size-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => navigate(`/cms/explorations/${item.id}`)}>Edit</DropdownMenuItem>
+            <DropdownMenuItem disabled={!can('content.preview')} onClick={() => navigate(`/cms/preview/exploration/${item.id}`)}>
+              Preview
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              disabled={!can('content.create')}
+              onClick={() => {
+                if (!attempt(() => duplicateCmsItem(item))) return
+                refresh()
+                toast.success('Duplicated as a draft.')
+              }}
+            >
+              Duplicate
+            </DropdownMenuItem>
+            {can('content.unpublish') && item.status === 'published' && (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  className="text-nff-text-error"
+                  onClick={() => setUnpublishing(item)}
+                >
+                  Unpublish
+                </DropdownMenuItem>
+              </>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      ),
+    },
+  ]
 
   return (
     <div className="flex flex-col gap-5">
       <PageHeader
         title="Explorations"
-        description={`${all.length} in the library`}
+        description="Written lessons: drafts, reviews and what is live."
         action={
-          <Button
-            className="h-10"
-            disabled={!can('content.create')}
-            onClick={() => {
-              let created: ReturnType<typeof createCmsItem> | undefined
-              if (!attempt(() => (created = createCmsItem('exploration')))) return
-              refresh()
-              navigate(`/cms/explorations/${created!.id}`)
-            }}
-          >
-            <Plus aria-hidden="true" className="size-4" />
-            New exploration
-          </Button>
+          can('content.create') && (
+            <Button className="h-10" onClick={create}>
+              <Plus aria-hidden="true" className="size-4" />
+              New exploration
+            </Button>
+          )
         }
       />
-
-      {all.length === 0 ? (
-        <EmptyState
-          icon={FileText}
-          title="No explorations yet"
-          description="Write your first exploration to start the library."
-        />
-      ) : (
-        <>
-          <Tabs
-            value={tab}
-            onValueChange={(value) => {
-              setTab(value as 'all' | CmsStatus)
-              setPage(1)
-            }}
-          >
-            <TabsList aria-label="Status">
-              {TABS.map((entry) => (
-                <TabsTrigger key={entry.value} value={entry.value}>
-                  {entry.label}
-                </TabsTrigger>
-              ))}
-            </TabsList>
-          </Tabs>
-
-          <div className="flex flex-wrap gap-3">
-            <Input
-              aria-label="Search explorations"
-              placeholder="Search title"
-              className="w-56"
-              value={search}
-              onChange={(event) => {
-                setSearch(event.target.value)
-                setPage(1)
-              }}
-            />
-            <Select
-              value={stage}
-              onValueChange={(value) => {
-                setStage(value)
-                setPage(1)
-              }}
-            >
-              <SelectTrigger aria-label="Stage" className="w-44">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All stages</SelectItem>
-                {stages.map((entry) => (
-                  <SelectItem key={entry.id} value={entry.id}>
-                    Stage {entry.number} · {entry.title}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select
-              value={category}
-              onValueChange={(value) => {
-                setCategory(value)
-                setPage(1)
-              }}
-            >
-              <SelectTrigger aria-label="Category" className="w-44">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All categories</SelectItem>
-                {['foundations', 'understand', 'contemplate', 'explore'].map(
-                  (entry) => (
-                    <SelectItem key={entry} value={entry} className="capitalize">
-                      {entry}
-                    </SelectItem>
-                  ),
-                )}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {filtered.length === 0 ? (
-            <EmptyState
-              icon={SearchX}
-              title="No results"
-              description="Try a different filter or clear the search."
-            />
-          ) : (
-            <div className="rounded-xl border bg-card">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Title</TableHead>
-                    <TableHead>Category</TableHead>
-                    <TableHead>Stage</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Owner</TableHead>
-                    <TableHead>Updated</TableHead>
-                    <TableHead className="w-12">
-                      <span className="sr-only">Actions</span>
-                    </TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {paged.slice.map((item) => (
-                    <TableRow key={item.id}>
-                      <TableCell className="max-w-xs truncate font-medium">
-                        <Link
-                          to={`/cms/explorations/${item.id}`}
-                          className="text-nff-text-link hover:underline"
-                        >
-                          {item.title || 'Untitled'}
-                        </Link>
-                      </TableCell>
-                      <TableCell className="capitalize">{item.category}</TableCell>
-                      <TableCell>
-                        {stages.find((entry) => entry.id === item.stageId)?.title}
-                      </TableCell>
-                      <TableCell>
-                        <ContentStatusChip status={item.status} />
-                        {item.revision && (
-                          <span className="block nff-caption text-muted-foreground">
-                            Revision: {item.revision.status.replace('_', ' ')}
-                          </span>
-                        )}
-                      </TableCell>
-                      <TableCell>{ownerLabel(item)}</TableCell>
-                      <TableCell>{formatDate(item.updatedAt)}</TableCell>
-                      <TableCell>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="size-8"
-                              aria-label={`Actions for ${item.title}`}
-                            >
-                              <MoreHorizontal aria-hidden="true" className="size-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem
-                              onClick={() =>
-                                navigate(`/cms/explorations/${item.id}`)
-                              }
-                            >
-                              Edit
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() =>
-                                navigate(`/cms/preview/exploration/${item.id}`)
-                              }
-                            >
-                              Preview
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              disabled={!can('content.create')}
-                              onClick={() => {
-                                if (!attempt(() => duplicateCmsItem(item))) return
-                                refresh()
-                                toast.success('Duplicated as a draft.')
-                              }}
-                            >
-                              Duplicate
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              disabled={item.status !== 'published' || !can('content.unpublish')}
-                              onClick={() => {
-                                if (!attempt(() => setCmsStatus(item.id, 'unpublished'))) return
-                                refresh()
-                                toast.success('Unpublished.')
-                              }}
-                            >
-                              Unpublish
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-          <Pager page={paged.page} pages={paged.pages} onPage={setPage} />
-        </>
-      )}
+      <DataTable
+        caption="Explorations"
+        noun="exploration"
+        rows={query.data}
+        columns={columns}
+        getRowId={(item) => item.id}
+        initialSort={{ id: 'updated', direction: 'desc' }}
+        views={[
+          { id: 'all', label: 'All', predicate: () => true },
+          { id: 'draft', label: 'Draft', predicate: (item) => item.status === 'draft' || item.status === 'rejected' },
+          { id: 'in_review', label: 'In review', predicate: (item) => item.status === 'in_review' },
+          { id: 'published', label: 'Published', predicate: (item) => item.status === 'published' },
+          { id: 'scheduled', label: 'Scheduled', predicate: (item) => item.status === 'scheduled' },
+        ]}
+        search={{ placeholder: 'Search title or summary', text: (item) => [item.title, item.slug, item.excerpt] }}
+        filters={[
+          { id: 'stage', label: 'Stage', options: STAGE_OPTIONS, predicate: (item, value) => item.stageId === value },
+          { id: 'category', label: 'Category', options: CATEGORY_OPTIONS, predicate: (item, value) => item.category === value },
+          {
+            id: 'featured',
+            label: 'Featured',
+            options: [
+              { value: 'yes', label: 'Featured on home' },
+              { value: 'no', label: 'Not featured' },
+            ],
+            predicate: (item, value) => item.featured === (value === 'yes'),
+          },
+        ]}
+        empty={{
+          icon: FileText,
+          title: 'No explorations yet',
+          description: 'Write your first exploration to start the library.',
+          action: can('content.create') ? (
+            <Button size="sm" onClick={create}>
+              New exploration
+            </Button>
+          ) : undefined,
+        }}
+      />
+      <ConfirmationDialog
+        open={unpublishing !== null}
+        onOpenChange={(open) => !open && setUnpublishing(null)}
+        title={`Unpublish ${unpublishing ? displayTitle(unpublishing) : 'this exploration'}?`}
+        description="Visitors and practitioners stop seeing it straight away. It stays in the CMS, and you can publish it again from the Review Queue."
+        confirmLabel="Unpublish"
+        onConfirm={() => {
+          const item = unpublishing
+          setUnpublishing(null)
+          if (!item || !attempt(() => setCmsStatus(item.id, 'unpublished'))) return
+          refresh()
+          toast.success(`${displayTitle(item)} is unpublished.`)
+        }}
+      />
     </div>
   )
 }

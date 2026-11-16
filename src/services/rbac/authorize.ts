@@ -1,6 +1,7 @@
 import type { Role } from '@/types'
 import { isPermission, type Permission } from './permissions'
 import { ROLE_DEFINITIONS, isRoleId, isStaffRole } from './roles'
+import { effectiveRolePermissions } from './rolePermissionStore'
 
 /**
  * The authorisation engine. Pure and deterministic: given an actor and a
@@ -61,8 +62,9 @@ export function toActor(value: unknown): Actor | null {
   }
 }
 
+/** What the role holds now: a Super admin's edits (rolePermissions.ts) or the defaults in roles.ts. */
 export function getRolePermissions(role: unknown): readonly Permission[] {
-  return isRoleId(role) ? ROLE_DEFINITIONS[role].permissions : []
+  return isRoleId(role) ? effectiveRolePermissions(role) : []
 }
 
 export function getRoleCapabilities(role: unknown): readonly string[] {

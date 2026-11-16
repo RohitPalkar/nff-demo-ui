@@ -198,7 +198,7 @@ export function HomeHero() {
             </div>
 
             <p
-              className="nff-hero-rise nff-body-sm text-[rgb(247_245_239/0.72)]"
+              className="nff-hero-rise nff-body-sm text-[rgb(247_245_239/0.92)]"
               style={delay(1040)}
             >
               Free previews · No card needed · Cancel anytime

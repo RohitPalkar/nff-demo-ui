@@ -11,6 +11,7 @@ import {
   getStoredSession,
   login as loginRequest,
   switchRole as switchRoleRequest,
+  verifySignInCode,
 } from '@/services/auth'
 import type { Role, SessionUser } from '@/types'
 
@@ -18,6 +19,8 @@ interface AuthContextValue {
   user: SessionUser | null
   isAuthenticated: boolean
   login: (email: string, password: string) => Promise<SessionUser>
+  /** Email + one-time code sign-in (SOW v1.3). */
+  signInWithCode: (email: string, code: string) => Promise<SessionUser>
   logout: () => void
   switchRole: (role: Role) => void
   refresh: () => void
@@ -32,6 +35,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = useCallback(async (email: string, password: string) => {
     const session = await loginRequest(email, password)
+    setUser(session.user)
+    return session.user
+  }, [])
+
+  const signInWithCode = useCallback(async (email: string, code: string) => {
+    const session = await verifySignInCode(email, code)
     setUser(session.user)
     return session.user
   }, [])
@@ -56,11 +65,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       user,
       isAuthenticated: user !== null,
       login,
+      signInWithCode,
       logout,
       switchRole,
       refresh,
     }),
-    [user, login, logout, switchRole, refresh],
+    [user, login, signInWithCode, logout, switchRole, refresh],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

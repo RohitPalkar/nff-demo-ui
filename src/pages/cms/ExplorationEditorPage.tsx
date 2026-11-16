@@ -4,6 +4,7 @@ import {
   Bold,
   Heading2,
   Heading3,
+  Eye,
   History,
   Italic,
   Link2,
@@ -13,8 +14,20 @@ import {
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useBlocker, useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
-import { ContentStatusChip, ReviewFeedback, RevisionNotice, PendingRevisionWarning } from '@/components/cms/CmsParts'
+import {
+  ActionBar,
+  CATEGORY_OPTIONS,
+  ContentStatusChip,
+  EditorCard,
+  FieldError, describeErrors,
+  PendingRevisionWarning,
+  ReadinessChecklist,
+  ReviewFeedback,
+  RevisionNotice,
+} from '@/components/cms/CmsParts'
+import { MarkdownPreview } from '@/components/cms/MarkdownPreview'
 import { OwnershipPanel } from '@/components/cms/OwnershipPanel'
+import { SOW_SCOPE } from '@/config/sowScope'
 import { ErrorState } from '@/components/admin'
 import { UnavailableState } from '@/components/nff/UnavailableState'
 import {
@@ -51,11 +64,11 @@ import { Textarea } from '@/components/ui/textarea'
 import { useAuth } from '@/features/auth/AuthProvider'
 import { attempt, usePermissions } from '@/features/auth/usePermissions'
 import { readJson, writeJson } from '@/mocks/api'
-import { stages } from '@/mocks/db'
 import {
   discardRevision,
   getCmsItem,
   isLiveStatus,
+  loadStages,
   submitRevision,
   saveCmsItem,
   setCmsStatus,
@@ -63,6 +76,7 @@ import {
   type CmsItem,
 } from '@/services/cms'
 import type { Category } from '@/types'
+import { cn } from '@/lib/utils'
 
 interface Version {
   at: string
@@ -87,6 +101,8 @@ function ago(at: number | null) {
   return `Saved ${Math.round(seconds / 60)} min ago`
 }
 
+const FIELD_LABELS = { title: 'Title', slug: 'Web address', excerpt: 'Summary' }
+
 export function ExplorationEditorPage() {
   const { id = '' } = useParams()
   const { user } = useAuth()
@@ -106,6 +122,8 @@ export function ExplorationEditorPage() {
     readJson<Version[]>(versionsKey(id), []),
   )
   const bodyRef = useRef<HTMLTextAreaElement>(null)
+  const [bodyMode, setBodyMode] = useState<'write' | 'preview'>('write')
+  const stageOptions = loadStages()
 
   useEffect(() => {
     if (query.data) setDraft(query.data)
@@ -175,7 +193,7 @@ export function ExplorationEditorPage() {
     const found = validateItem(draft)
     setErrors(found)
     if (Object.keys(found).length > 0) {
-      toast.error('Fix the highlighted fields first.')
+      toast.error(describeErrors(found, FIELD_LABELS))
       return
     }
     save(true)
@@ -228,6 +246,9 @@ export function ExplorationEditorPage() {
     { label: 'Quote', icon: Quote, run: () => linePrefix('> ') },
   ]
 
+  const words = draft.body.split(/\s+/).filter(Boolean).length
+  const minutes = Math.max(1, Math.round(words / 220))
+
   return (
     <div className="flex flex-col gap-5 pb-24">
       <header className="flex flex-wrap items-center gap-3">
@@ -236,13 +257,11 @@ export function ExplorationEditorPage() {
             <ArrowLeft aria-hidden="true" className="size-4" />
           </Link>
         </Button>
-        <h1 className="nff-heading-h3 min-w-0 flex-1 truncate">
-          {draft.title || 'Untitled exploration'}
-        </h1>
+        <div className="flex min-w-0 flex-1 flex-col">
+          <span className="nff-caption text-[var(--admin-text-muted)]">Exploration</span>
+          <h1 className="truncate admin-page-title">{draft.title || 'Untitled exploration'}</h1>
+        </div>
         <ContentStatusChip status={draft.status} />
-        <span role="status" className="nff-caption text-muted-foreground">
-          {dirty ? 'Unsaved changes' : ago(savedAt)}
-        </span>
         <Sheet>
           <SheetTrigger asChild>
             <Button variant="outline" size="sm">
@@ -253,27 +272,16 @@ export function ExplorationEditorPage() {
           <SheetContent>
             <SheetHeader>
               <SheetTitle>Version history</SheetTitle>
-              <SheetDescription>
-                Restore an earlier saved version.
-              </SheetDescription>
+              <SheetDescription>Restore an earlier saved version.</SheetDescription>
             </SheetHeader>
             <ul className="flex flex-col gap-3 px-4">
-              {versions.length === 0 && (
-                <li className="nff-body-sm text-muted-foreground">
-                  No saved versions yet.
-                </li>
-              )}
+              {versions.length === 0 && <li className="nff-body-sm text-muted-foreground">No saved versions yet.</li>}
               {versions.map((version) => (
-                <li
-                  key={version.at}
-                  className="flex items-center justify-between gap-3 rounded-lg border p-3"
-                >
+                <li key={version.at} className="flex items-center justify-between gap-3 rounded-lg border p-3">
                   <span className="nff-body-sm">
                     {version.author}
                     <br />
-                    <span className="nff-caption text-muted-foreground">
-                      {new Date(version.at).toLocaleString()}
-                    </span>
+                    <span className="nff-caption text-muted-foreground">{new Date(version.at).toLocaleString()}</span>
                   </span>
                   <Button
                     size="sm"
@@ -297,13 +305,12 @@ export function ExplorationEditorPage() {
             </ul>
           </SheetContent>
         </Sheet>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => navigate(`/cms/preview/exploration/${draft.id}`)}
-        >
-          Preview
-        </Button>
+        {can('content.preview') && (
+          <Button variant="outline" size="sm" onClick={() => navigate(`/cms/preview/exploration/${draft.id}`)}>
+            <Eye aria-hidden="true" className="size-4" />
+            Preview
+          </Button>
+        )}
       </header>
 
       {can('content.publish') && <PendingRevisionWarning item={draft} />}
@@ -325,162 +332,182 @@ export function ExplorationEditorPage() {
           }}
         />
       )}
-      {draft.status === 'rejected' && (
-        <ReviewFeedback note={draft.rejectionNote} />
-      )}
+      {draft.status === 'rejected' && <ReviewFeedback note={draft.rejectionNote} />}
 
-      <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
-        <section className="flex flex-col gap-4">
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="title">Title</Label>
-            <Input
-              id="title"
-              value={draft.title}
-              aria-invalid={Boolean(errors.title)}
-              onChange={(event) => {
-                const title = event.target.value
-                update({
-                  title,
-                  slug: draft.slug || slugify(title),
-                  seoTitle: draft.seoTitle || title,
-                })
-              }}
-            />
-            {errors.title && (
-              <p role="alert" className="nff-body-sm text-nff-text-error">
-                {errors.title}
-              </p>
-            )}
+      <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_340px]">
+        <section aria-label="Writing" className="flex min-w-0 flex-col rounded-lg border border-[var(--admin-border)] bg-[var(--admin-surface)]">
+          <div className="flex flex-col gap-4 p-4 sm:p-6">
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="title" className="nff-caption text-[var(--admin-text-muted)]">
+                Title
+              </Label>
+              <input
+                id="title"
+                value={draft.title}
+                placeholder="Give it a title"
+                aria-invalid={Boolean(errors.title)} aria-describedby={errors.title ? 'title-error' : undefined}
+                onChange={(event) => {
+                  const title = event.target.value
+                  update({
+                    title,
+                    slug: !draft.slug || draft.slug === slugify(draft.title) ? slugify(title) : draft.slug,
+                    seoTitle: !draft.seoTitle || draft.seoTitle === draft.title ? title : draft.seoTitle,
+                  })
+                }}
+                className="min-h-11 w-full rounded-sm border-b border-[var(--admin-border)] bg-transparent pb-2 text-2xl font-semibold tracking-tight outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 placeholder:text-[var(--admin-text-muted)] focus:border-[var(--admin-primary)] aria-[invalid=true]:border-nff-border-error"
+              />
+              <FieldError id="title-error" message={errors.title} />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="excerpt">Summary</Label>
+                <span className="nff-caption tabular-nums text-[var(--admin-text-muted)]">{draft.excerpt.length} / 200</span>
+              </div>
+              <Textarea
+                id="excerpt"
+                rows={2}
+                placeholder="One or two sentences shown on cards and to visitors."
+                value={draft.excerpt}
+                aria-invalid={Boolean(errors.excerpt)} aria-describedby={errors.excerpt ? 'excerpt-error' : undefined}
+                onChange={(event) => update({ excerpt: event.target.value })}
+              />
+              <FieldError id="excerpt-error" message={errors.excerpt} />
+            </div>
           </div>
 
-          <div className="flex flex-col gap-1.5">
-            <div
-              role="toolbar"
-              aria-label="Formatting"
-              className="flex flex-wrap gap-1 rounded-md border bg-card p-1"
-            >
-              {toolbar.map((entry) => (
+          <div className="sticky top-[var(--admin-topbar-height)] z-10 flex flex-wrap items-center justify-between gap-2 border-y border-[var(--admin-border)] bg-[var(--admin-surface)] px-2 py-1.5 sm:px-4">
+            <div role="tablist" aria-label="Body view" className="flex gap-1">
+              {(['write', 'preview'] as const).map((mode) => (
                 <Button
-                  key={entry.label}
+                  key={mode}
                   type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="size-8"
-                  aria-label={entry.label}
-                  onClick={entry.run}
+                  role="tab"
+                  size="sm"
+                  aria-selected={bodyMode === mode}
+                  variant={bodyMode === mode ? 'secondary' : 'ghost'}
+                  onClick={() => setBodyMode(mode)}
                 >
-                  <entry.icon aria-hidden="true" className="size-4" />
+                  {mode === 'write' ? 'Write' : 'Preview'}
                 </Button>
               ))}
             </div>
-            <Textarea
-              ref={bodyRef}
-              aria-label="Body"
-              rows={18}
-              value={draft.body}
-              onChange={(event) => update({ body: event.target.value })}
-              className="font-mono"
-            />
+            {bodyMode === 'write' && (
+              <div role="toolbar" aria-label="Formatting" className="flex flex-wrap gap-0.5">
+                {toolbar.map((entry) => (
+                  <Button key={entry.label} type="button" variant="ghost" size="icon" className="size-11" aria-label={entry.label} title={entry.label} onClick={entry.run}>
+                    <entry.icon aria-hidden="true" className="size-4" />
+                  </Button>
+                ))}
+              </div>
+            )}
           </div>
+
+          <div className="p-4 sm:p-6">
+            {bodyMode === 'write' ? (
+              <Textarea
+                ref={bodyRef}
+                aria-label="Body"
+                value={draft.body}
+                placeholder="Start writing. Leave a blank line between paragraphs."
+                onChange={(event) => update({ body: event.target.value })}
+                className="min-h-[28rem] resize-y border-0 px-0 text-base leading-7 shadow-none focus-visible:ring-0"
+              />
+            ) : (
+              <MarkdownPreview body={draft.body} className="mx-auto max-w-prose" />
+            )}
+          </div>
+          <p className="border-t border-[var(--admin-border)] px-4 py-2 nff-caption tabular-nums text-[var(--admin-text-muted)] sm:px-6">
+            {words.toLocaleString()} words · about {minutes} min read
+          </p>
         </section>
 
-        <aside
-          aria-label="Metadata"
-          className="flex flex-col gap-4 rounded-xl border bg-card p-4"
-        >
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="slug">Slug</Label>
-            <Input
-              id="slug"
-              value={draft.slug}
-              aria-invalid={Boolean(errors.slug)}
-              onChange={(event) => update({ slug: event.target.value })}
-            />
-            {errors.slug && (
-              <p role="alert" className="nff-body-sm text-nff-text-error">
-                {errors.slug}
-              </p>
-            )}
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="category">Category</Label>
-            <Select
-              value={draft.category}
-              onValueChange={(value) => update({ category: value as Category })}
-            >
-              <SelectTrigger id="category" className="w-full capitalize">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {['foundations', 'understand', 'contemplate', 'explore'].map(
-                  (entry) => (
-                    <SelectItem key={entry} value={entry} className="capitalize">
-                      {entry}
+        <aside aria-label="Settings" className="flex flex-col gap-5">
+          <EditorCard title="Publishing checks">
+            <ReadinessChecklist item={draft} />
+          </EditorCard>
+
+          <EditorCard title="Placement">
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="stage">Stage</Label>
+              <Select value={draft.stageId} onValueChange={(value) => update({ stageId: value })}>
+                <SelectTrigger id="stage" className="w-full data-[size=default]:h-11">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {stageOptions.map((entry, index) => (
+                    <SelectItem key={entry.id} value={entry.id}>
+                      Stage {index + 1} · {entry.title}
                     </SelectItem>
-                  ),
-                )}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="stage">Stage</Label>
-            <Select
-              value={draft.stageId}
-              onValueChange={(value) => update({ stageId: value })}
-            >
-              <SelectTrigger id="stage" className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {stages.map((entry) => (
-                  <SelectItem key={entry.id} value={entry.id}>
-                    Stage {entry.number} · {entry.title}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="excerpt">Excerpt</Label>
-            <Textarea
-              id="excerpt"
-              rows={3}
-              value={draft.excerpt}
-              aria-invalid={Boolean(errors.excerpt)}
-              onChange={(event) => update({ excerpt: event.target.value })}
-            />
-            {errors.excerpt && (
-              <p role="alert" className="nff-body-sm text-nff-text-error">
-                {errors.excerpt}
-              </p>
-            )}
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="seo-title">SEO title</Label>
-            <Input
-              id="seo-title"
-              value={draft.seoTitle}
-              onChange={(event) => update({ seoTitle: event.target.value })}
-            />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="seo-desc">SEO description</Label>
-            <Textarea
-              id="seo-desc"
-              rows={2}
-              value={draft.seoDescription}
-              onChange={(event) => update({ seoDescription: event.target.value })}
-            />
-          </div>
-          <div className="flex items-center justify-between gap-3">
-            <Label htmlFor="featured">Featured on home</Label>
-            <Switch
-              id="featured"
-              checked={draft.featured}
-              onCheckedChange={(checked) => update({ featured: checked })}
-            />
-          </div>
-          {can('content.ownership.manage') && (
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="category">Category</Label>
+              <Select value={draft.category} onValueChange={(value) => update({ category: value as Category })}>
+                <SelectTrigger id="category" className="w-full data-[size=default]:h-11">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {CATEGORY_OPTIONS.map((entry) => (
+                    <SelectItem key={entry.value} value={entry.value}>
+                      {entry.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex flex-col">
+                <Label htmlFor="featured">Featured on home</Label>
+                <span className="nff-caption text-[var(--admin-text-muted)]">Shown in the home page carousel.</span>
+              </div>
+              <Switch id="featured" checked={draft.featured} onCheckedChange={(checked) => update({ featured: checked })} />
+            </div>
+          </EditorCard>
+
+          <EditorCard title="Search and sharing">
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="slug">Web address</Label>
+              <div className="flex rounded-md border border-input focus-within:ring-2 focus-within:ring-ring">
+                <span className="flex items-center border-r border-input bg-[var(--admin-surface-subtle)] px-2 nff-caption text-[var(--admin-text-muted)]">/explorations/</span>
+                <input
+                  id="slug"
+                  value={draft.slug}
+                  aria-invalid={Boolean(errors.slug)} aria-describedby={errors.slug ? 'slug-error' : undefined}
+                  onChange={(event) => update({ slug: event.target.value })}
+                  className="h-11 min-w-0 flex-1 rounded-r-md bg-transparent px-2 text-sm outline-none"
+                />
+              </div>
+              <FieldError id="slug-error" message={errors.slug} />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="seo-title">SEO title</Label>
+                <span className={cn('nff-caption tabular-nums', draft.seoTitle.length > 60 ? 'text-nff-text-warning' : 'text-[var(--admin-text-muted)]')}>
+                  {draft.seoTitle.length} / 60
+                </span>
+              </div>
+              <Input id="seo-title" value={draft.seoTitle} onChange={(event) => update({ seoTitle: event.target.value })} />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="seo-desc">SEO description</Label>
+                <span className={cn('nff-caption tabular-nums', draft.seoDescription.length > 160 ? 'text-nff-text-warning' : 'text-[var(--admin-text-muted)]')}>
+                  {draft.seoDescription.length} / 160
+                </span>
+              </div>
+              <Textarea id="seo-desc" rows={3} value={draft.seoDescription} onChange={(event) => update({ seoDescription: event.target.value })} />
+            </div>
+            <div aria-label="Search result preview" className="flex flex-col gap-0.5 rounded-md border border-[var(--admin-border)] bg-[var(--admin-surface-subtle)] p-3">
+              <span className="truncate nff-caption text-[var(--admin-text-muted)]">meadow / explorations / {draft.slug || 'web-address'}</span>
+              <span className="line-clamp-1 nff-label-md text-nff-text-link">{draft.seoTitle || draft.title || 'SEO title'}</span>
+              <span className="line-clamp-2 nff-caption text-[var(--admin-text-muted)]">{draft.seoDescription || draft.excerpt || 'SEO description'}</span>
+            </div>
+          </EditorCard>
+
+          {/* Ownership is not in SOW v1.3 (see config/sowScope.ts). */}
+          {SOW_SCOPE.contentOwnership && can('content.ownership.manage') && (
             <OwnershipPanel
               key={`${draft.ownerId}-${(draft.collaboratorIds ?? []).join()}`}
               item={draft}
@@ -490,21 +517,17 @@ export function ExplorationEditorPage() {
         </aside>
       </div>
 
-      <div className="fixed inset-x-0 bottom-0 z-30 flex items-center justify-end gap-3 border-t bg-background/95 px-6 py-3 backdrop-blur lg:left-[var(--nff-layout-admin-sidebar)]">
+      <ActionBar status={dirty ? 'Unsaved changes · autosaves every 10 seconds' : ago(savedAt)}>
         <Button variant="outline" disabled={!dirty || !can('content.edit')} onClick={() => save()}>
           Save draft
         </Button>
-        {(draft.status === 'draft' || draft.status === 'rejected') && canSubmit ? (
-          <Button onClick={() => transition('in_review', 'Submitted for review.')}>
+        {(draft.status === 'draft' || draft.status === 'rejected') && canSubmit && (
+          <Button variant={canPublish ? 'outline' : 'default'} onClick={() => transition('in_review', 'Submitted for review.')}>
             Submit for review
           </Button>
-        ) : null}
-        {canPublish && draft.status !== 'published' && (
-          <Button onClick={() => transition('published', 'Published.')}>
-            Publish
-          </Button>
         )}
-      </div>
+        {canPublish && draft.status !== 'published' && <Button onClick={() => transition('published', 'Published.')}>Publish</Button>}
+      </ActionBar>
 
       <AlertDialog open={blocker.state === 'blocked'}>
         <AlertDialogContent>

@@ -1,5 +1,5 @@
 import { ArrowRight, Check, ChevronDown, CircleDot, Circle, PlayCircle } from 'lucide-react'
-import type { ReactNode } from 'react'
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { LearnProgress, Thumb } from '@/components/learn/home/homeParts'
 import { HOME_CARD, PRIMARY_ACTION, SECONDARY_ACTION, itemMeta } from '@/components/learn/home/homeStyles'
@@ -146,40 +146,81 @@ export function PathProgressCard({ entry, preview }: { entry: PathProgress; prev
   )
 }
 
-function LessonLine({
-  entry,
-  meta,
-  trailing,
-}: {
-  entry: HistoryEntry | TimelineEvent
-  meta: string
-  trailing?: ReactNode
-}) {
+
+type HistoryView = 'stage' | 'recent'
+
+/* Rows fill the width in two columns from md up, with hairline dividers
+   between rows and columns. */
+const ROWS =
+  'grid md:grid-cols-2 [&>li]:border-t [&>li]:border-nff-border-default [&>li:first-child]:border-t-0 md:[&>li:nth-child(2)]:border-t-0 md:[&>li:nth-child(odd)]:border-r'
+
+interface HistoryGroup {
+  key: string
+  path: HistoryEntry['path']
+  module: HistoryEntry['module']
+  moduleLabel: string
+  total: number
+  entries: HistoryEntry[]
+}
+
+/** One completed lesson: thumbnail, title and type, with the date in its own column. */
+function CompletedRow({ entry, showPlace }: { entry: HistoryEntry; showPlace: boolean }) {
   return (
     <Link
       to={entry.href}
-      className="group flex items-center gap-3 p-3 transition-colors hover:bg-[var(--nff-sage-50)] nff-focus-ring sm:gap-4 sm:px-4"
+      className="group flex items-center gap-3 px-3 py-2.5 transition-colors hover:bg-[var(--nff-sage-50)] nff-focus-ring sm:gap-4 sm:px-4"
     >
-      <Thumb item={entry.item} className="size-12 shrink-0 rounded-sm" />
-      <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-        <span className="truncate nff-caption text-nff-text-secondary">
-          {entry.path.title} · {entry.moduleLabel}
-        </span>
-        <span className="line-clamp-2 nff-label-md text-foreground group-hover:underline group-hover:underline-offset-4">
+      <Thumb item={entry.item} className="size-10 shrink-0 rounded-sm" />
+      <span className="flex min-w-0 flex-1 flex-col">
+        {showPlace && (
+          <span className="truncate nff-caption text-nff-text-secondary">
+            {entry.path.title} · {entry.moduleLabel}
+          </span>
+        )}
+        <span className="truncate nff-label-md text-foreground group-hover:underline group-hover:underline-offset-4">
           {entry.item.title}
         </span>
-        <span className="nff-caption text-nff-text-secondary">{meta}</span>
+        <span className="nff-caption text-nff-text-secondary">{itemMeta(entry.item).split(' · ')[0]}</span>
       </span>
-      {trailing}
+      <span className="shrink-0 text-right nff-caption tabular-nums text-nff-text-secondary">
+        {entry.completedAt ? (
+          <time dateTime={entry.completedAt}>{formatDate(entry.completedAt)}</time>
+        ) : (
+          <>
+            <span aria-hidden="true">—</span>
+            <span className="sr-only">Date not recorded</span>
+          </>
+        )}
+      </span>
     </Link>
   )
 }
 
-const LIST = cn(HOME_CARD, 'divide-y divide-nff-border-default overflow-hidden')
+function groupByStage(entries: HistoryEntry[]): HistoryGroup[] {
+  const groups = new Map<string, HistoryGroup>()
+  for (const entry of entries) {
+    const key = `${entry.path.id}:${entry.module.id}`
+    const group = groups.get(key)
+    if (group) group.entries.push(entry)
+    else
+      groups.set(key, {
+        key,
+        path: entry.path,
+        module: entry.module,
+        moduleLabel: entry.moduleLabel,
+        total: 0,
+        entries: [entry],
+      })
+  }
+  return [...groups.values()]
+    .map((group) => ({ ...group, total: group.entries.length }))
+    .sort((a, b) => a.path.title.localeCompare(b.path.title) || a.module.order - b.module.order)
+}
 
 /**
- * Completed lessons. Recorded dates first; completions carried over from the
- * old record have no date and say so, rather than showing an invented one.
+ * Completed lessons, grouped by stage (default) or newest first. Recorded
+ * dates sit in their own column; completions carried over from the old
+ * record show a dash, explained once below the list, never an invented date.
  */
 export function LearningHistory({
   dated,
@@ -192,45 +233,102 @@ export function LearningHistory({
   limit: number
   onShowAll?: () => void
 }) {
-  const shownDated = dated.slice(0, limit)
-  const shownUndated = undated.slice(0, Math.max(0, limit - shownDated.length))
-  const hidden = dated.length + undated.length - shownDated.length - shownUndated.length
+  const [view, setView] = useState<HistoryView>('stage')
+  const all = [...dated, ...undated]
+  const total = all.length
+  const hidden = Math.max(0, total - limit)
+
+  // Both views show the same first `limit` lessons in their own order.
+  const groups = groupByStage(all)
+  const stageOrder = groups.flatMap((group) => group.entries)
+  const shown = new Set((view === 'stage' ? stageOrder : all).slice(0, limit))
+
   return (
     <div className="flex flex-col gap-4">
-      {shownDated.length > 0 && (
-        <ul className={LIST}>
-          {shownDated.map((entry) => (
-            <li key={entry.lessonId}>
-              <LessonLine
-                entry={entry}
-                meta={`${itemMeta(entry.item).split(' · ')[0]} · Completed ${formatDate(entry.completedAt!)}`}
-              />
-            </li>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="nff-body-sm text-nff-text-secondary">
+          <strong className="font-medium text-foreground">{pluralise(total, 'lesson')}</strong> completed
+        </p>
+        <div
+          role="group"
+          aria-label="Order completed lessons"
+          className="inline-flex rounded-md border border-nff-border-default bg-nff-bg-surface p-0.5"
+        >
+          {(
+            [
+              ['stage', 'By stage'],
+              ['recent', 'Newest first'],
+            ] as const
+          ).map(([value, label]) => (
+            <button
+              key={value}
+              type="button"
+              aria-pressed={view === value}
+              onClick={() => setView(value)}
+              className={cn(
+                'nff-target rounded-[5px] px-3 py-1.5 nff-label-sm transition-colors nff-focus-ring',
+                view === value
+                  ? 'bg-[var(--nff-forest-900)] text-[var(--nff-ivory-50)]'
+                  : 'text-nff-text-secondary hover:text-foreground',
+              )}
+            >
+              {label}
+            </button>
           ))}
-        </ul>
-      )}
-      {shownUndated.length > 0 && (
-        <div className="flex flex-col gap-2">
-          {shownDated.length > 0 && (
-            <p className="nff-label-sm text-nff-text-secondary">Completed earlier, date not recorded</p>
-          )}
-          <ul className={LIST}>
-            {shownUndated.map((entry) => (
-              <li key={entry.lessonId}>
-                <LessonLine
-                  entry={entry}
-                  meta={`${itemMeta(entry.item).split(' · ')[0]} · Completed · date not recorded`}
-                />
+        </div>
+      </div>
+
+      {view === 'stage' ? (
+        <ul className="flex flex-col gap-4">
+          {groups
+            .filter((group) => group.entries.some((entry) => shown.has(entry)))
+            .map((group) => (
+              <li key={group.key} className={cn(HOME_CARD, 'overflow-hidden')}>
+                <h3 className="flex items-baseline justify-between gap-3 border-b border-nff-border-default bg-nff-bg-surface-sunken px-4 py-2.5">
+                  <span className="flex min-w-0 flex-col">
+                    <span className="truncate nff-caption text-nff-text-secondary">{group.path.title}</span>
+                    <span className="truncate nff-label-md text-foreground">{group.moduleLabel}</span>
+                  </span>
+                  <span className="shrink-0 nff-caption text-nff-text-secondary">{group.total} completed</span>
+                </h3>
+                <ul className={ROWS}>
+                  {group.entries
+                    .filter((entry) => shown.has(entry))
+                    .map((entry) => (
+                      <li key={entry.lessonId}>
+                        <CompletedRow entry={entry} showPlace={false} />
+                      </li>
+                    ))}
+                </ul>
               </li>
             ))}
-          </ul>
-        </div>
+        </ul>
+      ) : (
+        <ul className={cn(HOME_CARD, 'overflow-hidden', ROWS)}>
+          {all
+            .filter((entry) => shown.has(entry))
+            .map((entry) => (
+              <li key={entry.lessonId}>
+                <CompletedRow entry={entry} showPlace />
+              </li>
+            ))}
+        </ul>
       )}
-      {hidden > 0 && onShowAll && (
-        <button type="button" onClick={onShowAll} className={cn(SECONDARY_ACTION, 'self-start')}>
-          Show all {dated.length + undated.length} completed lessons
-        </button>
-      )}
+
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        {hidden > 0 && onShowAll ? (
+          <button type="button" onClick={onShowAll} className={SECONDARY_ACTION}>
+            Show all {total} completed lessons
+          </button>
+        ) : (
+          <span />
+        )}
+        {undated.length > 0 && (
+          <p className="nff-caption text-nff-text-secondary">
+            <span aria-hidden="true">— </span>Date not recorded: completed before dates were kept.
+          </p>
+        )}
+      </div>
     </div>
   )
 }
@@ -242,7 +340,7 @@ const dayKey = (iso: string) => {
 const timeOf = (iso: string) =>
   new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit' }).format(new Date(iso))
 
-/** Started and completed lessons, grouped by day, newest first. */
+/** Started and completed lessons as a vertical timeline, grouped by day, newest first. */
 export function ActivityTimeline({ events }: { events: TimelineEvent[] }) {
   const days: Array<{ key: string; at: string; events: TimelineEvent[] }> = []
   for (const event of events) {
@@ -252,22 +350,43 @@ export function ActivityTimeline({ events }: { events: TimelineEvent[] }) {
     else days.push({ key, at: event.at, events: [event] })
   }
   return (
-    <ol className="flex flex-col gap-5">
+    <ol className="flex flex-col gap-6">
       {days.map((day) => (
-        <li key={day.key} className="flex flex-col gap-2">
-          <h3 className="nff-label-sm text-nff-text-secondary">
+        <li key={day.key} className="flex flex-col gap-3">
+          <h3 className="nff-label-sm text-foreground">
             <time dateTime={day.at}>{formatDate(day.at)}</time>
           </h3>
-          <ol className={LIST}>
+          <ol className="relative flex flex-col gap-1 before:absolute before:top-2 before:bottom-2 before:left-[11px] before:w-px before:bg-nff-border-default">
             {day.events.map((event) => {
-              const Icon = event.kind === 'completed' ? Check : PlayCircle
+              const done = event.kind === 'completed'
+              const Icon = done ? Check : PlayCircle
               return (
-                <li key={event.id}>
-                  <LessonLine
-                    entry={event}
-                    meta={`${event.kind === 'completed' ? 'Completed' : 'Started'} at ${timeOf(event.at)}`}
-                    trailing={<Icon aria-hidden="true" className="size-4 shrink-0 text-nff-text-brand" />}
-                  />
+                <li key={event.id} className="relative flex gap-3">
+                  <span
+                    aria-hidden="true"
+                    className={cn(
+                      'relative z-10 mt-2.5 flex size-6 shrink-0 items-center justify-center rounded-full ring-4 ring-nff-bg-surface',
+                      done
+                        ? 'bg-[var(--nff-forest-900)] text-[var(--nff-ivory-50)]'
+                        : 'border border-nff-border-strong bg-nff-bg-surface text-nff-text-brand',
+                    )}
+                  >
+                    <Icon className="size-3.5" />
+                  </span>
+                  <Link
+                    to={event.href}
+                    className="group flex min-w-0 flex-1 flex-col rounded-md px-2 py-2 transition-colors hover:bg-[var(--nff-sage-50)] nff-focus-ring"
+                  >
+                    <span className="nff-caption text-nff-text-secondary">
+                      {done ? 'Completed' : 'Started'} · <time dateTime={event.at}>{timeOf(event.at)}</time>
+                    </span>
+                    <span className="truncate nff-label-md text-foreground group-hover:underline group-hover:underline-offset-4">
+                      {event.item.title}
+                    </span>
+                    <span className="truncate nff-caption text-nff-text-secondary">
+                      {event.path.title} · {event.moduleLabel}
+                    </span>
+                  </Link>
                 </li>
               )
             })}

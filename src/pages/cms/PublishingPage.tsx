@@ -1,95 +1,68 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { CheckCircle2, Inbox, XCircle } from 'lucide-react'
-import { useState } from 'react'
+import { BookOpen, Headphones, Inbox } from 'lucide-react'
+import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
-import { ContentStatusChip, PageHeader, ReviewFeedback, RevisionFields } from '@/components/cms/CmsParts'
-import { EmptyState } from '@/components/admin'
-import { ErrorState } from '@/components/admin'
+import { CellStack, DataTable, ErrorState, InlineNotice, LoadingState, type DataTableColumn } from '@/components/admin'
+import { ContentStatusChip, PageHeader, ReadinessBadge, displayTitle, readinessOf } from '@/components/cms/CmsParts'
+import { ReviewPanel, type Decision, type QueueRow } from '@/components/cms/ReviewPanel'
+import { SOW_SCOPE } from '@/config/sowScope'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from '@/components/ui/sheet'
-import { Skeleton } from '@/components/ui/skeleton'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Textarea } from '@/components/ui/textarea'
 import { attempt, usePermissions } from '@/features/auth/usePermissions'
 import { formatDate } from '@/lib/format'
 import {
-  checksFor,
-  isRevisionStale,
   listAllCmsItems,
   ownerLabel,
   publishRevision,
   rejectRevision,
   setCmsStatus,
   workingCopy,
-  type CmsItem,
 } from '@/services/cms'
 
-type Tab = 'in_review' | 'scheduled' | 'published' | 'rejected'
+type View = 'in_review' | 'scheduled' | 'published' | 'rejected'
 
-const TABS: Array<{ value: Tab; label: string }> = [
-  { value: 'in_review', label: 'Awaiting review' },
-  { value: 'scheduled', label: 'Scheduled' },
-  { value: 'published', label: 'Recently published' },
-  { value: 'rejected', label: 'Rejected' },
-]
+const shownOf = (row: QueueRow) => (row.revision ? workingCopy(row.item) : row.item)
 
-function Check({ ok, label }: { ok: boolean; label: string }) {
-  return (
-    <span
-      className={`inline-flex items-center gap-1 nff-caption ${ok ? 'text-nff-text-success' : 'text-nff-text-error'}`}
-    >
-      {ok ? (
-        <CheckCircle2 aria-hidden="true" className="size-3.5" />
-      ) : (
-        <XCircle aria-hidden="true" className="size-3.5" />
-      )}
-      {label}
-    </span>
-  )
+/** Which queue a row sits in. A pending revision sits beside its live item. */
+function viewOf(row: QueueRow): View | null {
+  if (row.revision) {
+    const status = row.item.revision?.status
+    return status === 'in_review' ? 'in_review' : status === 'rejected' ? 'rejected' : null
+  }
+  const status = row.item.status
+  return status === 'in_review' || status === 'scheduled' || status === 'published' || status === 'rejected' ? status : null
 }
+
+const dateOf = (row: QueueRow) =>
+  row.revision ? row.item.revision!.updatedAt : (row.item.status === 'scheduled' && row.item.scheduledFor) || row.item.updatedAt
 
 export function PublishingPage() {
   const { can } = usePermissions()
   const queryClient = useQueryClient()
   const query = useQuery({ queryKey: ['cms', 'all'], queryFn: () => listAllCmsItems() })
-  const [tab, setTab] = useState<Tab>('in_review')
-  const [pick, setPick] = useState<{ item: CmsItem; revision: boolean } | null>(null)
-  const selected = pick?.item ?? null
-  const isRevision = pick?.revision ?? false
-  const [comment, setComment] = useState('')
-  const [when, setWhen] = useState('')
+  const [view, setView] = useState<View>('in_review')
+  const [openKey, setOpenKey] = useState<string | null>(null)
 
   // Each action needs the permissions the workflow table asks for.
-  const canApprove = can('content.review') && can('content.approve') && can('content.publish')
-  const canSchedule = can('content.review') && can('content.approve') && can('content.schedule')
-  const canReject = can('content.review') && can('content.reject')
-  const canAct = canApprove || canSchedule || canReject
-
-  if (query.isPending) {
-    return (
-      <div aria-busy="true" className="flex flex-col gap-4">
-        <span className="nff-visually-hidden">Loading publishing queue</span>
-        <Skeleton className="h-10 w-64" />
-        <Skeleton className="h-64 rounded-xl" />
-      </div>
-    )
+  const abilities = {
+    approve: can('content.review') && can('content.approve') && can('content.publish'),
+    schedule: can('content.review') && can('content.approve') && can('content.schedule'),
+    reject: can('content.review') && can('content.reject'),
+    unpublish: can('content.unpublish'),
   }
+  const canAct = abilities.approve || abilities.schedule || abilities.reject
+
+  const rows = useMemo<QueueRow[]>(() => {
+    if (!query.data) return []
+    return query.data
+      .flatMap((item) => {
+        const out: QueueRow[] = [{ key: item.id, item, revision: false }]
+        if (item.revision) out.push({ key: `${item.id}-revision`, item, revision: true })
+        return out
+      })
+      .filter((row) => viewOf(row) !== null)
+  }, [query.data])
+
+  if (query.isPending) return <LoadingState label="Loading the review queue" rows={6} />
   if (query.isError) {
     return (
       <ErrorState
@@ -100,216 +73,191 @@ export function PublishingPage() {
     )
   }
 
-  // Edits to live content wait here as revisions, beside the items themselves.
-  const rows = query.data.flatMap((item) => {
-    const out: Array<{ item: CmsItem; revision: boolean }> = []
-    if (item.status === tab) out.push({ item, revision: false })
-    const pending = item.revision?.status
-    if ((tab === 'in_review' && pending === 'in_review') || (tab === 'rejected' && pending === 'rejected')) {
-      out.push({ item, revision: true })
-    }
-    return out
-  })
+  // The drawer walks the current view in date order (oldest waiting first).
+  const queue = rows
+    .filter((row) => viewOf(row) === view)
+    .sort((a, b) => dateOf(a).localeCompare(dateOf(b)))
+  const index = queue.findIndex((row) => row.key === openKey)
+  const open = index >= 0 ? queue[index]! : null
 
-  function act(
-    status: CmsItem['status'],
-    message: string,
-    extra: Partial<CmsItem> = {},
-  ) {
-    if (!selected) return
+  function decide(row: QueueRow, decision: Decision, extra: { note?: string; when?: string }) {
+    const id = row.item.id
     const run = () => {
-      if (!isRevision) return setCmsStatus(selected.id, status, extra)
-      // A revision is approved or rejected; the live version is never moved.
-      return status === 'rejected'
-        ? rejectRevision(selected.id, extra.rejectionNote ?? '')
-        : publishRevision(selected.id)
+      if (row.revision) {
+        if (decision === 'publish') publishRevision(id)
+        else if (decision === 'reject') rejectRevision(id, extra.note ?? '')
+        return
+      }
+      if (decision === 'publish') setCmsStatus(id, 'published')
+      else if (decision === 'schedule') setCmsStatus(id, 'scheduled', { scheduledFor: extra.when })
+      else if (decision === 'reject') setCmsStatus(id, 'rejected', { rejectionNote: extra.note })
+      else if (decision === 'unschedule') setCmsStatus(id, 'draft', { scheduledFor: undefined })
+      else if (decision === 'unpublish') setCmsStatus(id, 'unpublished')
     }
     if (!attempt(run)) return
+    const title = displayTitle(shownOf(row))
+    toast.success(
+      decision === 'publish'
+        ? `Published “${title}”.`
+        : decision === 'schedule'
+          ? `Scheduled “${title}”.`
+          : decision === 'reject'
+            ? `Sent “${title}” back to the author.`
+            : decision === 'unschedule'
+              ? `“${title}” is back in draft.`
+              : `Unpublished “${title}”.`,
+    )
+    // Move on to the next item in this queue, if there is one.
+    const next = queue[index + 1] ?? null
+    setOpenKey(next?.key ?? null)
     void queryClient.invalidateQueries({ queryKey: ['cms'] })
-    toast.success(message)
-    setPick(null)
-    setComment('')
-    setWhen('')
   }
 
-  const shown = selected ? (isRevision ? workingCopy(selected) : selected) : null
-  const checks = shown ? checksFor(shown) : null
-  const blocked = checks ? !(checks.artwork && checks.audio && checks.metadata) : false
+  const columns: Array<DataTableColumn<QueueRow>> = [
+    {
+      id: 'title',
+      header: 'Item',
+      primary: true,
+      sortValue: (row) => displayTitle(shownOf(row)),
+      cell: (row) => {
+        const Icon = row.item.type === 'meditation' ? Headphones : BookOpen
+        return (
+          <div className="flex items-center gap-3">
+            <span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-[var(--admin-surface-subtle)] text-[var(--admin-text-muted)]">
+              <Icon aria-hidden="true" className="size-4" />
+            </span>
+            <CellStack
+              title={
+                <button
+                  type="button"
+                  className="nff-target max-w-full truncate text-left hover:underline nff-focus-ring"
+                  onClick={() => setOpenKey(row.key)}
+                >
+                  {displayTitle(shownOf(row))}
+                </button>
+              }
+              meta={
+                <span className="capitalize">
+                  {row.item.type}
+                  {row.revision && ' · Revision of live content'}
+                </span>
+              }
+            />
+          </div>
+        )
+      },
+    },
+    {
+      id: 'readiness',
+      header: 'Readiness',
+      sortValue: (row) => readinessOf(shownOf(row)).filter((check) => !check.ok).length,
+      cell: (row) => <ReadinessBadge item={shownOf(row)} />,
+    },
+    ...(view !== 'in_review'
+      ? [
+          {
+            id: 'status',
+            header: 'Status',
+            cell: (row: QueueRow) => <ContentStatusChip status={row.revision ? row.item.revision!.status === 'rejected' ? 'rejected' : 'in_review' : row.item.status} />,
+          },
+        ]
+      : []),
+    ...(SOW_SCOPE.contentOwnership
+      ? [{ id: 'owner', header: 'Owner', sortValue: (row: QueueRow) => ownerLabel(row.item), cell: (row: QueueRow) => ownerLabel(row.item) }]
+      : []),
+    {
+      id: 'date',
+      header: view === 'scheduled' ? 'Goes live' : view === 'in_review' ? 'Submitted' : 'Updated',
+      sortValue: dateOf,
+      cell: (row) => <span className="tabular-nums">{formatDate(dateOf(row))}</span>,
+    },
+    {
+      id: 'actions',
+      header: 'Actions',
+      hideHeader: true,
+      cell: (row) => (
+        <Button
+          size="sm"
+          variant={canAct && view === 'in_review' ? 'default' : 'outline'}
+          aria-label={`Review ${displayTitle(shownOf(row))}`}
+          data-review-key={row.key}
+          onClick={() => setOpenKey(row.key)}
+        >
+          {canAct && view !== 'rejected' ? 'Review' : 'Open'}
+        </Button>
+      ),
+    },
+  ]
 
   return (
     <div className="flex flex-col gap-5">
-      <PageHeader title="Review Queue" description="Review and release content." />
+      <PageHeader title="Review Queue" description="Check submitted content, then publish, schedule or send it back." />
 
       {!canAct && (
-        <p
-          role="status"
-          className="rounded-xl border bg-nff-bg-muted p-4 nff-body-sm"
-        >
+        <InlineNotice tone="info">
           You can follow the review status of your content here. Approving, rejecting and publishing are done by an admin.
-        </p>
+        </InlineNotice>
       )}
 
-      <Tabs value={tab} onValueChange={(value) => setTab(value as Tab)}>
-        <TabsList aria-label="Queue">
-          {TABS.map((entry) => (
-            <TabsTrigger key={entry.value} value={entry.value}>
-              {entry.label}
-            </TabsTrigger>
-          ))}
-        </TabsList>
-      </Tabs>
+      <DataTable
+        caption="Review queue"
+        noun="item"
+        rows={rows}
+        columns={columns}
+        getRowId={(row) => row.key}
+        views={[
+          { id: 'in_review', label: 'Awaiting review', predicate: (row) => viewOf(row) === 'in_review' },
+          { id: 'scheduled', label: 'Scheduled', predicate: (row) => viewOf(row) === 'scheduled' },
+          { id: 'published', label: 'Published', predicate: (row) => viewOf(row) === 'published' },
+          { id: 'rejected', label: 'Sent back', predicate: (row) => viewOf(row) === 'rejected' },
+        ]}
+        view={view}
+        onViewChange={(next) => setView(next as View)}
+        initialSort={{ id: 'date', direction: 'asc' }}
+        search={{ placeholder: 'Search title', text: (row) => [shownOf(row).title, shownOf(row).excerpt] }}
+        filters={[
+          {
+            id: 'type',
+            label: 'Type',
+            options: [
+              { value: 'exploration', label: 'Explorations' },
+              { value: 'meditation', label: 'Meditations' },
+            ],
+            predicate: (row, value) => row.item.type === value,
+          },
+          {
+            id: 'readiness',
+            label: 'Readiness',
+            options: [
+              { value: 'ready', label: 'Ready to publish' },
+              { value: 'blocked', label: 'Needs work' },
+            ],
+            predicate: (row, value) => readinessOf(shownOf(row)).every((check) => check.ok) === (value === 'ready'),
+          },
+          {
+            id: 'kind',
+            label: 'Kind',
+            options: [
+              { value: 'new', label: 'New content' },
+              { value: 'revision', label: 'Revisions of live content' },
+            ],
+            predicate: (row, value) => row.revision === (value === 'revision'),
+          },
+        ]}
+        selectedId={openKey}
+        empty={{ icon: Inbox, title: 'Nothing to review', description: 'Items appear here when an author submits them for review.' }}
+      />
 
-      {rows.length === 0 ? (
-        <EmptyState
-          icon={Inbox}
-          title="Nothing here"
-          description="Items will appear in this queue as they move through review."
-        />
-      ) : (
-        <div className="rounded-xl border bg-card">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Item</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Owner</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead>Checks</TableHead>
-                <TableHead>
-                  <span className="sr-only">Actions</span>
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {rows.slice(0, 12).map(({ item, revision }) => {
-                const c = checksFor(revision ? workingCopy(item) : item)
-                return (
-                  <TableRow key={`${item.id}${revision ? '-revision' : ''}`}>
-                    <TableCell className="max-w-xs truncate font-medium">
-                      {revision ? workingCopy(item).title : item.title}
-                      {revision && (
-                        <span className="block nff-caption text-muted-foreground">
-                          Revision of live content
-                        </span>
-                      )}
-                    </TableCell>
-                    <TableCell className="capitalize">{item.type}</TableCell>
-                    <TableCell>{ownerLabel(item)}</TableCell>
-                    <TableCell>
-                      {formatDate(item.scheduledFor ?? item.updatedAt)}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex flex-col">
-                        <Check ok={c.artwork} label="Artwork" />
-                        <Check ok={c.audio} label="Audio ready" />
-                        <Check ok={c.metadata} label="Metadata" />
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Button size="sm" variant="outline" onClick={() => setPick({ item, revision })}>
-                        Review
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                )
-              })}
-            </TableBody>
-          </Table>
-        </div>
-      )}
-
-      <Sheet open={Boolean(selected)} onOpenChange={(open) => !open && setPick(null)}>
-        <SheetContent>
-          {selected && checks && (
-            <>
-              <SheetHeader>
-                <SheetTitle>{shown!.title}</SheetTitle>
-                <SheetDescription>
-                  Owner: {ownerLabel(selected)} · {formatDate(isRevision ? selected.revision!.updatedAt : selected.updatedAt)}
-                </SheetDescription>
-              </SheetHeader>
-              <div className="flex flex-col gap-4 px-4 pb-4">
-                {isRevision ? (
-                  <div role="status" className="flex flex-col gap-3">
-                    <p className="nff-body-sm">
-                      A revision of live content. The live version stays as it is until you approve this.
-                      {isRevisionStale(selected) && ' The live version has changed since this revision was started: approving replaces those fields.'}
-                    </p>
-                    <RevisionFields item={selected} />
-                  </div>
-                ) : (
-                  <ContentStatusChip status={selected.status} />
-                )}
-                {!isRevision && selected.status === 'rejected' && <ReviewFeedback note={selected.rejectionNote} />}
-                {isRevision && selected.revision!.status === 'rejected' && (
-                  <ReviewFeedback note={selected.revision!.rejectionNote} />
-                )}
-                <ul aria-label="Checklist" className="flex flex-col gap-1">
-                  <li><Check ok={checks.artwork} label="Artwork present" /></li>
-                  <li><Check ok={checks.audio} label="Audio ready" /></li>
-                  <li><Check ok={checks.metadata} label="Metadata complete" /></li>
-                </ul>
-                {blocked && (
-                  <p role="alert" className="nff-body-sm text-nff-text-error">
-                    Fix the failed checks before publishing.
-                  </p>
-                )}
-                <div className="flex flex-col gap-1.5">
-                  <Label htmlFor="review-comment">Comment</Label>
-                  <Textarea
-                    id="review-comment"
-                    rows={3}
-                    value={comment}
-                    onChange={(event) => setComment(event.target.value)}
-                  />
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <Label htmlFor="schedule-at">Schedule for</Label>
-                  <Input
-                    id="schedule-at"
-                    type="datetime-local"
-                    value={when}
-                    onChange={(event) => setWhen(event.target.value)}
-                  />
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  <Button
-                    disabled={!canApprove || blocked}
-                    onClick={() => act('published', 'Approved and published.')}
-                  >
-                    Approve and publish
-                  </Button>
-                  <Button
-                    variant="outline"
-                    disabled={!canSchedule || blocked || !when || isRevision}
-                    onClick={() =>
-                      act('scheduled', 'Scheduled.', {
-                        scheduledFor: new Date(when).toISOString(),
-                      })
-                    }
-                  >
-                    Schedule
-                  </Button>
-                  <Button
-                    variant="destructive"
-                    disabled={!canReject}
-                    onClick={() =>
-                      act('rejected', 'Rejected.', { rejectionNote: comment })
-                    }
-                  >
-                    Reject
-                  </Button>
-                </div>
-                {!canAct && (
-                  <p className="nff-caption text-muted-foreground">
-                    Only an admin can approve, reject or publish.
-                  </p>
-                )}
-              </div>
-            </>
-          )}
-        </SheetContent>
-      </Sheet>
+      <ReviewPanel
+        row={open}
+        position={index + 1}
+        total={queue.length}
+        can={abilities}
+        onPrevious={index > 0 ? () => setOpenKey(queue[index - 1]!.key) : undefined}
+        onNext={index >= 0 && index < queue.length - 1 ? () => setOpenKey(queue[index + 1]!.key) : undefined}
+        onClose={() => setOpenKey(null)}
+        onDecide={decide}
+      />
     </div>
   )
 }

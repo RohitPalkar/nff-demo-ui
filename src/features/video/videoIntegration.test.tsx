@@ -14,6 +14,16 @@ import { content } from '@/mocks/db'
 import { loadProgress } from '@/services/learning/progress'
 import type { Meditation, VideoMedia } from '@/types'
 
+// These tests cover features switched off for SOW v1.3 (config/sowScope.ts).
+// Run them with every feature on, so the code stays ready to switch back.
+vi.mock('@/config/sowScope', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/config/sowScope')>()
+  return {
+    SOW_SCOPE: Object.fromEntries(Object.keys(actual.SOW_SCOPE).map((key) => [key, true])),
+  }
+})
+
+
 const track = content.find(
   (item): item is Meditation => item.type === 'meditation' && item.published,
 )!

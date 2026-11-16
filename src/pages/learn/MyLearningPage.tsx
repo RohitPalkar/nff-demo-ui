@@ -102,7 +102,7 @@ export function MyLearningPage() {
       <TabsPrimitive.Root
         value={tab}
         onValueChange={(value) => update('tab', value, 'all')}
-        className="flex max-w-[1120px] flex-col gap-6"
+        className="flex flex-col gap-6"
       >
         <div className="-mx-4 overflow-x-auto overflow-y-hidden border-b border-nff-border-default px-4 sm:mx-0 sm:px-0">
           <TabsPrimitive.List aria-label="Filter learning by status" className="flex min-w-max gap-6">
@@ -185,7 +185,7 @@ export function MyLearningPage() {
       </TabsPrimitive.Root>
 
       {data && data.withdrawn.length > 0 && (
-        <section aria-labelledby="withdrawn-heading" className="flex max-w-[1120px] flex-col gap-3">
+        <section aria-labelledby="withdrawn-heading" className="flex flex-col gap-3">
           <h2 id="withdrawn-heading" className="nff-heading-h4 text-foreground">
             No longer assigned
           </h2>

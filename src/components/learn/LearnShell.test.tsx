@@ -2,11 +2,21 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { LearnLayout } from '@/app/layouts/LearnLayout'
 import { AuthProvider } from '@/features/auth/AuthProvider'
 import { PlayerProvider } from '@/features/player/PlayerProvider'
 import { LEARN_NAV } from '@/components/learn/navItems'
+
+// These tests cover features switched off for SOW v1.3 (config/sowScope.ts).
+// Run them with every feature on, so the code stays ready to switch back.
+vi.mock('@/config/sowScope', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/config/sowScope')>()
+  return {
+    SOW_SCOPE: Object.fromEntries(Object.keys(actual.SOW_SCOPE).map((key) => [key, true])),
+  }
+})
+
 
 const FUTURE = { v7_startTransition: true, v7_relativeSplatPath: true }
 
