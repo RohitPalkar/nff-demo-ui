@@ -1,6 +1,6 @@
 import { LEARN_HOME } from '@/services/learning/routes'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Loader2, Copy, Check } from 'lucide-react'
+import { Loader2, Copy, Check, ChevronDown, Eye, Mail } from 'lucide-react'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
@@ -32,29 +32,37 @@ export function LoginPage() {
   const [sentTo, setSentTo] = useState<string | null>(null)
   const [formError, setFormError] = useState<string | null>(null)
   const [noAccount, setNoAccount] = useState<string | null>(null)
+  const [demoExpanded, setDemoExpanded] = useState(false)
+  const [copiedItem, setCopiedItem] = useState<string | null>(null)
+  const [copyError, setCopyError] = useState<string | null>(null)
   const {
     register,
     handleSubmit,
-    getValues,
     formState: { errors, isSubmitting },
   } = useForm<Values>({
     resolver: zodResolver(schema),
     defaultValues: { email: state?.email ?? '' },
   })
 
-  const [copiedEmail, setCopiedEmail] = useState<string | null>(null)
-
-  async function copyEmail(email: string) {
-    await navigator.clipboard.writeText(email)
-    setCopiedEmail(email)
-    setTimeout(() => setCopiedEmail(null), 2000)
-  }
-
   const demoAccounts = [
     { role: 'Practitioner', email: 'practitioner@nff.demo', description: 'Full library access' },
     { role: 'Editor', email: 'editor@nff.demo', description: 'CMS preview access' },
     { role: 'Super Admin', email: 'admin@nff.demo', description: 'Full CMS access' },
   ] as const
+
+  const SHARED_PASSWORD = 'practice123'
+
+  async function copyToClipboard(text: string, label: string) {
+    try {
+      await navigator.clipboard.writeText(text)
+      setCopiedItem(label)
+      setCopyError(null)
+      setTimeout(() => setCopiedItem(null), 2000)
+    } catch {
+      setCopyError('Failed to copy. Please try again.')
+      setTimeout(() => setCopyError(null), 3000)
+    }
+  }
 
   async function sendCode(values: Values) {
     setFormError(null)
@@ -88,73 +96,210 @@ export function LoginPage() {
     <AuthCard
       title="Log in"
       description={
-        <p>
-          New to Meadow?{' '}
-          <Link to="/signup" state={{ email: getValues('email') }} className={authLink}>
-            Create a free account
-          </Link>
+        <p className="nff-body-lg text-[var(--nff-text-secondary)]">
+          Welcome back. Enter your email and we&apos;ll send a one-time code.
         </p>
       }
-      footer={<AuthHighlights heading="Pick up where you left off" />}
+      footer={
+        <AuthHighlights heading="A little more about Meadow" />
+      }
     >
-      <form onSubmit={handleSubmit(sendCode)} noValidate className="flex flex-col gap-4">
+      <form onSubmit={handleSubmit(sendCode)} noValidate className="flex flex-col gap-5">
         <FormAlert message={formError} />
         {noAccount && (
           <Link to="/signup" state={{ email: noAccount }} className={`-mt-1 w-fit nff-body-sm ${authLink}`}>
             Create an account with {noAccount}
           </Link>
         )}
+
+        {/* Email Field */}
         <Field label="Email address" error={errors.email?.message}>
           {(props) => (
-            <Input
-              {...props}
-              type="email"
-              autoComplete="email"
-              placeholder="you@example.com"
-              className="h-12 rounded-xl px-4 text-base md:text-base"
-              {...register('email')}
-            />
+            <div className="relative">
+              <Mail
+                className="absolute left-4 top-1/2 -translate-y-1/2 size-5 text-[var(--nff-icon-secondary)] pointer-events-none"
+                aria-hidden="true"
+              />
+              <Input
+                {...props}
+                type="email"
+                autoComplete="email"
+                placeholder="you@example.com"
+                className="h-12 rounded-xl pl-12 pr-4 text-base"
+                {...register('email')}
+              />
+            </div>
           )}
         </Field>
-        <Button type="submit" className="h-12 rounded-full text-base" disabled={isSubmitting}>
-          {isSubmitting && <Loader2 aria-hidden="true" className="size-4 animate-spin" />}
+
+        {/* Continue Button */}
+        <Button type="submit" className="h-12 rounded-full text-base font-medium" disabled={isSubmitting}>
+          {isSubmitting && <Loader2 aria-hidden="true" className="size-4 animate-spin mr-2" />}
           Continue
         </Button>
-        <p className="text-center nff-body-sm text-muted-foreground">
-          We'll email you a 6-digit code. No password needed.
+
+        {/* OTP Explanation */}
+        <p className="text-center nff-body-sm text-[var(--nff-text-tertiary)]">
+          We&apos;ll email you a 6-digit code. No password needed.
         </p>
 
-        {/* Demo Accounts with Copy Buttons */}
-        <div className="mt-6 p-4 rounded-xl bg-[var(--nff-sage-50)] border border-[var(--nff-sage-200)]">
-          <p className="text-center nff-caption font-medium text-[var(--nff-forest-700)] mb-3">
-            Demo accounts (password: <code className="bg-[var(--nff-sage-200)] px-1.5 py-0.5 rounded text-[var(--nff-forest-900)]">practice123</code>)
-          </p>
-          <div className="grid gap-2 sm:grid-cols-3">
-            {demoAccounts.map((account) => (
-              <button
-                key={account.email}
-                type="button"
-                onClick={() => copyEmail(account.email)}
+        {/* Demo Accounts - Collapsible Section */}
+        <section aria-labelledby="demo-heading" className="border-t border-[var(--nff-border-default)] pt-5">
+          <button
+            type="button"
+            onClick={() => setDemoExpanded(!demoExpanded)}
+            className={cn(
+              'w-full flex items-center justify-between gap-3 px-4 py-3 rounded-xl',
+              'bg-[var(--nff-sage-50)] border border-[var(--nff-sage-200)]',
+              'hover:bg-[var(--nff-sage-100)] hover:border-[var(--nff-sage-300)]',
+              'transition-all duration-200 nff-focus-ring'
+            )}
+            aria-expanded={demoExpanded}
+            aria-controls="demo-accounts"
+          >
+            <div className="flex items-center gap-3">
+              <ChevronDown
                 className={cn(
-                  'relative flex items-center justify-between gap-2 p-3 rounded-lg bg-white border border-[var(--nff-sage-200)]',
-                  'hover:border-[var(--nff-sage-300)] hover:shadow-sm transition-all duration-200',
-                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--nff-forest-500)]'
+                  'size-5 text-[var(--nff-icon-secondary)] transition-transform duration-200',
+                  demoExpanded && 'rotate-180'
                 )}
-              >
-                <div className="flex flex-col min-w-0">
-                  <span className="nff-caption font-medium text-[var(--nff-forest-900)]">{account.role}</span>
-                  <span className="nff-caption text-[var(--nff-forest-700)] truncate font-mono text-sm">{account.email}</span>
-                  <span className="nff-caption text-[var(--nff-sage-600)]">{account.description}</span>
+                aria-hidden="true"
+              />
+              <div className="flex-1 text-left">
+                <p className="nff-label-md font-medium text-[var(--nff-forest-900)]">
+                  Explore with a demo account
+                </p>
+                <p className="nff-caption text-[var(--nff-text-secondary)]">
+                  Try Meadow using one of our sample accounts
+                </p>
+              </div>
+            </div>
+            <span className="nff-caption text-[var(--nff-text-tertiary)]">
+              {demoExpanded ? 'Hide' : 'Show'} options
+            </span>
+          </button>
+
+          {/* Expanded Demo Accounts */}
+          <div
+            id="demo-accounts"
+            role="region"
+            aria-labelledby="demo-heading"
+            className={cn(
+              'overflow-hidden transition-all duration-300 ease-[var(--nff-easing-standard)]',
+              demoExpanded ? 'max-h-96 opacity-100 mt-4' : 'max-h-0 opacity-0 mt-0'
+            )}
+          >
+            <div className="space-y-3" style={{ minHeight: demoExpanded ? 'auto' : 0 }}>
+              {/* Demo Account Cards */}
+              <div className="grid gap-3 sm:grid-cols-3" role="list">
+                {demoAccounts.map((account, index) => (
+                  <article
+                    key={account.email}
+                    role="listitem"
+                    className={cn(
+                      'relative flex flex-col gap-2 p-4 rounded-xl',
+                      'bg-white border border-[var(--nff-sage-200)]',
+                      'hover:border-[var(--nff-sage-300)] hover:shadow-sm',
+                      'transition-all duration-200',
+                      'focus-within:ring-2 focus-within:ring-[var(--nff-forest-500)]'
+                    )}
+                    style={{ animationDelay: `${index * 50}ms` }}
+                  >
+                    <div className="flex flex-col gap-1.5">
+                      <span className="nff-caption font-semibold text-[var(--nff-forest-900)] uppercase tracking-wide">
+                        {account.role}
+                      </span>
+                      <span className="nff-body-sm font-mono text-[var(--nff-forest-800)] break-all">
+                        {account.email}
+                      </span>
+                      <span className="nff-caption text-[var(--nff-text-secondary)]">
+                        {account.description}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      className={cn(
+                        'mt-2 inline-flex items-center justify-center gap-2 px-3 py-2',
+                        'rounded-lg border border-[var(--nff-sage-200)]',
+                        'bg-[var(--nff-sage-50)] text-[var(--nff-forest-700)]',
+                        'hover:bg-[var(--nff-sage-100)] hover:border-[var(--nff-sage-300)]',
+                        'text-sm font-medium transition-all duration-200',
+                        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--nff-forest-500)]',
+                        copiedItem === account.email && 'bg-[var(--nff-emerald-50)] border-[var(--nff-emerald-300)] text-[var(--nff-emerald-700)]'
+                      )}
+                      onClick={() => copyToClipboard(account.email, account.email)}
+                      disabled={copiedItem === account.email}
+                      aria-label={copiedItem === account.email ? `Copied ${account.email}` : `Copy ${account.email}`}
+                    >
+                      {copiedItem === account.email ? (
+                        <>
+                          <Check className="size-4 text-[var(--nff-emerald-600)]" aria-hidden="true" />
+                          <span>Copied</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="size-4" aria-hidden="true" />
+                          <span>Copy email</span>
+                        </>
+                      )}
+                    </button>
+                  </article>
+                ))}
+              </div>
+
+              {/* Shared Password Row */}
+              <div className="mt-4 p-4 rounded-xl bg-[var(--nff-sage-50)] border border-[var(--nff-sage-200)]">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <Eye className="size-5 text-[var(--nff-sage-500)]" aria-hidden="true" />
+                    <div>
+                      <p className="nff-caption text-[var(--nff-text-tertiary)]">Shared demo password</p>
+                      <p className="font-mono text-[var(--nff-forest-900)]">{SHARED_PASSWORD}</p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    className={cn(
+                      'inline-flex items-center justify-center gap-2 px-4 py-2',
+                      'rounded-lg border border-[var(--nff-sage-200)]',
+                      'bg-white text-[var(--nff-forest-700)]',
+                      'hover:bg-[var(--nff-sage-50)] hover:border-[var(--nff-sage-300)]',
+                      'text-sm font-medium transition-all duration-200',
+                      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--nff-forest-500)]',
+                      copiedItem === 'password' && 'bg-[var(--nff-emerald-50)] border-[var(--nff-emerald-300)] text-[var(--nff-emerald-700)]'
+                    )}
+                    onClick={() => copyToClipboard(SHARED_PASSWORD, 'password')}
+                    disabled={copiedItem === 'password'}
+                    aria-label={copiedItem === 'password' ? 'Copied password' : 'Copy password'}
+                  >
+                    {copiedItem === 'password' ? (
+                      <>
+                        <Check className="size-4 text-[var(--nff-emerald-600)]" aria-hidden="true" />
+                        <span>Copied</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="size-4" aria-hidden="true" />
+                        <span>Copy password</span>
+                      </>
+                    )}
+                  </button>
                 </div>
-                {copiedEmail === account.email ? (
-                  <Check className="size-5 text-[var(--nff-emerald-600)] flex-shrink-0" aria-hidden="true" />
-                ) : (
-                  <Copy className="size-5 text-[var(--nff-sage-500)] hover:text-[var(--nff-forest-700)] transition-colors flex-shrink-0" aria-hidden="true" />
+                {copyError && (
+                  <p className="mt-2 nff-caption text-[var(--nff-error-600)]" role="alert">
+                    {copyError}
+                  </p>
                 )}
-              </button>
-            ))}
+              </div>
+              <p className="mt-3 text-center nff-caption text-[var(--nff-text-tertiary)]">
+                Demo credentials are provided for testing purposes only.
+              </p>
+            </div>
           </div>
-        </div>
+        </section>
+
+        {/* Supporting Meadow Benefits */}
+        <AuthHighlights heading="A little more about Meadow" />
       </form>
     </AuthCard>
   )
