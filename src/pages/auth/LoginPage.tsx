@@ -109,7 +109,7 @@ export function LoginPage() {
           We’ll email you a 6-digit code. No password needed.
         </p>
         <p className="text-center nff-caption text-muted-foreground">
-          Demo: practitioner@nff.demo or editor@nff.demo
+          Demo: practitioner@nff.demo, editor@nff.demo or admin@nff.demo (super admin)
         </p>
       </form>
     </AuthCard>
