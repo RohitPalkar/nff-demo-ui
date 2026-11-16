@@ -86,20 +86,27 @@ describe('Library page', () => {
       expect(content.find((item) => item.title === heading.textContent)?.featured).toBe(true)
     }
 
-    // Every card stays inside the Practitioner app.
+    // Every resource card stays inside the Practitioner app (exclude pagination links).
     for (const link of within(grid()).getAllByRole('link')) {
-      expect(link.getAttribute('href')).toMatch(/^\/learn\/library\/(article|audio)\//)
+      const href = link.getAttribute('href')
+      if (href && href !== '#') {
+        expect(href).toMatch(/^\/learn\/library\/(article|audio)\//)
+      }
     }
     expect(screen.queryByText(/rating|enrol|popular|review/i)).not.toBeInTheDocument()
   })
 
-  it('shows more on request', async () => {
+  it('shows next page via pagination', async () => {
     practitioner()
     const user = userEvent.setup()
     renderAt('/learn/library')
     await screen.findByText(/Showing 24 of/)
-    await user.click(screen.getByRole('button', { name: 'Show more' }))
-    expect(cardTitles()).toHaveLength(48)
+    const page1Titles = cardTitles()
+    // Click page 2 in pagination
+    await user.click(screen.getByRole('link', { name: 'Page 2' }))
+    const page2Titles = cardTitles()
+    expect(page2Titles).toHaveLength(24)
+    expect(page2Titles).not.toEqual(page1Titles)
   })
 
   it('searches after typing, keeps the query in the URL, and clears with Escape', async () => {

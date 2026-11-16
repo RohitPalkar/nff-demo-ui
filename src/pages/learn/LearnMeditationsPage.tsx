@@ -1,7 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { SECONDARY_ACTION } from '@/components/learn/home/homeStyles'
 import {
   LibraryCategoryNavigation,
   LibraryResultsSummary,
@@ -13,6 +12,7 @@ import { MeditationContinueCard, MeditationGrid } from '@/components/learn/medit
 import { SOW_SCOPE } from '@/config/sowScope'
 import { MeditationsHeader } from '@/components/learn/meditations/MeditationsHeader'
 import { Skeleton } from '@/components/ui/skeleton'
+import { PaginationFull } from '@/components/ui/pagination-full'
 import { useAuth } from '@/features/auth/AuthProvider'
 import { CATEGORY_COPY } from '@/services/content'
 import { getAccessContext } from '@/services/learning/accessContext'
@@ -26,7 +26,7 @@ import {
 } from '@/services/learning/meditations'
 import { loadProgress } from '@/services/learning/progress'
 
-/** Cards per "Show more". */
+/** Cards per page. */
 const PAGE_SIZE = 24
 
 /**
@@ -81,8 +81,14 @@ export function LearnMeditationsPage() {
   }, [entries, q, category, readyOnly, sort])
 
   const viewKey = [q, category, readyOnly, sort].join('|')
-  const [paging, setPaging] = useState({ viewKey, limit: PAGE_SIZE })
-  const limit = paging.viewKey === viewKey ? paging.limit : PAGE_SIZE
+  const [page, setPage] = useState(1)
+
+  // Reset page when view changes
+  const [lastViewKey, setLastViewKey] = useState(viewKey)
+  if (lastViewKey !== viewKey) {
+    setLastViewKey(viewKey)
+    setPage(1)
+  }
 
   const active: ActiveFilter[] = [
     ...(q.trim() ? [{ key: 'q' as const, label: `“${q.trim()}”` }] : []),
@@ -169,7 +175,7 @@ export function LearnMeditationsPage() {
             </div>
 
             <LibraryResultsSummary
-              shown={Math.min(limit, view.results.length)}
+              shown={Math.min(page * PAGE_SIZE, view.results.length)}
               total={view.results.length}
               active={active}
               noun="meditation"
@@ -179,16 +185,13 @@ export function LearnMeditationsPage() {
 
             {view.results.length > 0 ? (
               <>
-                <MeditationGrid entries={view.results.slice(0, limit)} />
-                {view.results.length > limit && (
-                  <button
-                    type="button"
-                    onClick={() => setPaging({ viewKey, limit: limit + PAGE_SIZE })}
-                    className={`${SECONDARY_ACTION} self-center`}
-                  >
-                    Show more
-                  </button>
-                )}
+                <MeditationGrid entries={view.results.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)} />
+                <PaginationFull
+                  currentPage={page}
+                  totalPages={Math.ceil(view.results.length / PAGE_SIZE)}
+                  onPageChange={setPage}
+                  className="mt-6"
+                />
               </>
             ) : (
               <LibraryEmptyState

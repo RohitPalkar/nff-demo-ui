@@ -83,7 +83,10 @@ describe('Meditations page', () => {
     expect(screen.getByText('Find a little space to pause, listen and return to your practice.')).toBeInTheDocument()
     expect(await screen.findByText(`Showing 24 of ${meditations.length} meditations`)).toBeInTheDocument()
     for (const link of within(browse()).getAllByRole('link')) {
-      expect(link.getAttribute('href')).toMatch(/^\/learn\/meditations\/[a-z0-9-]+$/)
+      const href = link.getAttribute('href')
+      if (href && href !== '#') {
+        expect(href).toMatch(/^\/learn\/meditations\/[a-z0-9-]+$/)
+      }
     }
     expect(screen.queryByText(/popular|rating|reviews|listeners|streak/i)).not.toBeInTheDocument()
   })
