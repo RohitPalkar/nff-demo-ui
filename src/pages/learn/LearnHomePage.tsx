@@ -5,6 +5,7 @@ import { LearningPathCard } from '@/components/learn/home/LearningPathCard'
 import { RecentLearningList, UpNextList } from '@/components/learn/home/LessonList'
 import { ResourceCard } from '@/components/learn/home/ResourceCard'
 import { WelcomeHeader } from '@/components/learn/home/WelcomeHeader'
+import { AnalyticsSidebar } from '@/components/learn/analytics'
 import { useAuth } from '@/features/auth/AuthProvider'
 import { usePlayer } from '@/features/player/PlayerProvider'
 import { cn } from '@/lib/utils'
@@ -32,13 +33,25 @@ export function LearnHomePage() {
   }, [user])
 
   if (!home) return null
-  const { continueLearning, assigned, upNext, recent, explore, isPreview } = home
+  const {
+    continueLearning,
+    assigned,
+    upNext,
+    recent,
+    explore,
+    isPreview,
+    progressOverview,
+    weeklyActivity,
+    learningStreak,
+    learningTimeSeries,
+  } = home
 
   return (
     <div className="mx-auto flex max-w-[1440px] flex-col gap-10 px-4 py-8 sm:px-6 md:gap-12 md:py-12 lg:px-10">
       <WelcomeHeader firstName={home.firstName} intro={home.intro} action={home.action} />
 
-      <div className="grid gap-10 md:gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(300px,360px)] lg:gap-10 xl:grid-cols-[minmax(0,1fr)_400px]">
+      <div className="grid gap-10 md:gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(320px,380px)] lg:gap-10 xl:grid-cols-[minmax(0,1fr)_420px]">
+        {/* Main Content Column */}
         <div className="flex min-w-0 flex-col gap-10 md:gap-12">
           {continueLearning && (
             <HomeSection id="home-continue">
@@ -84,45 +97,55 @@ export function LearnHomePage() {
               />
             )}
           </HomeSection>
+
+          {(upNext.length > 0 || !isPreview) && (
+            <div
+              className={cn(
+                'grid min-w-0 gap-10 lg:grid-cols-1 lg:gap-12',
+                upNext.length > 0 && !isPreview && 'md:grid-cols-2 md:gap-6',
+              )}
+            >
+              {upNext.length > 0 && (
+                <HomeSection id="home-up-next" className="rounded-2xl bg-[var(--nff-bg-brand-subtle)] p-6 sm:p-8">
+                  <HomeSectionHeader
+                    id="home-up-next"
+                    title="Up next"
+                    description={
+                      assigned.length > 1
+                        ? 'Your next lessons across all paths, in order.'
+                        : 'The next lessons you have not finished, in path order.'
+                    }
+                  />
+                  <UpNextList items={upNext} />
+                </HomeSection>
+              )}
+
+              {!isPreview && (
+                <HomeSection id="home-recent">
+                  <HomeSectionHeader id="home-recent" title="Recently accessed" />
+                  {recent.length > 0 ? (
+                    <RecentLearningList items={recent} />
+                  ) : (
+                    <HomeEmptyState
+                      title="Nothing yet"
+                      description="Lessons you start or finish will be listed here."
+                    />
+                  )}
+                </HomeSection>
+              )}
+            </div>
+          )}
         </div>
 
-        {(upNext.length > 0 || !isPreview) && (
-          <div
-            className={cn(
-              'grid min-w-0 content-start gap-10 lg:grid-cols-1 lg:gap-12',
-              upNext.length > 0 && !isPreview && 'md:grid-cols-2 md:gap-6',
-            )}
-          >
-            {upNext.length > 0 && (
-              <HomeSection id="home-up-next" className="rounded-2xl bg-[var(--nff-bg-brand-subtle)] p-6 sm:p-8">
-                <HomeSectionHeader
-                  id="home-up-next"
-                  title="Up next"
-                  description={
-                    assigned.length > 1
-                      ? 'Your next lessons across all paths, in order.'
-                      : 'The next lessons you have not finished, in path order.'
-                  }
-                />
-                <UpNextList items={upNext} />
-              </HomeSection>
-            )}
-
-            {!isPreview && (
-              <HomeSection id="home-recent">
-                <HomeSectionHeader id="home-recent" title="Recently accessed" />
-                {recent.length > 0 ? (
-                  <RecentLearningList items={recent} />
-                ) : (
-                  <HomeEmptyState
-                    title="Nothing yet"
-                    description="Lessons you start or finish will be listed here."
-                  />
-                )}
-              </HomeSection>
-            )}
-          </div>
-        )}
+        {/* Analytics Sidebar */}
+        <aside className="lg:self-start lg:sticky lg:top-24">
+          <AnalyticsSidebar
+            progressOverview={progressOverview}
+            weeklyActivity={weeklyActivity}
+            learningStreak={learningStreak}
+            learningTimeSeries={learningTimeSeries}
+          />
+        </aside>
       </div>
 
       <HomeSection id="home-explore">

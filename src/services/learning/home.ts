@@ -28,6 +28,7 @@ import {
 } from './catalogue'
 import { isPreviewRole } from './previewRoles'
 import { isLessonComplete, isSupportedAudioProgress, pathCompletion, countsTowardCompletion } from './progress'
+import { subDays, format, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay } from 'date-fns'
 import {
   LEARN_LIBRARY,
   pathLessonHref,
@@ -102,6 +103,38 @@ export interface HomeAction {
   href: string
 }
 
+// Learning Analytics Types
+// ---------------------------------------------------------------------------
+
+export interface WeeklyActivityDay {
+  date: string
+  label: string
+  lessonsCompleted: number
+  minutesListened: number
+  isToday: boolean
+}
+
+export interface LearningStreak {
+  currentStreak: number
+  longestStreak: number
+  lastActiveDate: string | null
+  weeklyActiveDays: boolean[] // 7 days, true = active
+}
+
+export interface LearningProgressOverview {
+  totalLessons: number
+  completedLessons: number
+  percentComplete: number
+  totalLearningTimeMinutes: number
+  activePaths: number
+}
+
+export interface LearningTimeSeriesPoint {
+  week: string
+  minutes: number
+  lessons: number
+}
+
 export interface LearnerHome {
   firstName: string
   intro: string
@@ -114,6 +147,11 @@ export interface LearnerHome {
   recent: RecentLesson[]
   explore: ExploreResource[]
   libraryHref: string
+  // Analytics
+  progressOverview: LearningProgressOverview
+  weeklyActivity: WeeklyActivityDay[]
+  learningStreak: LearningStreak
+  learningTimeSeries: LearningTimeSeriesPoint[]
 }
 
 export const UP_NEXT_LIMIT = 3
@@ -518,6 +556,12 @@ export function buildLearnerHome(
 
   const { intro, action } = welcomeCopy({ continueLearning, assigned, upNext, isPreview })
 
+  // Compute analytics
+  const progressOverview = computeProgressOverview(ctx, store, assigned)
+  const weeklyActivity = computeWeeklyActivity(store)
+  const learningStreak = computeLearningStreak(store)
+  const learningTimeSeries = computeLearningTimeSeries(store)
+
   return {
     firstName: firstNameOf(user.name),
     intro,
@@ -529,7 +573,208 @@ export function buildLearnerHome(
     recent,
     explore,
     libraryHref: LEARN_LIBRARY,
+    progressOverview,
+    weeklyActivity,
+    learningStreak,
+    learningTimeSeries,
   }
+}
+
+// Learning Analytics Computation
+// ---------------------------------------------------------------------------
+
+function computeProgressOverview(
+  _ctx: AccessContext,
+  store: LearningProgressStore,
+  assignedPaths: AssignedPath[],
+): LearningProgressOverview {
+  // Total lessons across all accessible paths
+  const allLessons = assignedPaths.flatMap((entry) =>
+    getLessonsOf(entry.path.id).filter(countsTowardCompletion)
+  )
+  const totalLessons = allLessons.length
+  const completedLessons = allLessons.filter((lesson) => isLessonComplete(lesson, store)).length
+  const percentComplete = totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0
+
+  // Total learning time from media progress
+  let totalLearningTimeMinutes = 0
+  for (const media of Object.values(store.media)) {
+    if (isSupportedAudioProgress(media.resourceId, media)) {
+      totalLearningTimeMinutes += Math.floor((media.playedSec ?? 0) / 60)
+    }
+  }
+
+  // Active paths (in-progress or not-started with assigned lessons)
+  const activePaths = assignedPaths.filter((entry) => entry.status !== 'complete').length
+
+  return {
+    totalLessons,
+    completedLessons,
+    percentComplete,
+    totalLearningTimeMinutes,
+    activePaths,
+  }
+}
+
+function computeWeeklyActivity(
+  store: LearningProgressStore,
+): WeeklyActivityDay[] {
+  const today = new Date()
+  const weekStart = startOfWeek(today, { weekStartsOn: 1 }) // Monday start
+  const weekEnd = endOfWeek(today, { weekStartsOn: 1 })
+  const days = eachDayOfInterval({ start: weekStart, end: weekEnd })
+
+  return days.map((day: Date) => {
+    const dayStr = format(day, 'yyyy-MM-dd')
+    const dayLabel = format(day, 'EEE')
+    const isToday = isSameDay(day, today)
+
+    // Count lessons completed on this day
+    let lessonsCompleted = 0
+    let minutesListened = 0
+
+    for (const activity of store.activity) {
+      if (activity.at.startsWith(dayStr)) {
+        if (activity.type === 'completed') lessonsCompleted++
+      }
+    }
+
+    // Audio minutes listened on this day (approximate from playedSec)
+    for (const media of Object.values(store.media)) {
+      if (media.updatedAt?.startsWith(dayStr) && isSupportedAudioProgress(media.resourceId, media)) {
+        minutesListened += Math.floor((media.playedSec ?? 0) / 60)
+      }
+    }
+
+    // Also check lesson reading activity
+    for (const lesson of Object.values(store.lessons)) {
+      if (lesson.reading?.lastReadAt?.startsWith(dayStr)) {
+        // Count as activity even if not completed
+        if (lessonsCompleted === 0) lessonsCompleted = 1
+      }
+    }
+
+    return {
+      date: dayStr,
+      label: dayLabel,
+      lessonsCompleted,
+      minutesListened,
+      isToday,
+    }
+  })
+}
+
+function computeLearningStreak(
+  store: LearningProgressStore,
+): LearningStreak {
+  // Get all unique dates with learning activity
+  const activeDates = new Set<string>()
+
+  // From activity events
+  for (const activity of store.activity) {
+    if (['completed', 'started', 'opened'].includes(activity.type)) {
+      activeDates.add(activity.at.split('T')[0])
+    }
+  }
+
+  // From media progress
+  for (const media of Object.values(store.media)) {
+    if (media.updatedAt && isSupportedAudioProgress(media.resourceId, media)) {
+      activeDates.add(media.updatedAt.split('T')[0])
+    }
+  }
+
+  // From reading progress
+  for (const lesson of Object.values(store.lessons)) {
+    if (lesson.reading?.lastReadAt) {
+      activeDates.add(lesson.reading.lastReadAt.split('T')[0])
+    }
+  }
+
+  const sortedDates = [...activeDates].sort().reverse()
+  const today = format(new Date(), 'yyyy-MM-dd')
+  const yesterday = format(subDays(new Date(), 1), 'yyyy-MM-dd')
+
+  // Calculate current streak
+  let currentStreak = 0
+  let checkDate = today
+
+  // If no activity today, check from yesterday
+  if (!activeDates.has(today)) {
+    checkDate = yesterday
+  }
+
+  while (activeDates.has(checkDate)) {
+    currentStreak++
+    checkDate = format(subDays(new Date(checkDate), 1), 'yyyy-MM-dd')
+  }
+
+  // Calculate longest streak
+  let longestStreak = 0
+  let tempStreak = 0
+  let prevDate: Date | null = null
+
+  for (const dateStr of [...activeDates].sort()) {
+    const date = new Date(dateStr)
+    if (prevDate && Math.floor((date.getTime() - prevDate.getTime()) / (1000 * 60 * 60 * 24)) === 1) {
+      tempStreak++
+    } else {
+      tempStreak = 1
+    }
+    longestStreak = Math.max(longestStreak, tempStreak)
+    prevDate = date
+  }
+
+  // Weekly active days (last 7 days including today)
+  const weekStart = startOfWeek(new Date(), { weekStartsOn: 1 })
+  const weeklyActiveDays = eachDayOfInterval({
+    start: weekStart,
+    end: endOfWeek(new Date(), { weekStartsOn: 1 }),
+  }).map((day: Date) => activeDates.has(format(day, 'yyyy-MM-dd')))
+
+  return {
+    currentStreak,
+    longestStreak,
+    lastActiveDate: sortedDates[0] ?? null,
+    weeklyActiveDays,
+  }
+}
+
+function computeLearningTimeSeries(
+  store: LearningProgressStore,
+  weeks = 6,
+): LearningTimeSeriesPoint[] {
+  const result: LearningTimeSeriesPoint[] = []
+  const today = new Date()
+
+  for (let i = weeks - 1; i >= 0; i--) {
+    const weekStart = startOfWeek(subDays(today, i * 7), { weekStartsOn: 1 })
+    const weekEnd = endOfWeek(subDays(today, i * 7), { weekStartsOn: 1 })
+    const weekLabel = format(weekStart, 'MMM d')
+
+    let minutes = 0
+    let lessons = 0
+
+    for (const activity of store.activity) {
+      const activityDate = new Date(activity.at)
+      if (activityDate >= weekStart && activityDate <= weekEnd) {
+        if (activity.type === 'completed') lessons++
+      }
+    }
+
+    for (const media of Object.values(store.media)) {
+      if (media.updatedAt && isSupportedAudioProgress(media.resourceId, media)) {
+        const mediaDate = new Date(media.updatedAt)
+        if (mediaDate >= weekStart && mediaDate <= weekEnd) {
+          minutes += Math.floor((media.playedSec ?? 0) / 60)
+        }
+      }
+    }
+
+    result.push({ week: weekLabel, minutes, lessons })
+  }
+
+  return result
 }
 
 function welcomeCopy({
