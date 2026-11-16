@@ -4,6 +4,7 @@ import {
   content,
   emailLogs,
   emailTemplates,
+  scoreLogSeed,
   scoreWeightsSeed,
   stages,
   userById,
@@ -849,8 +850,12 @@ export function loadScoreWeights(): ScoreWeights {
 export interface ScoreLogEntry {
   at: string
   weights: ScoreWeights
+  /** The configuration that was replaced, used to show what each save changed. */
+  previousWeights?: ScoreWeights
   /** Who saved it. Absent on entries saved before authorship was recorded. */
   by?: string
+  /** Resolved display name, added when the log is read. */
+  actorName?: string
 }
 
 /** Saving weights stores them. Nothing recalculates scores from them (see docs). */
@@ -860,18 +865,24 @@ export function saveScoreWeights(weights: ScoreWeights, actor?: ActorInput) {
     'insights.scores.configure',
     { action: 'insights.scores.configure', resourceType: 'score_settings', resourceId: 'weights' },
     (resolved) => {
+      const previousWeights = loadScoreWeights()
       writeJson(SCORE_KEY, weights)
-      const log = readJson<ScoreLogEntry[]>(`${SCORE_KEY}.log`, [])
+      const log = readJson<ScoreLogEntry[]>(`${SCORE_KEY}.log`, scoreLogSeed)
       writeJson(
         `${SCORE_KEY}.log`,
-        [{ at: new Date().toISOString(), weights, by: resolved.id }, ...log].slice(0, 5),
+        [{ at: new Date().toISOString(), weights, previousWeights, by: resolved.id }, ...log].slice(0, 5),
       )
     },
   )
 }
 
-export function scoreLog() {
-  return readJson<ScoreLogEntry[]>(`${SCORE_KEY}.log`, [])
+export function scoreLog(): ScoreLogEntry[] {
+  const entries = readJson<ScoreLogEntry[]>(`${SCORE_KEY}.log`, scoreLogSeed)
+  return entries.map((entry, index) => ({
+    ...entry,
+    previousWeights: entry.previousWeights ?? entries[index + 1]?.weights,
+    actorName: entry.actorName ?? (entry.by ? userById.get(entry.by)?.name : undefined),
+  }))
 }
 
 /** Role assignments made through the team screen, by user id. */

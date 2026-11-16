@@ -71,10 +71,13 @@ describe('data-source labels', () => {
     expect(container.querySelector('[data-source="live"]')).toBeNull()
   })
 
-  it('Score settings says nothing recalculates scores', async () => {
+  it('Score settings says nothing recalculates scores and shows relevant demo change history', async () => {
     renderPage(<ScoreSettingsPage />, EMAIL.superAdmin)
     expect(await screen.findByText(/nothing calculates engagement scores from them/, {}, T)).toBeInTheDocument()
     expect(screen.queryByText(/recalculate this weekend/i)).not.toBeInTheDocument()
+    expect(screen.getAllByText('Weighting updated')).toHaveLength(3)
+    expect(screen.getByText('3 entries')).toBeInTheDocument()
+    expect(screen.getAllByText('Saved by Adeola Bankole')).toHaveLength(3)
   })
 
   it('Overview shows no value for an engagement trend it cannot measure, and labels seeded counts as demo', async () => {

@@ -1,3 +1,4 @@
+import { ArrowRight, History } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { DataSourceNotice, PageHeader } from '@/components/cms/CmsParts'
@@ -11,6 +12,7 @@ import {
   loadScoreWeights,
   saveScoreWeights,
   scoreLog,
+  type ScoreLogEntry,
   type ScoreWeights,
 } from '@/services/cms'
 
@@ -20,6 +22,18 @@ const LABELS: Record<keyof ScoreWeights, string> = {
   completion: 'Completion',
   progression: 'Progression',
   email: 'Email engagement',
+}
+
+const WEIGHT_KEYS = Object.keys(LABELS) as Array<keyof ScoreWeights>
+
+function changesFrom(entry: ScoreLogEntry) {
+  const previous = entry.previousWeights
+  if (!previous) return []
+  return WEIGHT_KEYS.flatMap((key) => {
+    const from = previous[key]
+    const to = entry.weights[key]
+    return from === to ? [] : [{ key, label: LABELS[key], from, to }]
+  })
 }
 
 export function ScoreSettingsPage() {
@@ -110,25 +124,69 @@ export function ScoreSettingsPage() {
         )}
       </section>
 
-      <section aria-labelledby="changes" className="flex flex-col gap-2">
-        <h2 id="changes" className="nff-heading-h4">
-          Change log
-        </h2>
+      <section aria-labelledby="changes" className="flex flex-col gap-3">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center gap-2">
+              <History aria-hidden="true" className="size-4 text-[var(--admin-text-muted)]" />
+              <h2 id="changes" className="nff-heading-h4">
+                Change log
+              </h2>
+            </div>
+            <p className="nff-body-sm text-[var(--admin-text-muted)]">
+              Saved weighting snapshots, newest first. Seeded demo history is included.
+            </p>
+          </div>
+          <span className="rounded-full border border-[var(--admin-border)] bg-[var(--admin-surface)] px-2.5 py-1 nff-label-sm text-[var(--admin-text-muted)]">
+            {log.length} {log.length === 1 ? 'entry' : 'entries'}
+          </span>
+        </div>
         {log.length === 0 ? (
           <p className="nff-body-sm text-muted-foreground">No changes yet.</p>
         ) : (
-          <ul className="flex flex-col divide-y rounded-xl border bg-card">
-            {log.map((entry) => (
-              <li key={entry.at} className="flex justify-between gap-3 p-3 nff-body-sm">
-                <span>
-                  {Object.entries(entry.weights)
-                    .map(([key, value]) => `${LABELS[key as keyof ScoreWeights]} ${value}`)
-                    .join(' · ')}
-                </span>
-                <span className="text-muted-foreground">{formatDate(entry.at)}</span>
-              </li>
-            ))}
-          </ul>
+          <ol className="overflow-hidden rounded-xl border bg-card">
+            {log.map((entry, index) => {
+              const changes = changesFrom(entry)
+              const entryTotal = Object.values(entry.weights).reduce((sum, value) => sum + value, 0)
+              return (
+                <li
+                  key={`${entry.at}-${index}`}
+                  className="grid gap-3 border-b p-4 last:border-b-0 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start"
+                >
+                  <div className="flex min-w-0 flex-col gap-1.5">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="nff-label-md">Weighting updated</span>
+                      <span className="rounded-full border border-[var(--admin-border)] bg-[var(--admin-surface-subtle)] px-2 py-0.5 nff-caption text-[var(--admin-text-muted)]">
+                        Total {entryTotal} / 100
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 nff-body-sm text-[var(--admin-text-muted)]">
+                      <time dateTime={entry.at}>{formatDate(entry.at)}</time>
+                      <span aria-hidden="true">·</span>
+                      <span>Saved by {entry.actorName ?? 'Super admin'}</span>
+                    </div>
+                  </div>
+                  <div className="flex min-w-0 flex-wrap gap-2 lg:justify-end">
+                    {changes.length > 0 ? (
+                      changes.map((change) => (
+                        <span
+                          key={change.key}
+                          className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--admin-border)] bg-[var(--admin-surface-subtle)] px-2.5 py-1.5 nff-caption"
+                        >
+                          <span className="font-medium text-[var(--admin-text)]">{change.label}</span>
+                          <span className="tabular-nums text-[var(--admin-text-muted)]">{change.from}</span>
+                          <ArrowRight aria-hidden="true" className="size-3 text-[var(--admin-text-muted)]" />
+                          <span className="font-medium tabular-nums text-[var(--admin-text)]">{change.to}</span>
+                        </span>
+                      ))
+                    ) : (
+                      <span className="nff-body-sm text-[var(--admin-text-muted)]">Initial configuration recorded.</span>
+                    )}
+                  </div>
+                </li>
+              )
+            })}
+          </ol>
         )}
       </section>
     </div>

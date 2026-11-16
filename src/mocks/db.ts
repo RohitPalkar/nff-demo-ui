@@ -607,6 +607,28 @@ export const scoreWeightsSeed = {
   email: 10,
 }
 
+/** Seeded score-setting history for the prototype review. */
+export const scoreLogSeed = [
+  {
+    at: daysAgo(4),
+    weights: { loginRecency: 20, minutesListened: 25, completion: 25, progression: 20, email: 10 },
+    previousWeights: { loginRecency: 15, minutesListened: 25, completion: 25, progression: 25, email: 10 },
+    by: 'u-admin',
+  },
+  {
+    at: daysAgo(13),
+    weights: { loginRecency: 15, minutesListened: 25, completion: 25, progression: 25, email: 10 },
+    previousWeights: { loginRecency: 15, minutesListened: 20, completion: 20, progression: 35, email: 10 },
+    by: 'u-admin',
+  },
+  {
+    at: daysAgo(31),
+    weights: { loginRecency: 15, minutesListened: 20, completion: 20, progression: 35, email: 10 },
+    previousWeights: { loginRecency: 10, minutesListened: 20, completion: 20, progression: 40, email: 10 },
+    by: 'u-admin',
+  },
+]
+
 export const demoCode = '123456'
 
 export function addMockUser(user: User) {
