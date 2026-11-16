@@ -78,8 +78,8 @@ describe('Library page', () => {
     expect(
       screen.getByText('Discover learning resources, practices and ideas to explore at your own pace.'),
     ).toBeInTheDocument()
-    expect(await screen.findByText(`Showing 24 of ${published.length} resources`)).toBeInTheDocument()
-    expect(cardTitles()).toHaveLength(24)
+    expect(await screen.findByText(`Showing 9 of ${published.length} resources`)).toBeInTheDocument()
+    expect(cardTitles()).toHaveLength(9)
 
     const featured = screen.getByRole('region', { name: 'Featured' })
     for (const heading of within(featured).getAllByRole('heading', { level: 3 })) {
@@ -100,12 +100,12 @@ describe('Library page', () => {
     practitioner()
     const user = userEvent.setup()
     renderAt('/learn/library')
-    await screen.findByText(/Showing 24 of/)
+    await screen.findByText(/Showing 9 of/)
     const page1Titles = cardTitles()
     // Click page 2 in pagination
     await user.click(screen.getByRole('link', { name: 'Page 2' }))
     const page2Titles = cardTitles()
-    expect(page2Titles).toHaveLength(24)
+    expect(page2Titles).toHaveLength(9)
     expect(page2Titles).not.toEqual(page1Titles)
   })
 
@@ -113,7 +113,7 @@ describe('Library page', () => {
     practitioner()
     const user = userEvent.setup()
     renderAt('/learn/library?sort=title')
-    await screen.findByText(/Showing 24 of/)
+    await screen.findByText(/Showing 9 of/)
 
     const target = published.find((item) => item.type === 'exploration')!
     const search = screen.getByRole('searchbox', { name: 'Search the library' })
@@ -145,7 +145,7 @@ describe('Library page', () => {
     practitioner()
     const user = userEvent.setup()
     renderAt('/learn/library')
-    await screen.findByText(/Showing 24 of/)
+    await screen.findByText(/Showing 9 of/)
 
     const nav = screen.getByRole('navigation', { name: 'Library categories' })
     const contemplate = published.filter((item) => item.category === 'contemplate')
@@ -157,8 +157,9 @@ describe('Library page', () => {
     const formats = screen.getByRole('group', { name: 'Format' })
     await user.click(within(formats).getByRole('button', { name: /^Article/ }))
     const expected = contemplate.filter((item) => item.type === 'exploration').length
-    expect(screen.getByText(`${expected} resources`)).toBeInTheDocument()
-    expect(cardTitles()).toHaveLength(expected)
+    // With pagination showing 9 per page, the summary says "Showing 9 of X resources"
+    expect(await screen.findByText(`Showing ${Math.min(expected, 9)} of ${expected} resources`)).toBeInTheDocument()
+    expect(cardTitles()).toHaveLength(Math.min(expected, 9))
 
     const chips = screen.getByRole('list', { name: 'Active filters' })
     await user.click(within(chips).getByRole('button', { name: 'Remove filter: Contemplate' }))
@@ -168,7 +169,7 @@ describe('Library page', () => {
   it('treats unsupported media formats as no filter', async () => {
     practitioner()
     renderAt('/learn/library?format=video')
-    expect(await screen.findByText(`Showing 24 of ${published.length} resources`)).toBeInTheDocument()
+    expect(await screen.findByText(`Showing 9 of ${published.length} resources`)).toBeInTheDocument()
     expect(within(grid()).queryByText('Video', { selector: 'span' })).not.toBeInTheDocument()
   })
 
@@ -176,7 +177,7 @@ describe('Library page', () => {
     practitioner()
     const user = userEvent.setup()
     renderAt('/learn/library')
-    await screen.findByText(/Showing 24 of/)
+    await screen.findByText(/Showing 9 of/)
     await user.selectOptions(screen.getByLabelText('Sort by'), 'title')
     expect(screen.getByTestId('where')).toHaveTextContent('sort=title')
     const titles = cardTitles() as string[]
@@ -186,7 +187,7 @@ describe('Library page', () => {
   it('lists nothing unpublished, even for staff', async () => {
     session('u-editor', 'Rowan Ellis', 'editor@nff.demo', 'editor')
     renderAt('/learn/library?q=')
-    expect(await screen.findByText(`Showing 24 of ${published.length} resources`)).toBeInTheDocument()
+    expect(await screen.findByText(`Showing 9 of ${published.length} resources`)).toBeInTheDocument()
   })
 })
 

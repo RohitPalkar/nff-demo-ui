@@ -28,8 +28,8 @@ import {
 } from '@/services/learning/library'
 import { CATEGORY_COPY } from '@/services/content'
 
-/** Cards per page. */
-const PAGE_SIZE = 24
+/** Cards per page (3 rows × 3 cols = 9). */
+const PAGE_SIZE = 9
 
 /**
  * `/learn/library`: search, browse and filter every resource the viewer may

@@ -81,7 +81,7 @@ describe('Meditations page', () => {
     renderAt('/learn/meditations')
     expect(screen.getByRole('heading', { level: 1, name: 'Meditations' })).toBeInTheDocument()
     expect(screen.getByText('Find a little space to pause, listen and return to your practice.')).toBeInTheDocument()
-    expect(await screen.findByText(`Showing 24 of ${meditations.length} meditations`)).toBeInTheDocument()
+    expect(await screen.findByText(`Showing 9 of ${meditations.length} meditations`)).toBeInTheDocument()
     for (const link of within(browse()).getAllByRole('link')) {
       const href = link.getAttribute('href')
       if (href && href !== '#') {
@@ -95,7 +95,7 @@ describe('Meditations page', () => {
     practitioner()
     setStore()
     const { unmount } = renderAt('/learn/meditations')
-    await screen.findByText(/Showing 24 of/)
+    await screen.findByText(/Showing 9 of/)
     expect(screen.queryByRole('region', { name: 'Continue listening' })).not.toBeInTheDocument()
     unmount()
 
@@ -133,10 +133,10 @@ describe('Meditations page', () => {
     setStore()
     const user = userEvent.setup()
     renderAt('/learn/meditations')
-    await screen.findByText(/Showing 24 of/)
+    await screen.findByText(/Showing 9 of/)
     await user.click(screen.getByRole('checkbox', { name: 'Ready to play only' }))
     expect(screen.getByTestId('where')).toHaveTextContent('ready=1')
-    expect(screen.getByText(`Showing 24 of ${ready.length} meditations`)).toBeInTheDocument()
+    expect(screen.getByText(`Showing 9 of ${ready.length} meditations`)).toBeInTheDocument()
     expect(screen.getByRole('list', { name: 'Active filters' })).toHaveTextContent('Ready to play')
   })
 
@@ -145,7 +145,7 @@ describe('Meditations page', () => {
     setStore()
     const user = userEvent.setup()
     renderAt('/learn/meditations?sort=title')
-    await screen.findByText(/Showing 24 of/)
+    await screen.findByText(/Showing 9 of/)
 
     const nav = screen.getByRole('navigation', { name: 'Library categories' })
     const foundations = meditations.filter((item) => item.category === 'foundations')
@@ -153,7 +153,7 @@ describe('Meditations page', () => {
     await user.click(chip)
     expect(screen.getByTestId('where')).toHaveTextContent('category=foundations')
     expect(screen.getByTestId('where')).toHaveTextContent('sort=title')
-    expect(titles()).toHaveLength(foundations.length)
+    expect(titles()).toHaveLength(Math.min(foundations.length, 9))
     const sorted = titles() as string[]
     expect(sorted).toEqual([...sorted].sort((a, b) => a.localeCompare(b)))
 
@@ -168,7 +168,7 @@ describe('Meditations page', () => {
   it('gives staff a read-only preview with no personal sections', async () => {
     session('u-editor', 'Rowan Ellis', 'editor@nff.demo', 'editor')
     renderAt('/learn/meditations')
-    await screen.findByText(/Showing 24 of/)
+    await screen.findByText(/Showing 9 of/)
     expect(screen.queryByRole('region', { name: 'Continue listening' })).not.toBeInTheDocument()
     expect(window.localStorage.getItem(progressKey('u-editor'))).toBeNull()
   })
