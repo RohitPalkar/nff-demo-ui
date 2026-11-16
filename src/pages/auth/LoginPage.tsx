@@ -1,6 +1,6 @@
 import { LEARN_HOME } from '@/services/learning/routes'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Loader2 } from 'lucide-react'
+import { Loader2, Copy, Check } from 'lucide-react'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
@@ -12,6 +12,7 @@ import { requestSignInCode } from '@/services/auth'
 import { AuthCard, Field, FormAlert, authLink } from './AuthCard'
 import { AuthHighlights } from './AuthHighlights'
 import { CodeStep } from './CodeStep'
+import { cn } from '@/lib/utils'
 
 const schema = z.object({
   email: z.string().trim().email('Enter a valid email address.'),
@@ -40,6 +41,20 @@ export function LoginPage() {
     resolver: zodResolver(schema),
     defaultValues: { email: state?.email ?? '' },
   })
+
+  const [copiedEmail, setCopiedEmail] = useState<string | null>(null)
+
+  async function copyEmail(email: string) {
+    await navigator.clipboard.writeText(email)
+    setCopiedEmail(email)
+    setTimeout(() => setCopiedEmail(null), 2000)
+  }
+
+  const demoAccounts = [
+    { role: 'Practitioner', email: 'practitioner@nff.demo', description: 'Full library access' },
+    { role: 'Editor', email: 'editor@nff.demo', description: 'CMS preview access' },
+    { role: 'Super Admin', email: 'admin@nff.demo', description: 'Full CMS access' },
+  ] as const
 
   async function sendCode(values: Values) {
     setFormError(null)
@@ -106,11 +121,40 @@ export function LoginPage() {
           Continue
         </Button>
         <p className="text-center nff-body-sm text-muted-foreground">
-          We’ll email you a 6-digit code. No password needed.
+          We'll email you a 6-digit code. No password needed.
         </p>
-        <p className="text-center nff-caption text-muted-foreground">
-          Demo: practitioner@nff.demo, editor@nff.demo or admin@nff.demo (super admin)
-        </p>
+
+        {/* Demo Accounts with Copy Buttons */}
+        <div className="mt-6 p-4 rounded-xl bg-[var(--nff-sage-50)] border border-[var(--nff-sage-200)]">
+          <p className="text-center nff-caption font-medium text-[var(--nff-forest-700)] mb-3">
+            Demo accounts (password: <code className="bg-[var(--nff-sage-200)] px-1.5 py-0.5 rounded text-[var(--nff-forest-900)]">practice123</code>)
+          </p>
+          <div className="grid gap-2 sm:grid-cols-3">
+            {demoAccounts.map((account) => (
+              <button
+                key={account.email}
+                type="button"
+                onClick={() => copyEmail(account.email)}
+                className={cn(
+                  'relative flex items-center justify-between gap-2 p-3 rounded-lg bg-white border border-[var(--nff-sage-200)]',
+                  'hover:border-[var(--nff-sage-300)] hover:shadow-sm transition-all duration-200',
+                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--nff-forest-500)]'
+                )}
+              >
+                <div className="flex flex-col min-w-0">
+                  <span className="nff-caption font-medium text-[var(--nff-forest-900)]">{account.role}</span>
+                  <span className="nff-caption text-[var(--nff-forest-700)] truncate font-mono text-sm">{account.email}</span>
+                  <span className="nff-caption text-[var(--nff-sage-600)]">{account.description}</span>
+                </div>
+                {copiedEmail === account.email ? (
+                  <Check className="size-5 text-[var(--nff-emerald-600)] flex-shrink-0" aria-hidden="true" />
+                ) : (
+                  <Copy className="size-5 text-[var(--nff-sage-500)] hover:text-[var(--nff-forest-700)] transition-colors flex-shrink-0" aria-hidden="true" />
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
       </form>
     </AuthCard>
   )
