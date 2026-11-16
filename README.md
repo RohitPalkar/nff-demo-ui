@@ -81,3 +81,4 @@ docs/screens.md
 The player streams a short looped ambience file at `public/audio/meditation-preview.wav`; its timeline uses the seeded track length so preview and completion states can be demonstrated without large audio assets.
 
 Later screens are routed to a clearly labelled placeholder so navigation works while each screen is built.
+# nff-demo-ui
