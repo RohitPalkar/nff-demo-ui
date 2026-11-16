@@ -35,6 +35,7 @@ import { AboutPage } from '@/pages/public/AboutPage'
 import { ExplorationDetailPage } from '@/pages/public/ExplorationDetailPage'
 import { ExplorationsPage } from '@/pages/public/ExplorationsPage'
 import { HomePage } from '@/pages/public/HomePage'
+import { LibraryCategoryPage } from '@/pages/public/LibraryCategoryPage'
 import { MeditationDetailPage } from '@/pages/public/MeditationDetailPage'
 import { MeditationsPage } from '@/pages/public/MeditationsPage'
 import { ComingSoonPage } from '@/pages/system/ComingSoonPage'
@@ -57,6 +58,7 @@ export const router = createBrowserRouter(
       { path: 'about/:slug', element: <AboutPage /> },
       { path: 'explorations', element: <ExplorationsPage /> },
       { path: 'explorations/:slug', element: <ExplorationDetailPage /> },
+      { path: 'library/:category', element: <LibraryCategoryPage /> },
       { path: 'meditations', element: <MeditationsPage /> },
       { path: 'meditations/:slug', element: <MeditationDetailPage /> },
       // Sample legal pages (SOW §3.1 #9); NFF's counsel supplies the final text.

@@ -16,23 +16,15 @@ export const PRACTICE_ITEMS = PRACTICE_KEYS.map((key) => ({
 }))
 
 /**
- * The Library menu (navbar only). Display names are navigation labels for the
- * existing explorations categories; the category keys and `?tab=` values are
- * unchanged, and descriptions are the approved CATEGORY_COPY text.
+ * The Library menu (navbar only). Display names are the category labels;
+ * the category keys and routes use the new `/library/:category` paths.
  */
-const LIBRARY_LABELS: Record<Category, string> = {
-  foundations: 'Start Here',
-  understand: 'Understand Your Mind',
-  contemplate: 'Reflect & Contemplate',
-  explore: 'Everyday Practice',
-}
-
 export const LIBRARY_ITEMS = PRACTICE_KEYS.map((key, index) => ({
   key,
   index: String(index + 1).padStart(2, '0'),
-  label: LIBRARY_LABELS[key],
+  label: CATEGORY_COPY[key].label,
   description: CATEGORY_COPY[key].description,
-  href: `/explorations?tab=${key}`,
+  href: `/library/${key}`,
 }))
 
 /** The whole catalogue, offered at the foot of the Library menu. */

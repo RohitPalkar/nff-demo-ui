@@ -7,7 +7,7 @@ import {
   SearchX,
 } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams, useParams } from 'react-router-dom'
 import { AccountRegistrationCTA } from '@/components/nff/AccountRegistrationCTA'
 import { CategoryTabs } from '@/components/nff/CategoryTabs'
 import { ContentCard } from '@/components/nff/ContentCard'
@@ -49,9 +49,16 @@ function readSort(value: string | null): CatalogueSort {
 
 export function ExplorationsPage() {
   const [params, setParams] = useSearchParams()
+  const { category: pathCategory } = useParams<{ category?: string }>()
   const { user } = useAuth()
 
-  const category = readCategoryParam(params.get('tab'))
+  // Prefer tab query param, fall back to path category (for /library/:category routes)
+  const tabParam = params.get('tab')
+  const category = readCategoryParam(tabParam ?? pathCategory ?? null)
+
+  // Detect if we're on a library category route
+  const isLibraryRoute = Boolean(pathCategory)
+
   const rawSearch = params.get('q') ?? ''
   const search = rawSearch.trim()
   const sort = readSort(params.get('sort'))
@@ -96,6 +103,14 @@ export function ExplorationsPage() {
       else next.delete(key)
     }
     const query = next.toString()
+
+    // On library category routes, generate /library/:category URLs
+    if (isLibraryRoute) {
+      const tab = next.get('tab')
+      const base = tab ? `/library/${tab}` : '/library'
+      return query ? `${base}?${query.replace(/^tab=[^&]*&?/, '')}` : base
+    }
+
     return query ? `/explorations?${query}` : '/explorations'
   }
 

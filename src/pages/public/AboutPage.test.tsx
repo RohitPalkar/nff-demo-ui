@@ -84,7 +84,7 @@ describe('AboutPage', () => {
 
     expect(screen.getByRole('link', { name: 'Foundations' })).toHaveAttribute(
       'href',
-      '/explorations?tab=foundations',
+      '/library/foundations',
     )
     expect(screen.getByRole('link', { name: 'Browse meditations' })).toHaveAttribute(
       'href',
