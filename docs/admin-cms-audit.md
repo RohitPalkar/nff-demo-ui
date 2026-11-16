@@ -137,7 +137,8 @@ Notes:
 | "Rich-text" editor | Partial | Plain `<textarea>` (monospace) with a toolbar that inserts Markdown characters (H2, H3, bold, italic, list, link, quote). No WYSIWYG, no images, no embeds, no live preview. 18 rows, resizable |
 | Reading time | Missing | Not editable and not recomputed. `CmsItem` has no `readingTimeMin` |
 | Artwork / hero image | Missing | No field. `checksFor().artwork` is hard-coded `true`, so the publish checklist always passes it |
-| Topic (`understandTopic`), transcript, video, captions | Missing | Not in `CmsItem` |
+| Topic (`understandTopic`), transcript | Missing | Not in `CmsItem` |
+| Video and video captions | Permanently unsupported | The platform supports article and audio only; video is intentionally absent from the content model and CMS |
 | Autosave | Working | Saves 10 s after the last change, quietly |
 | Version history | Partial | Last 10 saves, per item, restore to draft. Autosave also writes versions, so 10 slots fill with autosaves. No diff, no label, no author beyond display name |
 | Unsaved-changes guard | Working | `useBlocker` on in-app navigation. No `beforeunload`, so tab close/reload loses work between autosaves |
@@ -526,7 +527,8 @@ disconnected.
 
 1. Two parallel status vocabularies (`CmsStatus` vs `published` + `Resource.status`).
 2. `CmsItem` lacks fields the learner models need (artwork, image, readingTime,
-   topic, transcript, audio URL, video, captions).
+   topic, transcript and audio URL). Video is intentionally excluded because
+   it is permanently unsupported.
 3. Two stage structures (`stages` constant, `CmsStage` overlay) and a derived
    module layer.
 4. Ownership strings (`owner`) are fabricated labels, not user ids.
@@ -742,7 +744,8 @@ Learning paths, keeping `legacyStageId` ids as stable aliases.
 7. Retention of version history (count, per autosave or per save)?
 8. Which analytics are in scope for launch, and which can be removed rather
    than simulated?
-9. Transcripts and captions: required to publish audio/video?
+9. Transcripts and captions: required to publish audio? (Video is permanently
+   unsupported.)
 10. Do Learning Paths replace Stages in the CMS vocabulary?
 
 ---

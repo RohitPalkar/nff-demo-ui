@@ -14,6 +14,7 @@ import { claimMedia, releaseMedia } from '@/features/media/mediaExclusive'
 import { getProgress, saveProgress } from '@/services/content'
 import type { Meditation } from '@/types'
 
+// oxlint-disable-next-line react/only-export-components
 export const SPEEDS = [0.75, 1, 1.25, 1.5] as const
 
 interface PlayerContextValue {
@@ -51,7 +52,9 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const lastSaveRef = useRef(0)
   const toggleRef = useRef<() => void>(() => undefined)
 
-  positionRef.current = position
+  useEffect(() => {
+    positionRef.current = position
+  }, [position])
 
   const persist = useCallback(
     async (complete: boolean) => {
@@ -162,7 +165,9 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     setPlaying((value) => !value)
   }, [track, ended])
 
-  toggleRef.current = toggle
+  useEffect(() => {
+    toggleRef.current = toggle
+  }, [toggle])
 
   // The global player shares the one-media-at-a-time slot with public previews.
   // Claiming pauses whichever preview was playing before the full track starts.

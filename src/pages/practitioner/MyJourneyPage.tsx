@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { ArrowRight, Flame, Headphones, Layers, ListChecks } from 'lucide-react'
-import { useState, type ReactNode } from 'react'
+import { useState, useMemo, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { ErrorState } from '@/components/nff/ErrorState'
 import { Button } from '@/components/ui/button'
@@ -61,6 +61,19 @@ export function MyJourneyPage() {
     enabled: Boolean(user),
   })
 
+  const recent = useMemo(() => {
+    if (!query.data) return []
+    const now = Date.now()
+    return query.data.progress.completedItemIds
+      .slice(-5)
+      .reverse()
+      .map((id, index) => ({
+        item: getItemById(id),
+        date: new Date(now - index * 86_400_000).toISOString(),
+      }))
+      .filter((entry) => entry.item)
+  }, [query.data])
+
   if (query.isPending) {
     return (
       <div aria-busy="true" className="nff-content flex flex-col gap-6 py-10">
@@ -106,15 +119,6 @@ export function MyJourneyPage() {
       </div>
     )
   }
-
-  const recent = progress.completedItemIds
-    .slice(-5)
-    .reverse()
-    .map((id, index) => ({
-      item: getItemById(id),
-      date: new Date(Date.now() - index * 86_400_000).toISOString(),
-    }))
-    .filter((entry) => entry.item)
 
   const peak = Math.max(...WEEKLY_MINUTES)
 

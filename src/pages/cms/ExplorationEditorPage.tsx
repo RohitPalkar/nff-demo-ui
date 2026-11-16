@@ -393,6 +393,7 @@ export function ExplorationEditorPage() {
             </div>
             {bodyMode === 'write' && (
               <div role="toolbar" aria-label="Formatting" className="flex flex-wrap gap-0.5">
+                {/* oxlint-disable-next-line react/refs */}
                 {toolbar.map((entry) => (
                   <Button key={entry.label} type="button" variant="ghost" size="icon" className="size-11" aria-label={entry.label} title={entry.label} onClick={entry.run}>
                     <entry.icon aria-hidden="true" className="size-4" />

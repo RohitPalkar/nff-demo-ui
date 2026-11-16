@@ -325,11 +325,11 @@ The app now works with any number of assigned paths, not only Meadow Journey.
 | Published | 100. `exp-draft` is unpublished. |
 | Accessible | Every Resource is `access: 'registered'`, so a signed-in practitioner gets all 100 in full; staff get a read-only preview; visitors get none on `/learn`. No item is `public`, `assigned` or `restricted` today. |
 | Metadata | title, slug, excerpt, image, category (4), `understandTopic` (mind / wellbeing, Understand only), `featured` (12 items), `updatedAt`, reading time or audio length, `stageId`, `transcode` (audio). No tags, no authors, no publication date. |
-| Content types | Article and audio. Video is an extra format on 4 items (`CONTENT_VIDEOS`: exp-1, exp-7, exp-20, med-56); med-5's video is unavailable. |
-| Detail routes | `/learn/library/:type/:slug` existed as a placeholder; article and audio now open in the real reader and player. `video` and `mixed` keep the "not available yet" state (no such resources exist). |
+| Content types | Article and audio only. Video is permanently unsupported. |
+| Detail routes | `/learn/library/:type/:slug` opens article and audio in the real reader and player. `video` and `mixed` are not valid formats and resolve to the in-app not-found state. |
 | Missing for discovery | Tags (search uses title, description, category and topic instead); a publication date ("Recently updated" sorts by `updatedAt` and says so); any discoverable path (all paths are `assigned`, so none are listed as discovery entries); real access variety (no access filter, since every item is open to every learner). |
 
-Category counts (learner, unfiltered): Foundations 25, Understand 25, Contemplate 25, Explore 25. Formats: Article 40, Audio 60, Video 4. Four audio items are still processing (med-1, med-20, med-39, med-58).
+Category counts (learner, unfiltered): Foundations 25, Understand 25, Contemplate 25, Explore 25. Formats: Article 40, Audio 60. Four audio items are still processing (med-1, med-20, med-39, med-58).
 
 ### What was built
 
@@ -368,7 +368,7 @@ This is deliberate and unchanged: a module lock orders a path, it does not restr
 
 ### What was built
 
-- **Service** `services/learning/pathPage.ts`: `buildPathPage` composes `buildPathOverview` (modules, locks, lesson access) and `buildMyLearning` (status, next lesson, action, assigned and due dates), so numbers and actions cannot drift from Home or My Learning. Lesson state is `complete`, `in-progress` (saved reading, audio or video position, or the path's in-progress lesson), `available`, `locked` or `unavailable` (audio still processing). Video is shown only when it can play.
+- **Service** `services/learning/pathPage.ts`: `buildPathPage` composes `buildPathOverview` (modules, locks, lesson access) and `buildMyLearning` (status, next lesson, action, assigned and due dates), so numbers and actions cannot drift from Home or My Learning. Lesson state is `complete`, `in-progress` (saved reading or audio position, or the path's in-progress lesson), `available`, `locked` or `unavailable` (audio still processing).
 - **Components** `components/learn/path/`: `LearningPathHeader`, `LearningPathProgress`, `CurriculumSection` (Radix accordion, one section per module, Expand/Collapse all), `LessonRow` (`LessonStatus`, `LessonFormatIndicator`). State is always a word plus an icon.
 - **Page** `pages/learn/PathOverviewPage.tsx` now serves every path including Meadow Journey. `PathPage` keeps the access check and still accepts `?module=` (old stage links), which opens that module. The current module is open by default; a completed path opens none.
 - **Primary action.** Start learning / Continue learning open the lesson the shared logic picks; Review learning scrolls to the curriculum. Staff preview shows no action and records nothing.
@@ -387,14 +387,17 @@ This is deliberate and unchanged: a module lock orders a path, it does not restr
 - **Completion** is recorded per item through `saveProgress` (legacy shape) into the v2 store (`applyLegacyProgress`), so finishing an item completes every lesson in every path that uses it. Staff in preview never write: `persist` ignores preview identities.
 - **Reading.** The old reader tracked scroll only for display and never saved a position (`recordReading` existed but was unused). Completion is the explicit "Mark as complete" button (`FLAGS.completionMode`); `'scroll'` completes at 98%.
 - **Audio.** `PlayerProvider` is the one player. It advances position on a 250 ms timer and plays `/audio/meditation-preview.wav` on loop (a short placeholder), saving position every 15 s and completing at 95%. **Time and completion are simulated**: the real `<audio>` element is not the clock, because the placeholder file is not the track's real length. This is a demo limitation, not verified listening. The lesson screen says so in one line under the controls.
-- **Video.** `ResourceVideo` / `VideoPlayer` use real media events and `recordMedia` (position, played seconds, completion at the video's end), keyed `{itemId}#video`. Captions come from real `.vtt` tracks when configured. Unavailable and processing videos show an in-app status panel (`data-video-state`). Video completion does not complete the lesson; an article or audio item's own rule does.
-- **Catalogue.** Every lesson is a single article or audio item (`kind` `reading` / `audio`). A video is an add-on to those items (exp-1, exp-7, exp-20, med-56; med-5's is unavailable). There are no video-only or mixed lessons.
+- **Video.** Video is permanently unsupported. There is no player, route,
+  catalogue field or progress record for it; unsupported legacy media entries
+  are discarded during progress-store sanitization.
+- **Catalogue.** Every lesson is a single article or audio item (`kind`
+  `reading` / `audio`). Video-only and mixed lessons do not exist.
 
 ### What was built
 
 - **Service** `services/learning/lessonView.ts`: `buildLessonPage` composes `buildPathPage` (so states, locks and progress are the same numbers as everywhere) and adds the current lesson's place, previous/next, and completion context (module complete, path complete, whether the next module is open and, if not, what it waits for). Previous/next skip locked lessons and audio that is not ready; they never lead into a closed lesson.
 - **Frame** `components/learn/lesson/LessonShell.tsx`: a slim bar (back to the path, "Module · Lesson n of m", Curriculum), a sticky curriculum column from 1024px (`LessonCurriculum`: current module open, state icon plus a word for screen readers, current lesson `aria-current`, locked lessons are not links) and a bottom drawer below it that closes on navigation. From the Library there is no curriculum and no "Lesson n of n".
-- **Formats.** `ReadingLesson` (reading column, real reading progress, "pick up where you left off", completion button, optional video above the text, image), `AudioLesson` / `AudioPlayerCard` (the shared player: seek, ±15 s, speed saved per account, resume prompt, processing/failed audio shown as unavailable), `BlockLesson` (renders `text` and `resource` blocks in order for `video`/`mixed` lessons; ready but unused, no lesson invented).
+- **Formats.** `ReadingLesson` (reading column, real reading progress, "pick up where you left off", completion button and image), `AudioLesson` / `AudioPlayerCard` (the shared player: seek, ±15 s, speed saved per account, resume prompt, processing/failed audio shown as unavailable).
 - **Completion** `CompletionPanel`: confirmation, "Stage 2 · Attention: 5 of 17 lessons complete", whether the module is finished and whether the next opens by its own rule, Continue learning, Back to curriculum; "You have completed {path}" at the end. No points, streaks or badges.
 - **Routes.** `LessonPage` serves every path's lessons (Meadow Journey included) behind `RequireLessonAccess`; `ResourcePage` (Library) uses the same reading and audio views with no curriculum.
 - **Mini-player.** It now hides on the track's own page in any path (`lesson-med-1@key`) and in the Library, not only on the Meadow route, and still carries playback across pages.
@@ -406,12 +409,13 @@ This is deliberate and unchanged: a module lock orders a path, it does not restr
 | Reading position | `lessons[lessonId].reading.scrollPct` via `recordReading`, under the item's Meadow lesson id | After a 0.7 s pause in scrolling and on leaving; nothing on open; not once complete; never for staff |
 | Completion | `completedItemIds` → `lessons[id].status = completed` | Only the button (or the existing flag) and the player's 95% rule |
 | Audio position and speed | `positionsSec[itemId]`, `playback-speed` per account | Every 15 s while playing, on close; speed on change |
-| Video position | `media[itemId#video]` via `recordMedia` | From real media events |
 
 ### Known limitations and dependencies
 
 - **Audio is simulated** (see above). Real listening data needs real audio files and driving position from media events; that is a change inside `PlayerProvider`, not made here.
-- **Video-only and mixed lessons do not exist** in the catalogue, so `BlockLesson` is untested against real content. Video-end completion (`media-end`) is not wired because no lesson uses it.
+- **Video is permanently unsupported.** Video-only and mixed lessons are not
+  valid catalogue kinds. The `media-end` lesson-completion option remains in
+  the model for audio playback.
 - **Articles have only paragraphs** (`body: string[]`): no headings, lists or inline images in the model, so none are rendered.
 - **Library vs path access is unchanged.** An item in a locked module still opens from the Library (see section 14); the lesson route stays protected.
 - **Dead code.** `ExplorationReaderPage`, `PlayerPage`, `JourneyPage`, `StageDetailPage` are no longer routed; `itemHref` in `JourneyPage` is still imported by them and `MyJourneyPage`. Removing them was blocked earlier, so it is left to you.
@@ -431,7 +435,7 @@ This is deliberate and unchanged: a module lock orders a path, it does not restr
 | Artwork | Every item has a natural-photograph `image` and a letter `artwork` tile |
 | Featured | 6 meditations carry `featured` |
 | Access | Every Resource is `registered`: learners open all published ones; staff preview read-only; visitors get none on `/learn` |
-| Progress records | Audio position at `media[itemId]` (saved by the player every 15 s and on close), completion at `lessons[lesson-{id}]`; a video position uses `{id}#video` and is not read here |
+| Progress records | Audio position at `media[itemId]` (saved by the player every 15 s and on close), completion at `lessons[lesson-{id}]`; unsupported legacy media entries are ignored and cleaned |
 | Player | One `PlayerProvider` + `MiniPlayer`; position advances on a timer (simulated), see section 15 |
 
 ### What was built

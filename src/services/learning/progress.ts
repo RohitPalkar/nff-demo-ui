@@ -16,6 +16,7 @@ import {
   getLessonsOf,
   getModule,
   getModulesOf,
+  getResource,
   getResourceIdsOf,
   itemIdForLesson,
   lessonIdForItem,
