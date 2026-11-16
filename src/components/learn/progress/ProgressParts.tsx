@@ -268,8 +268,8 @@ export function LearningHistory({
               className={cn(
                 'nff-target rounded-[5px] px-3 py-1.5 nff-label-sm transition-colors nff-focus-ring',
                 view === value
-                  ? 'bg-[var(--nff-forest-900)] text-[var(--nff-ivory-50)]'
-                  : 'text-nff-text-secondary hover:text-foreground',
+                  ? 'bg-[var(--nff-bg-active)] text-[var(--nff-text-active)] border border-[var(--nff-border-active)]'
+                  : 'text-nff-text-secondary hover:bg-[var(--nff-sage-50)] hover:text-[var(--nff-text-active)]',
               )}
             >
               {label}

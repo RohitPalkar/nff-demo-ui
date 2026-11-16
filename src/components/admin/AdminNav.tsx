@@ -64,8 +64,8 @@ export function AdminNavItem({
             'flex items-center gap-3 rounded-md px-3 nff-label-md transition-colors nff-focus-ring',
             touch ? 'min-h-11' : 'min-h-9',
             isActive
-              ? 'bg-[var(--admin-nav-active-bg)] font-semibold text-[var(--admin-primary)]'
-              : 'text-[var(--admin-text-muted)] hover:bg-nff-bg-hover hover:text-[var(--admin-text)]',
+              ? 'bg-[var(--nff-bg-active)] font-semibold text-[var(--nff-text-active)] border border-[var(--nff-border-active)]'
+              : 'text-[var(--admin-text-muted)] hover:bg-[var(--nff-sage-50)] hover:text-[var(--admin-text)]',
             collapsed && 'justify-center px-0',
           )
         }

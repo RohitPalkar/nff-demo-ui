@@ -39,8 +39,8 @@ const SIZE = {
   sm: 'min-h-10 px-3.5 nff-label-sm',
   md: 'min-h-11 px-4 nff-label-md sm:px-5',
 } as const
-const ACTIVE = 'bg-[var(--nff-forest-900)] text-[var(--nff-ivory-50)] shadow-nff-1'
-const IDLE = 'text-nff-text-secondary hover:bg-[rgb(255_255_255/0.7)] hover:text-foreground'
+const ACTIVE = 'bg-[var(--nff-bg-active)] text-[var(--nff-text-active)] border border-[var(--nff-border-active)] shadow-nff-1'
+const IDLE = 'text-nff-text-secondary hover:bg-[var(--nff-sage-50)] hover:text-foreground'
 
 /**
  * Generic pill button group: one track, one selected pill in forest. Use it

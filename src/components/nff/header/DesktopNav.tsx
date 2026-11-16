@@ -24,8 +24,8 @@ function navItemClass(active: boolean) {
     'group relative inline-flex h-10 items-center gap-1 whitespace-nowrap rounded-full px-3 nff-nav nff-focus-ring xl:px-4',
     'transition-colors duration-[var(--nff-duration-fast)]',
     active
-      ? 'text-[var(--nff-nav-fg-active)]'
-      : 'text-[var(--nff-nav-fg)] hover:text-[var(--nff-nav-fg-active)]',
+      ? 'text-[var(--nff-text-active)]'
+      : 'text-[var(--nff-nav-fg)] hover:text-[var(--nff-text-active)]',
   )
 }
 
@@ -34,7 +34,7 @@ function ActiveBar({ active }: { active: boolean }) {
     <span
       aria-hidden="true"
       className={cn(
-        'absolute bottom-0.5 left-1/2 h-0.5 w-4 -translate-x-1/2 rounded-full bg-[var(--nff-nav-indicator)] transition-[opacity,transform] duration-[var(--nff-duration-base)]',
+        'absolute bottom-0.5 left-1/2 h-0.5 w-4 -translate-x-1/2 rounded-full bg-[var(--nff-accent-active)] transition-[opacity,transform] duration-[var(--nff-duration-base)]',
         active ? 'scale-x-100 opacity-100' : 'scale-x-0 opacity-0',
       )}
     />
@@ -78,7 +78,7 @@ function LibraryMenu() {
               <DropdownMenuItem
                 key={entry.key}
                 asChild
-                className="group/item grid cursor-pointer grid-cols-[1.75rem_minmax(0,1fr)] items-start gap-x-2 rounded-xl px-3 py-3 transition-colors duration-[var(--nff-duration-fast)] focus:bg-nff-bg-hover focus:text-foreground data-[active=true]:bg-nff-bg-selected"
+                className="group/item grid cursor-pointer grid-cols-[1.75rem_minmax(0,1fr)] items-start gap-x-2 rounded-xl px-3 py-3 transition-colors duration-[var(--nff-duration-fast)] focus:bg-[var(--nff-sage-50)] focus:text-foreground data-[active=true]:bg-[var(--nff-bg-active)] data-[active=true]:text-[var(--nff-text-active)]"
               >
                 <Link
                   to={entry.href}

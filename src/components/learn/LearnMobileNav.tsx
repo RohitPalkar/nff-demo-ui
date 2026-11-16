@@ -71,8 +71,8 @@ export function LearnMobileNav() {
                     className={cn(
                       'flex min-h-14 items-center border-l-2 px-4 nff-heading-h4 transition-colors nff-focus-ring',
                       active
-                        ? 'border-[var(--nff-forest-800)] bg-nff-bg-selected text-foreground'
-                        : 'border-transparent text-nff-text-secondary hover:bg-nff-bg-hover hover:text-foreground',
+                        ? 'border-[var(--nff-accent-active)] bg-[var(--nff-bg-active)] text-[var(--nff-text-active)]'
+                        : 'border-transparent text-nff-text-secondary hover:bg-[var(--nff-sage-50)] hover:text-foreground',
                     )}
                   >
                     {item.label}

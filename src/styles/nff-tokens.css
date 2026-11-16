@@ -151,6 +151,12 @@
   --nff-color-bg-pressed: var(--nff-sage-100);
   --nff-color-bg-selected: var(--nff-sage-100);
   --nff-color-bg-disabled: var(--nff-neutral-100);
+
+  /* Active/Selected state tokens — for current lesson, selected navigation, etc. */
+  --nff-color-bg-active: #E9EDE5;
+  --nff-color-border-active: #D5DFD0;
+  --nff-color-text-active: #292B25;
+  --nff-color-accent-active: #354C3C;
   --nff-color-bg-brand-default: var(--nff-forest-800);
   --nff-color-bg-brand-hover: var(--nff-forest-900);
   --nff-color-bg-brand-pressed: var(--nff-forest-950);
@@ -656,6 +662,13 @@
   --nff-table-border: var(--nff-color-border-default);
   --nff-chip-bg: var(--nff-color-bg-tonal);
   --nff-chip-fg: var(--nff-color-text-brand);
+  /* Active card — for current lesson, selected content rows */
+  --nff-active-card-bg: var(--nff-color-bg-active);
+  --nff-active-card-border: var(--nff-color-border-active);
+  --nff-active-card-fg: var(--nff-color-text-active);
+  --nff-active-card-accent: var(--nff-color-accent-active);
+  --nff-active-card-radius: var(--nff-radius-lg);
+  --nff-active-card-padding: var(--nff-space-16);
   /* Focus — WCAG 2.2 AA: 2px offset in the surface colour + 2px forest ring (≥3:1). */
   --nff-focus-ring: 0 0 0 2px var(--nff-color-bg-surface), 0 0 0 4px var(--nff-color-border-focus);
 
@@ -764,6 +777,10 @@
   --color-nff-bg-info-default: var(--nff-color-bg-info-default);
   --color-nff-bg-info-subtle: var(--nff-color-bg-info-subtle);
   --color-nff-bg-error-hover: var(--nff-color-bg-error-hover);
+  --color-nff-bg-active: var(--nff-color-bg-active);
+  --color-nff-border-active: var(--nff-color-border-active);
+  --color-nff-text-active: var(--nff-color-text-active);
+  --color-nff-accent-active: var(--nff-color-accent-active);
   --color-nff-text-primary: var(--nff-color-text-primary);
   --color-nff-text-secondary: var(--nff-color-text-secondary);
   --color-nff-text-tertiary: var(--nff-color-text-tertiary);

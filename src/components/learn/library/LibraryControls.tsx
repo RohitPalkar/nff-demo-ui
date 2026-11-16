@@ -14,7 +14,7 @@ const CHIP =
   'inline-flex h-10 shrink-0 items-center gap-2 rounded-md border px-3.5 nff-label-md transition-colors nff-focus-ring'
 const CHIP_OFF =
   'border-nff-border-default bg-nff-bg-surface text-nff-text-secondary hover:border-[var(--nff-forest-800)] hover:text-foreground'
-const CHIP_ON = 'border-[var(--nff-forest-900)] bg-[var(--nff-forest-900)] text-[var(--nff-ivory-50)]'
+const CHIP_ON = 'border-[var(--nff-border-active)] bg-[var(--nff-bg-active)] text-[var(--nff-text-active)]'
 
 function Count({ value, active }: { value: number; active: boolean }) {
   return (
@@ -94,7 +94,7 @@ export function LibraryFilters({
             className={cn(
               'inline-flex h-9 shrink-0 items-center gap-1.5 rounded-sm px-2.5 nff-label-md transition-colors nff-focus-ring sm:px-3',
               active
-                ? 'bg-[var(--nff-sage-100)] text-[var(--nff-forest-900)]'
+                ? 'bg-[var(--nff-bg-active)] text-[var(--nff-text-active)] border border-[var(--nff-border-active)]'
                 : 'text-nff-text-secondary hover:text-foreground',
             )}
           >

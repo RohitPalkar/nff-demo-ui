@@ -81,7 +81,7 @@ export function LessonCurriculum({
                         <>
                           <Icon aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-nff-icon-secondary" />
                           <span className="flex min-w-0 flex-1 flex-col">
-                            <span className={cn('nff-body-sm text-foreground', current && 'nff-label-md')}>
+                            <span className={cn('nff-body-sm text-foreground', current && 'font-semibold')}>
                               {lesson.item.title}
                             </span>
                             <span className="nff-caption text-nff-text-secondary">
@@ -91,7 +91,7 @@ export function LessonCurriculum({
                           </span>
                         </>
                       )
-                      const base = 'flex items-start gap-2.5 rounded-sm px-2 py-2'
+                      const base = 'flex items-start gap-2.5 rounded-sm px-2 py-2 transition-colors nff-focus-ring'
                       return (
                         <li key={lesson.lessonId}>
                           {lesson.state === 'locked' || lesson.state === 'unavailable' ? (
@@ -103,8 +103,9 @@ export function LessonCurriculum({
                               aria-current={current ? 'page' : undefined}
                               className={cn(
                                 base,
-                                'transition-colors hover:bg-[var(--nff-sage-50)] nff-focus-ring',
-                                current && 'bg-[var(--nff-sage-100)]',
+                                current
+                                  ? 'bg-[var(--nff-bg-active)] border border-[var(--nff-border-active)] rounded-[var(--nff-radius-lg)] shadow-nff-1'
+                                  : 'hover:bg-[var(--nff-sage-50)]',
                               )}
                             >
                               {body}

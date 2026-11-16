@@ -3,10 +3,14 @@ import { FileQuestion } from 'lucide-react'
 import { useEffect } from 'react'
 import { useParams, useSearchParams } from 'react-router-dom'
 import { AccountRegistrationCTA } from '@/components/nff/AccountRegistrationCTA'
-import { AboutHowWeDoIt } from '@/components/nff/about/AboutHowWeDoIt'
-import { AboutIntro } from '@/components/nff/about/AboutIntro'
-import { AboutStory } from '@/components/nff/about/AboutStory'
-import { AboutWhatWeDo } from '@/components/nff/about/AboutWhatWeDo'
+import { AboutHero } from '@/components/nff/about/AboutHero'
+import { AboutPractice } from '@/components/nff/about/AboutPractice'
+import { AboutBrandStatement } from '@/components/nff/about/AboutBrandStatement'
+import { AboutWhyMeadow } from '@/components/nff/about/AboutWhyMeadow'
+import { AboutPeople } from '@/components/nff/about/AboutPeople'
+import { AboutWhatWeDo } from '@/components/nff/about/AboutWhatWeDoNew'
+import { AboutHowWeDoIt } from '@/components/nff/about/AboutHowWeDoItNew'
+import { AboutCta } from '@/components/nff/about/AboutCta'
 import { DetailBreadcrumb } from '@/components/nff/DetailBreadcrumb'
 import { ErrorState } from '@/components/nff/ErrorState'
 import { UnavailableState } from '@/components/nff/UnavailableState'
@@ -106,25 +110,33 @@ export function AboutPage() {
   const [who, what, how] = ABOUT_TOPICS.map((topic) =>
     pages.find((page) => page.slug === topic.slug),
   )
-  const updatedAt = pages.map((page) => page.updatedAt).sort().at(-1) ?? ''
 
   return (
     <div>
       {who && (
         <>
-          <AboutIntro
-            page={who}
-            topics={ABOUT_TOPICS}
-            updatedAt={updatedAt}
-            forceMissingImage={forceMissingImage}
-          />
-          <AboutStory page={who} />
+          <AboutHero page={who} forceMissingImage={forceMissingImage} />
+          {/* "A practice, not a promise" section */}
+          {who.sections[0] && (
+            <AboutPractice section={who.sections[0]} />
+          )}
+          {/* Brand statement / pull quote */}
+          <AboutBrandStatement section={who.sections[0]} />
+          {/* Why Meadow section */}
+          {who.sections[1] && (
+            <AboutWhyMeadow section={who.sections[1]} eyebrow={who.title} />
+          )}
+          {/* The People Behind It */}
+          {who.sections[2] && (
+            <AboutPeople section={who.sections[2]} eyebrow={who.title} />
+          )}
         </>
       )}
       {what && <AboutWhatWeDo page={what} />}
       {how && (
         <AboutHowWeDoIt page={how} stages={stages} forceMissingImage={forceMissingImage} />
       )}
+      <AboutCta />
       <AccountRegistrationCTA />
     </div>
   )

@@ -6,6 +6,9 @@ import type { LessonState, PathLesson } from '@/services/learning/pathPage'
 /**
  * One lesson in a module. State is a word and an icon, never colour alone.
  * Rows are plain text (no thumbnails) so a module of many lessons stays calm.
+ * 
+ * Active lesson (isActive): receives a distinct card treatment with muted sage
+ * background, subtle border, and "CURRENT LESSON" label.
  */
 
 const STATE: Record<LessonState, { label: string; icon: typeof Circle; tone: string }> = {
@@ -44,7 +47,13 @@ export function LessonFormatIndicator({ lesson }: { lesson: PathLesson }) {
   )
 }
 
-export function LessonRow({ lesson }: { lesson: PathLesson }) {
+interface LessonRowProps {
+  lesson: PathLesson
+  /** Whether this lesson is the currently selected/active one */
+  isActive?: boolean
+}
+
+export function LessonRow({ lesson, isActive = false }: LessonRowProps) {
   const action = ACTION[lesson.state]
   const body = (
     <>
@@ -52,10 +61,20 @@ export function LessonRow({ lesson }: { lesson: PathLesson }) {
         {lesson.number}
       </span>
       <span className="flex min-w-0 flex-1 flex-col gap-1">
-        <span className="nff-label-md text-foreground">{lesson.item.title}</span>
+        <span className={cn(
+          'nff-label-md text-foreground',
+          isActive && 'font-semibold'
+        )}>
+          {lesson.item.title}
+        </span>
         <span className="flex flex-wrap items-center gap-x-4 gap-y-1">
           <LessonStatus state={lesson.state} />
           <LessonFormatIndicator lesson={lesson} />
+          {isActive && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-[var(--nff-accent-active)] px-2 py-0.5 nff-caption font-medium text-[var(--nff-ivory-50)]">
+              Current lesson
+            </span>
+          )}
         </span>
         {lesson.note && <span className="nff-caption text-nff-text-secondary">{lesson.note}</span>}
       </span>
@@ -69,14 +88,27 @@ export function LessonRow({ lesson }: { lesson: PathLesson }) {
   )
 
   const openable = lesson.state !== 'locked' && lesson.state !== 'unavailable'
+  const baseClasses = 'group flex items-start gap-3 px-4 py-3.5 transition-colors nff-focus-ring sm:items-center sm:gap-4 sm:px-6'
+  const activeClasses = cn(
+    baseClasses,
+    isActive && 'bg-[var(--nff-bg-active)] border border-[var(--nff-border-active)] rounded-[var(--nff-radius-lg)] shadow-nff-1',
+    !isActive && 'hover:bg-[var(--nff-sage-50)]',
+  )
+
   return openable ? (
     <Link
       to={lesson.href}
-      className="group flex items-start gap-3 px-4 py-3.5 transition-colors hover:bg-[var(--nff-sage-50)] nff-focus-ring sm:items-center sm:gap-4 sm:px-6"
+      className={activeClasses}
+      aria-current={isActive ? 'page' : undefined}
     >
       {body}
     </Link>
   ) : (
-    <div className="flex items-start gap-3 px-4 py-3.5 sm:items-center sm:gap-4 sm:px-6">{body}</div>
+    <div className={cn(
+      'flex items-start gap-3 px-4 py-3.5 sm:items-center sm:gap-4 sm:px-6',
+      isActive && 'bg-[var(--nff-bg-active)] border border-[var(--nff-border-active)] rounded-[var(--nff-radius-lg)]'
+    )}>
+      {body}
+    </div>
   )
 }
