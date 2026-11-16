@@ -22,7 +22,7 @@ import { pathCompletion } from './progress'
  * The architecture has learning paths only. There are no courses, and nothing
  * records enrolment yet (`startEnrolment` is never called), so "started" means
  * the learner has a real record against a lesson in the path: a completion, the
- * in-progress lesson, or a dated audio, video or reading position.
+ * in-progress lesson, or a dated audio or reading position.
  */
 
 export type LearningStatus = 'in-progress' | 'not-started' | 'completed'

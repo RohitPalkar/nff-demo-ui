@@ -1,4 +1,5 @@
 import type { LearningProgressStore } from '@/types'
+import { isSupportedAudioProgress } from './progress'
 import type { AccessContext } from './access'
 import { lessonIdForItem } from './catalogue'
 import {
@@ -58,7 +59,7 @@ export function listMeditations(ctx: AccessContext, store: LearningProgressStore
         return { ...base, state: 'completed' }
       }
       const media = store.media[item.id]
-      if (media && media.positionSec > 0 && media.updatedAt) {
+      if (isSupportedAudioProgress(item.id, media) && media && media.positionSec > 0 && media.updatedAt) {
         return {
           ...base,
           state: 'in-progress',

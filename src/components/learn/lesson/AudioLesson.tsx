@@ -1,6 +1,5 @@
 import { Headphones, Pause, Play, RotateCcw, RotateCw } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { LessonVideo } from '@/components/learn/LessonVideo'
 import { Thumb } from '@/components/learn/home/homeParts'
 import { HOME_CARD, PRIMARY_ACTION, SECONDARY_ACTION } from '@/components/learn/home/homeStyles'
 import { Button } from '@/components/ui/button'
@@ -12,8 +11,7 @@ import { getPlaybackSpeed, savePlaybackSpeed } from '@/services/account'
 import { isPreviewRole } from '@/services/learning/previewRoles'
 import { CATEGORY_COPY } from '@/services/content'
 import type { LessonPageData } from '@/services/learning/lessonView'
-import { LEARN_LIBRARY, lessonHref, pathHref } from '@/services/learning/routes'
-import { getContentVideo } from '@/services/learning/video'
+import { LEARN_LIBRARY, pathHref } from '@/services/learning/routes'
 import type { Meditation } from '@/types'
 import { CompletionPanel, LessonPager } from './LessonPager'
 import { LessonNotice } from './LessonNotice'
@@ -157,7 +155,6 @@ export function AudioLesson({
 }) {
   const { completed, progress, ready } = useLessonCompletion([item.id])
   const saved = progress?.positionsSec[item.id] ?? 0
-  const hasVideo = Boolean(getContentVideo(item.id))
   const category = CATEGORY_COPY[item.category].label
   const shellLibrary = { backHref: back.href, backLabel: back.label, label: `${back.label} · ${category}` }
 
@@ -189,9 +186,7 @@ export function AudioLesson({
           <p className="nff-body-sm text-nff-text-secondary">Audio · {formatDuration(item.durationSec)}</p>
         </header>
 
-        {hasVideo ? (
-          <LessonVideo itemId={item.id} title={item.title} returnTo={data ? data.lesson.href : lessonHref(item.id)} />
-        ) : item.image ? (
+        {item.image ? (
           <Thumb
             item={item}
             className="mx-auto aspect-square w-full max-w-xs rounded-md border border-nff-border-default"

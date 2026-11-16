@@ -1,6 +1,5 @@
 import { LibraryContentCard } from '@/components/nff/LibraryContentCard'
 import { getStageNumber } from '@/services/content'
-import { getContentVideo } from '@/services/learning/video'
 import type { ContentItem } from '@/types'
 
 interface ContentCardProps {
@@ -41,7 +40,6 @@ export function ContentCard({
       freePreview={!isExploration && item.preview && !unavailable}
       locked={locked}
       unavailable={unavailable}
-      video={getContentVideo(item.id)}
       ctaLabel={locked ? lockedLabel : undefined}
     />
   )

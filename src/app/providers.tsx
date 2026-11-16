@@ -4,7 +4,6 @@ import { Toaster } from '@/components/ui/sonner'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { AuthProvider } from '@/features/auth/AuthProvider'
 import { PlayerProvider } from '@/features/player/PlayerProvider'
-import { VideoProvider } from '@/features/video/VideoProvider'
 import { NffThemeProvider } from '@/features/theme/NffThemeProvider'
 import { DevScenarioPanel } from '@/components/nff/DevScenarioPanel'
 
@@ -27,13 +26,11 @@ export function Providers({ children }: { children: ReactNode }) {
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
           <PlayerProvider>
-            <VideoProvider>
-              <TooltipProvider delayDuration={250}>
-                {children}
-                <Toaster position="bottom-right" closeButton />
-                <DevScenarioPanel />
-              </TooltipProvider>
-            </VideoProvider>
+            <TooltipProvider delayDuration={250}>
+              {children}
+              <Toaster position="bottom-right" closeButton />
+              <DevScenarioPanel />
+            </TooltipProvider>
           </PlayerProvider>
         </AuthProvider>
       </QueryClientProvider>

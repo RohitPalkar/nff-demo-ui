@@ -10,14 +10,6 @@
  */
 export const SOW_SCOPE = {
   /**
-   * Video: landing "Watch" section, video chips and hover previews on cards,
-   * video on detail and lesson pages, and the video mini-player.
-   * SOW §4 Out of scope: "Video streaming — Audio only, per the RFP";
-   * §3.3 #2 essay editor: "Images only; no video".
-   */
-  video: false,
-
-  /**
    * Forgot / reset password. SOW §3.2 #1–2: sign-in is email plus one-time
    * code; "No password is set or stored". (The OTP sign-in itself is not
    * built yet; the demo still signs in with a password.)

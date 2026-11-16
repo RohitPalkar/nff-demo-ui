@@ -91,7 +91,7 @@ export function useLibraryPlayback(): LibraryPlayback {
     setPreview(null)
   }, [])
 
-  // Starting a video (or other audio) pauses the preview; it can be resumed.
+  // Starting another audio source pauses the preview; it can be resumed.
   const claimPreviewSlot = useCallback(() => {
     claimMedia({
       id: PREVIEW_CLAIM_ID,

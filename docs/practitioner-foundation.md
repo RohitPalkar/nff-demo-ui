@@ -22,7 +22,8 @@ Consequences:
   screens never read those keys, so they do not change.
 - `CmsItem` is a flat editor record (title, excerpt, body as one string,
   category, `stageId`, status, owner, SEO, preview, transcode, duration). It
-  has no modules, lessons, video, captions, access level or assignment.
+  has no modules, lessons, access level or assignment. Video and video
+  captions are permanently unsupported.
 - The mock database in `mocks/db.ts` is shared module state, seeded with a
   fixed random seed, so the same content appears on every load.
 - No learner data is written by the CMS, and the CMS never reads learner
@@ -31,7 +32,7 @@ Consequences:
 Missing integrations (all CMS-DEPENDENCY or BACKEND-DEPENDENCY):
 
 - A single content source that both the CMS and learner services read.
-- Editors for paths, modules, lessons, blocks, video, captions, transcripts.
+- Editors for paths, modules, lessons, blocks and transcripts.
 - Assignment, group and access-level management.
 - Publishing that actually changes what learners see.
 
@@ -41,8 +42,8 @@ disconnection from the CMS.
 
 ## 2. New data structures (`src/types/learning.ts`)
 
-`LearningPath`, `Module`, `Lesson`, `LessonBlock`, `Resource`, `VideoMedia`,
-`Group`, `Assignment`, `Enrolment`, `LessonProgress`, `MediaProgress`,
+`LearningPath`, `Module`, `Lesson`, `LessonBlock`, `Resource`, `Group`,
+`Assignment`, `Enrolment`, `LessonProgress`, `MediaProgress`,
 `LearningActivity`, `LearningProgressStore`.
 
 Single source of truth: a child holds its parent id and order
@@ -63,7 +64,9 @@ first read, per user. Source order: stored legacy record, then the seeded
 mock progress (this is how the demo user keeps their seeded progress), then
 empty.
 
-- Versioned (`version: 2`); a v2 record is never rewritten by migration.
+- Versioned (`version: 2`); migration does not replace a valid v2 record.
+  Unsupported legacy media entries are sanitized in place without a version
+  bump.
 - Recoverable: the legacy key is left untouched, and `migratedFrom` records
   the source and time.
 - Preserves completed ids (and order), the in-progress item, audio positions.
@@ -124,7 +127,7 @@ not move. "Preferences" in the new profile menu has no page today.
 | Component | Used by | Safe reuse or extension |
 |---|---|---|
 | `PlayerProvider` | Practitioner layout, player page, `useLibraryPlayback` (public cards for practitioners) | Do not change its `load(track, stageId, startAt, autoplay)` signature or its use of `getProgress`/`saveProgress`. Generalise behind an adapter. It still runs a simulated clock and persists through the legacy adapters. |
-| `MiniPlayer` | Practitioner layout only | Audio only. Keep video out of it. Low regression risk. |
+| `MiniPlayer` | Practitioner layout only | Audio only. Video is permanently unsupported. Low regression risk. |
 | `BrandLogo` | Public header, auth, practitioner, CMS (compact) | Changed earlier this session for Meadow. Do not restyle per surface; use `className`. |
 | `Button` | Everywhere, including 16 CMS files | Add variants, never alter defaults. |
 | `Progress` | Practitioner pages, CMS (`UserDetail`, `ScoreSettings`) | Fully rounded track today. A square variant must be opt-in via `className`/new prop. |
@@ -137,7 +140,7 @@ not move. "Preferences" in the new profile menu has no page today.
 - Server-side access checks and real sessions.
 - Durable assignments, groups, enrolment and progress (currently localStorage).
 - A shared content store so CMS changes reach learners.
-- Video hosting, captions, transcripts; real audio files and durations.
+- Transcripts and captions for audio; real audio files and durations.
 - CMS editors for paths, modules, lessons, access levels and assignments.
 
 ## 8. Phase 1: application shell
@@ -204,8 +207,8 @@ sit in a right-hand column.
 - **Continue learning.** One item, chosen in this order, skipping anything
   completed, missing or not openable (`canAccessLesson`):
   1. the in-progress lesson (`inProgressLessonId`);
-  2. the audio or video lesson with the newest saved position
-     (`media.updatedAt`, position above zero);
+  2. the audio lesson with the newest saved position (`media.updatedAt`,
+     position above zero);
   3. the reading lesson read most recently (`reading.lastReadAt`).
   Nothing is shown if none apply. Never the "next" lesson: that is a
   suggestion, not something in progress.
@@ -225,23 +228,18 @@ sit in a right-hand column.
 The rules live in `services/learning/home.ts` (pure, tested); the page
 and `components/learn/home/*` only present them.
 
-## 10. Demo video (between Phase 2 and Phase 3)
+## 10. Video support (permanently unsupported)
 
-- `public/media/demo/` holds three generated placeholder clips (MP4, 30 to
-  36 s, made locally from the library photos and the demo audio tone), each
-  with a poster and English WebVTT captions. Every frame and caption says
-  "Demo video" / placeholder. Replace them before launch.
-- `config/contentVideos.ts` turns them on for `exp-1`, `exp-7`, `exp-20` and
-  `med-56`; `med-5` stays `unavailable` so that state can still be seen.
-  `config/landingVideo.ts` plays the welcome clip on the public home page.
-- In the Practitioner app, `components/learn/LessonVideo.tsx` shows the video
-  on reading lessons (above the text), audio lessons (in place of the
-  artwork, above the audio player) and library item pages. It reuses
-  `ResourceVideo`: resume, captions, the video mini-player, one media at a
-  time.
-- Video progress is saved under `{itemId}#video` (`videoProgressId`), so a
-  meditation's video never overwrites its audio position. Home counts it for
-  Continue learning and lists it as "Watched".
+- Video is permanently unsupported. The platform supports article and audio
+  content only; video models, routes, players, mini-players, card previews and
+  video progress have been removed rather than feature-flagged.
+- `/learn/library/video/...` and `/learn/library/mixed/...` are not valid
+  library formats and resolve to the in-app not-found state.
+- Legacy media records with composite ids or unsupported kinds are discarded
+  when a v2 progress store is read, without changing the store version. They
+  are never interpreted as audio progress or copied back to the legacy shape.
+- Audio playback, captions/transcript support, public previews, transcoding
+  states, resume and one-at-a-time playback remain supported.
 
 ## 11. Phase 3: My Learning (`/learn/my-learning`)
 
@@ -261,9 +259,8 @@ and `components/learn/home/*` only present them.
 
 - **Completed:** every counted lesson complete (`pathCompletion.complete`).
 - **In progress:** not complete, and at least one of: a completed lesson,
-  the in-progress lesson belongs to this path, or a dated audio, video or
-  reading record against one of its lessons. Undated migrated positions do
-  not count.
+  the in-progress lesson belongs to this path, or a dated audio or reading
+  record against one of its lessons. Undated migrated positions do not count.
 - **Not started:** everything else.
 - **Next lesson:** the Home Continue item if it is in this path (shown as
   "Resume"), otherwise the first unfinished, openable lesson in path order.

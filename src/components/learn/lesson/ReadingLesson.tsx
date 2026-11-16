@@ -1,6 +1,5 @@
 import { CheckCircle2 } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { LessonVideo } from '@/components/learn/LessonVideo'
 import { HOME_CARD, PRIMARY_ACTION, SECONDARY_ACTION } from '@/components/learn/home/homeStyles'
 import { Thumb } from '@/components/learn/home/homeParts'
 import { FLAGS } from '@/config/flags'
@@ -10,8 +9,7 @@ import { formatReadingTime } from '@/lib/format'
 import { lessonIdForItem } from '@/services/learning/catalogue'
 import type { LessonPageData } from '@/services/learning/lessonView'
 import { loadProgress, recordReading } from '@/services/learning/progress'
-import { LEARN_LIBRARY, lessonHref } from '@/services/learning/routes'
-import { getContentVideo } from '@/services/learning/video'
+import { LEARN_LIBRARY } from '@/services/learning/routes'
 import { CATEGORY_COPY } from '@/services/content'
 import type { Exploration } from '@/types'
 import { CompletionPanel, LessonPager } from './LessonPager'
@@ -129,9 +127,7 @@ export function ReadingLesson({ item, data }: { item: Exploration; data: LessonP
           </div>
         )}
 
-        <LessonVideo itemId={item.id} title={item.title} returnTo={data ? data.lesson.href : lessonHref(item.id)} />
-
-        {item.image && !getContentVideo(item.id) && (
+        {item.image && (
           <figure className="overflow-hidden rounded-md">
             <Thumb item={item} className="aspect-[16/9] w-full" />
           </figure>

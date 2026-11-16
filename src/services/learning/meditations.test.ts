@@ -101,10 +101,10 @@ describe('listening state comes from real records', () => {
     expect(continueListening(list(progress)).map((entry) => entry.item.id)).toEqual([b!.id, a!.id])
   })
 
-  it('ignores a video position saved against the same item', () => {
+  it('ignores a legacy composite media position saved against the same item', () => {
     const [a] = ready
     const progress = store({
-      media: { [`${a!.id}#video`]: { resourceId: `${a!.id}#video`, kind: 'video', positionSec: 50, updatedAt: NOW } },
+      media: { [`${a!.id}#video`]: { resourceId: `${a!.id}#video`, kind: 'audio', positionSec: 50, updatedAt: NOW } },
     })
     expect(list(progress).find((entry) => entry.item.id === a!.id)!.state).toBe('not-started')
   })

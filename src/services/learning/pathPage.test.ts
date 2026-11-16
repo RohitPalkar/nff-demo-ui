@@ -108,7 +108,7 @@ describe('lesson states', () => {
     expect(data.modules[1]!.lessons.every((l) => l.state === 'locked')).toBe(true)
   })
 
-  it('treats a saved audio, video or reading position as in progress', () => {
+  it('treats a saved audio or reading position as in progress', () => {
     const first = getModulesOf(MEADOW_JOURNEY_ID)[0]!
     const items = getLessonsOf(first.id).map((l) => content.find((i) => i.id === l.id.replace('lesson-', ''))!)
     const audio = items.find((i) => i.type === 'meditation' && i.transcode === 'ready')!
@@ -130,11 +130,22 @@ describe('lesson states', () => {
     expect(allStates.every((l) => l.state !== 'available')).toBe(true)
   })
 
-  it('shows a video only when it can play', () => {
-    const lessons = page(store(meadowItems())).modules.flatMap((m) => m.lessons)
-    const withVideo = lessons.filter((l) => l.hasVideo).map((l) => l.item.id).sort()
-    expect(withVideo).toEqual(['exp-1', 'exp-20', 'exp-7', 'med-56'])
-    expect(lessons.find((l) => l.item.id === 'med-5')!.hasVideo).toBe(false)
+  it('ignores legacy composite media ids instead of treating them as progress', () => {
+    const first = getModulesOf(MEADOW_JOURNEY_ID)[0]!
+    const items = getLessonsOf(first.id).map((l) => content.find((i) => i.id === l.id.replace('lesson-', ''))!)
+    const article = items.find((i) => i.type === 'exploration')!
+    const progress = store([], {
+      media: {
+        [`${article.id}#video`]: {
+          resourceId: `${article.id}#video`,
+          kind: 'audio',
+          positionSec: 40,
+          updatedAt: NOW,
+        },
+      },
+    })
+    const row = page(progress).modules[0]!.lessons.find((l) => l.item.id === article.id)!
+    expect(row.state).not.toBe('in-progress')
   })
 })
 

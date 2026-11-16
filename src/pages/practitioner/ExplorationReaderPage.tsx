@@ -1,7 +1,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { ArrowLeft, ArrowRight, CheckCircle2, FileQuestion } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { Link, useLocation, useParams } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom'
 import { UnavailableState } from '@/components/nff/UnavailableState'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
@@ -17,8 +17,7 @@ import {
   saveProgress,
 } from '@/services/content'
 import { itemHref } from './JourneyPage'
-import { lessonHref, moduleHref, pathHref } from '@/services/learning/routes'
-import { LessonVideo } from '@/components/learn/LessonVideo'
+import { moduleHref, pathHref } from '@/services/learning/routes'
 import type { LessonOutline } from '@/services/learning/outline'
 
 interface LessonViewProps {
@@ -34,7 +33,6 @@ export function ExplorationReaderPage({
   contentId: contentIdProp,
   outline,
 }: LessonViewProps = {}) {
-  const { pathname } = useLocation()
   const params = useParams()
   const stageId = stageIdProp ?? params.stageId ?? ''
   const contentId = contentIdProp ?? params.contentId ?? ''
@@ -152,7 +150,6 @@ export function ExplorationReaderPage({
               {formatReadingTime(item.readingTimeMin)}
             </p>
           </header>
-          <LessonVideo itemId={item.id} title={item.title} returnTo={outline ? pathname : lessonHref(item.id)} />
 
           <p className="nff-reading-lead text-nff-text-secondary">
             {item.excerpt}

@@ -55,6 +55,17 @@ describe('migration of a stored legacy record', () => {
     expect(store.version).toBe(2)
   })
 
+  it('drops legacy composite media ids instead of copying them back as audio', () => {
+    const store = migrateLegacyProgress(
+      legacyRecord({ positionsSec: { 'med-2': 145, 'med-1#video': 50 } }),
+      'legacy',
+      NOW,
+    )
+    expect(store.media['med-2']).toMatchObject({ kind: 'audio', positionSec: 145 })
+    expect(store.media['med-1#video']).toBeUndefined()
+    expect(toLegacyProgress(store).positionsSec).toEqual({ 'med-2': 145 })
+  })
+
   it('writes meadow.progress.v2.{userId} and leaves the legacy key untouched', () => {
     const raw = JSON.stringify(legacyRecord())
     window.localStorage.setItem(legacyProgressKey('u-legacy'), raw)
@@ -207,9 +218,69 @@ describe('new progress records', () => {
     })
   })
 
-  it('supports the video structure without any video asset', () => {
-    const store = recordMedia('u-v', 'vid-1', { kind: 'video', positionSec: 12 }, NOW)
-    expect(store.media['vid-1']?.kind).toBe('video')
+  it('does not persist unsupported media kinds or legacy composite ids', () => {
+    const unsupportedKind = recordMedia(
+      'u-v',
+      'vid-1',
+      { kind: 'video' as unknown as 'audio', positionSec: 12 },
+      NOW,
+    )
+    expect(unsupportedKind.media['vid-1']).toBeUndefined()
+
+    const compositeId = recordMedia(
+      'u-v',
+      'vid-1#video',
+      { kind: 'audio', positionSec: 12 },
+      NOW,
+    )
+    expect(compositeId.media['vid-1#video']).toBeUndefined()
+  })
+
+  it('cleans unsupported records from an existing v2 store without changing its version', () => {
+    window.localStorage.setItem(
+      progressKey('u-clean'),
+      JSON.stringify({
+        version: 2,
+        userId: 'u-clean',
+        lessons: {},
+        media: {
+          'med-1#video': {
+            resourceId: 'med-1#video',
+            kind: 'audio',
+            positionSec: 50,
+            updatedAt: NOW.toISOString(),
+          },
+          'med-2': {
+            resourceId: 'med-2',
+            kind: 'video',
+            positionSec: 20,
+            updatedAt: NOW.toISOString(),
+          },
+          'med-3': {
+            resourceId: 'med-3',
+            kind: 'audio',
+            positionSec: 10,
+            updatedAt: NOW.toISOString(),
+          },
+        },
+        activity: [],
+        updatedAt: NOW.toISOString(),
+      }),
+    )
+
+    const store = loadProgress('u-clean', LATER)
+    expect(store.version).toBe(2)
+    expect(store.media).toEqual({
+      'med-3': {
+        resourceId: 'med-3',
+        kind: 'audio',
+        positionSec: 10,
+        updatedAt: NOW.toISOString(),
+      },
+    })
+    const persisted = JSON.parse(window.localStorage.getItem(progressKey('u-clean')) ?? '{}')
+    expect(persisted.version).toBe(2)
+    expect(Object.keys(persisted.media)).toEqual(['med-3'])
   })
 })
 

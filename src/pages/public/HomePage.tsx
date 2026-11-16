@@ -6,7 +6,6 @@ import { HomeHero } from '@/components/nff/HomeHero'
 import { HomeHowItWorks } from '@/components/nff/HomeHowItWorks'
 import { HomeIntro } from '@/components/nff/HomeIntro'
 import { HomeLibrary } from '@/components/nff/HomeLibrary'
-import { HomeVideo } from '@/components/nff/HomeVideo'
 import { LoadingState } from '@/components/nff/LoadingState'
 import { AccountRegistrationCTA } from '@/components/nff/AccountRegistrationCTA'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -34,7 +33,6 @@ export function HomePage() {
     <div>
       <HomeHero />
       <HomeIntro />
-      <HomeVideo />
       <HomeSections />
     </div>
   )

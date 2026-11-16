@@ -1,17 +1,17 @@
 /**
  * One media at a time.
  *
- * Anything that starts audible playback (the global audio player, the card
- * preview, a video) claims the single slot. Claiming pauses whoever held it.
- * Holders release the slot when they pause, end or unmount.
+ * Anything that starts audible playback (the global audio player or a card
+ * preview) claims the single slot. Claiming pauses whoever held it. Holders
+ * release the slot when they pause, end or unmount.
  *
- * A plain module (not React state) so the audio player, card previews and
- * video can coordinate without importing each other.
+ * A plain module (not React state) so the audio player and card previews can
+ * coordinate without importing each other.
  */
-export type MediaKind = 'audio' | 'video'
+export type MediaKind = 'audio'
 
 export interface MediaClaim {
-  /** Unique per playing thing, e.g. `video:landing-welcome-video`. */
+  /** Unique per playing thing, e.g. `audio:med-1`. */
   id: string
   kind: MediaKind
   /** Pause this media. Must be safe to call when it is already paused. */

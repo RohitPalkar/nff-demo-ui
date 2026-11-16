@@ -9,7 +9,6 @@ import {
 } from 'lucide-react'
 import { Link, useParams } from 'react-router-dom'
 import { ContentCard } from '@/components/nff/ContentCard'
-import { ContentVideo } from '@/components/nff/ContentVideo'
 import { DetailBreadcrumb } from '@/components/nff/DetailBreadcrumb'
 import { ErrorState } from '@/components/nff/ErrorState'
 import { SectionHeading } from '@/components/nff/SectionHeading'
@@ -18,7 +17,6 @@ import { UnavailableState } from '@/components/nff/UnavailableState'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { canReadArticleInFull, publicAccessContext } from '@/services/learning/access'
-import { getContentVideo } from '@/services/learning/video'
 import { useAuth } from '@/features/auth/AuthProvider'
 import { formatReadingTime } from '@/lib/format'
 import { cn } from '@/lib/utils'
@@ -158,7 +156,6 @@ export function ExplorationDetailPage() {
 
   const related = query.data.related
   const paragraphs = canReadFull ? item.body : item.body.slice(0, 1)
-  const video = getContentVideo(item.id)
 
   return (
     <div>
@@ -190,15 +187,6 @@ export function ExplorationDetailPage() {
         </header>
 
         <div className="nff-content mt-8 md:mt-10">
-          {video ? (
-            <ContentVideo
-              itemId={item.id}
-              title={item.title}
-              video={video}
-              returnTo={`/explorations/${item.slug}`}
-              fullAccess={canReadFull}
-            />
-          ) : (
           <div
             aria-hidden="true"
             className={cn(
@@ -210,7 +198,6 @@ export function ExplorationDetailPage() {
               {item.artwork.label}
             </span>
           </div>
-          )}
         </div>
 
         <div className="nff-content mt-10 md:mt-14">

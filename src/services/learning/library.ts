@@ -1,5 +1,3 @@
-import { SOW_SCOPE } from '@/config/sowScope'
-import { resolveVideoState } from '@/features/video/videoState'
 import { content } from '@/mocks/db'
 import { CATEGORY_COPY } from '@/services/content'
 import type { Category, ContentItem } from '@/types'
@@ -7,7 +5,6 @@ import { canAccessResource, isFull, type AccessContext } from './access'
 import { getLearningCatalogue } from './catalogue'
 import type { LessonOutline } from './outline'
 import { LEARN_LIBRARY, libraryHref, type LibraryType } from './routes'
-import { getContentVideo } from './video'
 
 /**
  * The Practitioner Library, as data. One list of real catalogue records the
@@ -20,16 +17,12 @@ import { getContentVideo } from './video'
  * open them by URL in preview.
  */
 
-export type LibraryFormat = 'article' | 'audio' | 'video'
-// The video format is out of scope in SOW v1.3 (see config/sowScope.ts).
-export const LIBRARY_FORMATS: readonly LibraryFormat[] = SOW_SCOPE.video
-  ? ['article', 'audio', 'video']
-  : ['article', 'audio']
+export type LibraryFormat = 'article' | 'audio'
+export const LIBRARY_FORMATS: readonly LibraryFormat[] = ['article', 'audio']
 
 export const FORMAT_LABEL: Record<LibraryFormat, string> = {
   article: 'Article',
   audio: 'Audio',
-  video: 'Video',
 }
 
 export const LIBRARY_SORTS = ['updated', 'title', 'shortest', 'longest'] as const
@@ -47,14 +40,13 @@ const TOPIC_LABEL = { mind: 'Mind', wellbeing: 'Wellbeing' } as const
 export interface LibraryResource {
   item: ContentItem
   /** Route segment for `/learn/library/:type/:slug`. */
-  type: Extract<LibraryType, 'article' | 'audio'>
+  type: LibraryType
   href: string
   category: Category
   categoryLabel: string
   topicLabel?: string
-  /** Every format the item offers: its own, plus video when one plays. */
+  /** The format the item offers. */
   formats: LibraryFormat[]
-  hasVideo: boolean
   /** Reading time or audio length, in minutes. */
   durationMin: number
   /** 'processing': published, but its audio is not ready to play yet. */
@@ -71,7 +63,6 @@ export interface LibraryQuery {
 
 function toResource(item: ContentItem): LibraryResource {
   const type = item.type === 'meditation' ? 'audio' : 'article'
-  const hasVideo = resolveVideoState(getContentVideo(item.id)) === 'ready'
   const topicLabel = item.understandTopic ? TOPIC_LABEL[item.understandTopic] : undefined
   const categoryLabel = CATEGORY_COPY[item.category].label
   return {
@@ -81,8 +72,7 @@ function toResource(item: ContentItem): LibraryResource {
     category: item.category,
     categoryLabel,
     ...(topicLabel ? { topicLabel } : {}),
-    formats: hasVideo ? [type, 'video'] : [type],
-    hasVideo,
+    formats: [type],
     durationMin:
       item.type === 'meditation' ? Math.round(item.durationSec / 60) : item.readingTimeMin,
     availability:

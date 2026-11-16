@@ -3,12 +3,10 @@ import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { describe, expect, it } from 'vitest'
 import { MeditationsHeader } from '@/components/learn/meditations/MeditationsHeader'
-import { HomeVideo } from '@/components/nff/HomeVideo'
 import { SOW_SCOPE } from '@/config/sowScope'
 import { AuthProvider } from '@/features/auth/AuthProvider'
 import { LoginPage } from '@/pages/auth/LoginPage'
 import { LIBRARY_FORMATS, parseFormat } from '@/services/learning/library'
-import { getContentVideo } from '@/services/learning/video'
 
 /** The shipped build follows SOW v1.3: everything outside it is off. */
 describe('SOW v1.3 scope', () => {
@@ -18,12 +16,10 @@ describe('SOW v1.3 scope', () => {
     }
   })
 
-  it('has no video: no item video, no Video format, no landing section', () => {
-    expect(getContentVideo('exp-1')).toBeUndefined()
-    expect(LIBRARY_FORMATS).not.toContain('video')
+  it('supports only article and audio library formats', () => {
+    expect(LIBRARY_FORMATS).toEqual(['article', 'audio'])
     expect(parseFormat('video')).toBe('all')
-    const { container } = render(<HomeVideo />)
-    expect(container).toBeEmptyDOMElement()
+    expect(parseFormat('mixed')).toBe('all')
   })
 
   it('has no search box on Practitioner meditations', () => {

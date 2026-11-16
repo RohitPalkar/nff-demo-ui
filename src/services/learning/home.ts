@@ -27,8 +27,7 @@ import {
   lessonIdForItem,
 } from './catalogue'
 import { isPreviewRole } from './previewRoles'
-import { getContentVideo, itemIdForVideoProgress, videoProgressId } from './video'
-import { isLessonComplete, pathCompletion } from './progress'
+import { isLessonComplete, isSupportedAudioProgress, pathCompletion } from './progress'
 import {
   LEARN_LIBRARY,
   pathLessonHref,
@@ -83,7 +82,7 @@ export interface UpNextLesson extends HomeLesson {
   kind: 'reading' | 'audio'
 }
 
-export type RecentKind = 'completed' | 'started' | 'opened' | 'listened' | 'watched' | 'read'
+export type RecentKind = 'completed' | 'started' | 'opened' | 'listened' | 'read'
 
 export interface RecentLesson extends HomeLesson {
   kind: RecentKind
@@ -126,13 +125,9 @@ export const EXPLORE_LIMIT = 6
 const itemById = (id: string | undefined) =>
   id ? content.find((entry) => entry.id === id) : undefined
 
-/**
- * The content item behind a media record: a lesson video (`{id}#video`), or a
- * meditation's audio. Legacy positions saved against articles are ignored.
- */
+/** The meditation behind an audio media record. Other records are ignored. */
 function mediaItemId(media: MediaProgress): string | undefined {
-  const videoItem = itemIdForVideoProgress(media.resourceId)
-  if (videoItem) return itemById(videoItem) ? videoItem : undefined
+  if (!isSupportedAudioProgress(media.resourceId, media)) return undefined
   return itemById(media.resourceId)?.type === 'meditation' ? media.resourceId : undefined
 }
 
@@ -180,18 +175,10 @@ function itemProgress(
   store: LearningProgressStore,
   lessonId: string,
 ): ContinueLearning['progress'] {
-  const video = store.media[videoProgressId(item.id)]
-  const duration = getContentVideo(item.id)?.durationSec
-  const audioAt = store.media[item.id]?.updatedAt ?? ''
-  if (video?.updatedAt && video.positionSec > 0 && duration && video.updatedAt >= audioAt) {
-    const left = Math.max(0, duration - Math.floor(Math.min(video.positionSec, duration)))
-    return {
-      percent: Math.round((Math.min(video.positionSec, duration) / duration) * 100),
-      label: `Video · ${Math.max(1, Math.ceil(left / 60))} min left`,
-    }
-  }
   if (item.type === 'meditation') {
-    const position = store.media[item.id]?.positionSec ?? 0
+    const media = store.media[item.id]
+    if (!isSupportedAudioProgress(item.id, media)) return null
+    const position = media?.positionSec ?? 0
     if (position <= 0 || item.durationSec <= 0) return null
     const clamped = Math.min(position, item.durationSec)
     const left = Math.max(0, item.durationSec - Math.floor(clamped))
@@ -207,8 +194,8 @@ function itemProgress(
 
 /**
  * One item, picked deterministically. Order: the in-progress lesson; the
- * audio or video lesson with the newest saved position; the article read
- * most recently. Completed, missing, unpublished and unopenable lessons are
+ * audio lesson with the newest saved position; the article read most
+ * recently. Completed, missing, unpublished and unopenable lessons are
  * skipped. Returns null rather than falling back to "the next lesson".
  */
 export function pickContinueLearning(
@@ -419,7 +406,7 @@ export function listRecentLessons(
     if (!media.updatedAt || !itemId) continue
     events.push({
       lessonId: lessonIdForItem(itemId),
-      kind: media.kind === 'video' ? 'watched' : 'listened',
+      kind: 'listened',
       at: media.updatedAt,
     })
   }
@@ -432,7 +419,7 @@ export function listRecentLessons(
   }
 
   // A completion outranks other events at the same moment.
-  const rank: Record<RecentKind, number> = { completed: 0, started: 1, listened: 2, watched: 2, read: 3, opened: 4 }
+  const rank: Record<RecentKind, number> = { completed: 0, started: 1, listened: 2, read: 3, opened: 4 }
   events.sort(
     (a, b) =>
       b.at.localeCompare(a.at) || rank[a.kind] - rank[b.kind] || a.lessonId.localeCompare(b.lessonId),

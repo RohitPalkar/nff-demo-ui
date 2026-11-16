@@ -65,7 +65,6 @@ const RECENT_VERB: Record<RecentKind, string> = {
   started: 'Started',
   opened: 'Opened',
   listened: 'Listened',
-  watched: 'Watched',
   read: 'Read',
 }
 

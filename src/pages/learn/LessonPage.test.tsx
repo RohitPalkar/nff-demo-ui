@@ -225,22 +225,6 @@ describe('audio lesson', () => {
   })
 })
 
-describe('video', () => {
-  it('shows the video on a lesson that has one, and an in-app state when it is unavailable', async () => {
-    practitioner()
-    storeWith(allItems())
-    const { container, unmount } = renderLesson('exp-1')
-    await screen.findByRole('heading', { level: 1 })
-    expect(screen.getByRole('region', { name: /^Video:/ })).toBeInTheDocument()
-    expect(container.querySelector('[data-video-state="unavailable"]')).toBeNull()
-    unmount()
-
-    const { container: other } = renderLesson('med-5')
-    await screen.findByRole('heading', { level: 1 })
-    expect(other.querySelector('[data-video-state="unavailable"]')).not.toBeNull()
-  })
-})
-
 describe('access', () => {
   it('keeps a locked lesson closed on a direct URL, inside the app', async () => {
     practitioner()

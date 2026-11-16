@@ -1,10 +1,9 @@
-import { Video } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { cn } from '@/lib/utils'
 import { CATEGORY_COPY } from '@/services/content'
 import type { ExploreResource } from '@/services/learning/home'
 import { Thumb } from './homeParts'
-import { HOME_CARD, hasPlayableVideo, itemMeta } from './homeStyles'
+import { HOME_CARD, itemMeta } from './homeStyles'
 
 /**
  * A library item inside the Practitioner app. Opens `/learn/library/...`.
@@ -22,12 +21,6 @@ export function ResourceCard({ resource, note }: { resource: ExploreResource; no
     >
       <div className="relative">
         <Thumb item={item} className="aspect-[16/9] w-full" />
-        {hasPlayableVideo(item.id) && (
-          <span className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-sm bg-[var(--nff-forest-900)]/90 px-2 py-1 nff-label-sm text-[var(--nff-ivory-50)]">
-            <Video aria-hidden="true" className="size-3.5" />
-            Video
-          </span>
-        )}
       </div>
       <div className="flex flex-1 flex-col gap-2 p-4 sm:p-5">
         <p className="nff-caption text-nff-text-secondary">

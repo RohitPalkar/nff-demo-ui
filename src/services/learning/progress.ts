@@ -16,7 +16,6 @@ import {
   getLessonsOf,
   getModule,
   getModulesOf,
-  getResource,
   getResourceIdsOf,
   itemIdForLesson,
   lessonIdForItem,
@@ -43,6 +42,53 @@ export const ACTIVITY_CAP = 200
 export const progressKey = (userId: string) => `${PROGRESS_V2_PREFIX}${userId}`
 export const legacyProgressKey = (userId: string) =>
   `${LEGACY_PROGRESS_PREFIX}${userId}`
+
+/**
+ * Legacy media records used a suffixed id to keep a removed media type apart
+ * from audio. Composite ids are no longer supported, so they are discarded
+ * during migration and never copied back to the legacy shape.
+ */
+const isLegacyCompositeMediaId = (resourceId: string) => resourceId.includes('#')
+
+/** Whether a persisted media record is supported audio progress. */
+export function isSupportedAudioProgress(
+  resourceId: string,
+  media: { kind?: unknown; resourceId?: unknown } | undefined,
+): boolean {
+  if (!media || media.kind !== 'audio') return false
+  if (isLegacyCompositeMediaId(resourceId)) return false
+  return typeof media.resourceId !== 'string' || !isLegacyCompositeMediaId(media.resourceId)
+}
+
+function sanitizeMediaRecords(media: unknown): {
+  media: Record<string, MediaProgress>
+  changed: boolean
+} {
+  if (typeof media !== 'object' || media === null || Array.isArray(media)) {
+    return { media: {}, changed: true }
+  }
+
+  const clean: Record<string, MediaProgress> = {}
+  let changed = false
+  for (const [resourceId, value] of Object.entries(media)) {
+    if (
+      isLegacyCompositeMediaId(resourceId) ||
+      typeof value !== 'object' ||
+      value === null ||
+      !isSupportedAudioProgress(resourceId, value as { kind?: unknown; resourceId?: unknown })
+    ) {
+      changed = true
+      continue
+    }
+    clean[resourceId] = value as MediaProgress
+  }
+  return { media: clean, changed }
+}
+
+function sanitizeStore(store: LearningProgressStore): LearningProgressStore {
+  const { media, changed } = sanitizeMediaRecords(store.media)
+  return changed ? { ...store, media } : store
+}
 
 function seedFor(userId: string): Progress | undefined {
   return (
@@ -88,8 +134,8 @@ export function migrateLegacyProgress(
   }
 
   for (const [resourceId, positionSec] of Object.entries(legacy.positionsSec)) {
-    const kind = getResource(resourceId)?.kind === 'video' ? 'video' : 'audio'
-    store.media[resourceId] = { resourceId, kind, positionSec }
+    if (isLegacyCompositeMediaId(resourceId)) continue
+    store.media[resourceId] = { resourceId, kind: 'audio', positionSec }
   }
   return store
 }
@@ -114,7 +160,11 @@ export function loadProgress(
   now: Date = new Date(),
 ): LearningProgressStore {
   const existing = readJson<unknown>(progressKey(userId), null)
-  if (isStore(existing)) return existing
+  if (isStore(existing)) {
+    const clean = sanitizeStore(existing)
+    if (clean !== existing) persist(clean)
+    return clean
+  }
 
   const rawLegacy = storageGet(legacyProgressKey(userId))
   let legacy: Progress | undefined
@@ -156,6 +206,7 @@ export function toLegacyProgress(store: LearningProgressStore): Progress {
   }
   const positionsSec: Record<string, number> = {}
   for (const media of Object.values(store.media)) {
+    if (!isSupportedAudioProgress(media.resourceId, media)) continue
     positionsSec[media.resourceId] = media.positionSec
   }
   const inProgress = store.inProgressLessonId
@@ -197,11 +248,12 @@ export function applyLegacyProgress(
   now: Date,
 ): LearningProgressStore {
   const at = now.toISOString()
+  const cleanCurrent = sanitizeStore(current)
   const store: LearningProgressStore = {
-    ...current,
-    lessons: { ...current.lessons },
-    media: { ...current.media },
-    activity: [...current.activity],
+    ...cleanCurrent,
+    lessons: { ...cleanCurrent.lessons },
+    media: { ...cleanCurrent.media },
+    activity: [...cleanCurrent.activity],
     updatedAt: at,
   }
 
@@ -255,15 +307,13 @@ export function applyLegacyProgress(
   }
 
   for (const [resourceId, positionSec] of Object.entries(legacy.positionsSec)) {
+    if (isLegacyCompositeMediaId(resourceId)) continue
     const before = store.media[resourceId]
-    const kind =
-      before?.kind ??
-      (getResource(resourceId)?.kind === 'video' ? 'video' : 'audio')
     if (before && before.positionSec === positionSec) continue
     store.media[resourceId] = {
       ...before,
       resourceId,
-      kind,
+      kind: 'audio',
       positionSec,
       updatedAt: at,
     }
@@ -336,8 +386,8 @@ export function recordReading(
 }
 
 /**
- * Media progress for audio or video. `playedDeltaSec` is time actually played
- * since the last call, so `playedSec` is never a wall-clock guess.
+ * Audio media progress. `playedDeltaSec` is time actually played since the
+ * last call, so `playedSec` is never a wall-clock guess.
  */
 export function recordMedia(
   userId: string,
@@ -350,6 +400,7 @@ export function recordMedia(
   },
   now = new Date(),
 ) {
+  if (!isSupportedAudioProgress(resourceId, update_)) return loadProgress(userId, now)
   return update(userId, now, (store) => {
     const before = store.media[resourceId]
     const at = now.toISOString()

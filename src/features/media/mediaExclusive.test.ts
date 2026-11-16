@@ -9,38 +9,39 @@ import {
 beforeEach(resetMediaClaims)
 
 describe('mediaExclusive', () => {
-  it('pauses the previous holder when another media claims the slot', () => {
-    const pauseAudio = vi.fn()
-    const pauseVideo = vi.fn()
-    claimMedia({ id: 'audio:a', kind: 'audio', pause: pauseAudio })
-    claimMedia({ id: 'video:v', kind: 'video', pause: pauseVideo })
-    expect(pauseAudio).toHaveBeenCalledTimes(1)
-    expect(pauseVideo).not.toHaveBeenCalled()
-    expect(getActiveMedia()?.id).toBe('video:v')
+  it('pauses the previous holder when another audio claims the slot', () => {
+    const pauseFirst = vi.fn()
+    const pauseSecond = vi.fn()
+    claimMedia({ id: 'audio:first', kind: 'audio', pause: pauseFirst })
+    claimMedia({ id: 'audio:second', kind: 'audio', pause: pauseSecond })
+    expect(pauseFirst).toHaveBeenCalledTimes(1)
+    expect(pauseSecond).not.toHaveBeenCalled()
+    expect(getActiveMedia()?.id).toBe('audio:second')
+    expect(getActiveMedia()?.kind).toBe('audio')
   })
 
   it('does not pause a holder that claims again', () => {
     const pause = vi.fn()
-    claimMedia({ id: 'video:v', kind: 'video', pause })
-    claimMedia({ id: 'video:v', kind: 'video', pause })
+    claimMedia({ id: 'audio:track', kind: 'audio', pause })
+    claimMedia({ id: 'audio:track', kind: 'audio', pause })
     expect(pause).not.toHaveBeenCalled()
   })
 
   it('a pause event from the old holder cannot release the new one', () => {
     claimMedia({
-      id: 'audio:a',
+      id: 'audio:first',
       kind: 'audio',
-      pause: () => releaseMedia('audio:a'),
+      pause: () => releaseMedia('audio:first'),
     })
-    claimMedia({ id: 'video:v', kind: 'video', pause: vi.fn() })
-    expect(getActiveMedia()?.id).toBe('video:v')
+    claimMedia({ id: 'audio:second', kind: 'audio', pause: vi.fn() })
+    expect(getActiveMedia()?.id).toBe('audio:second')
   })
 
   it('release only clears the matching holder', () => {
-    claimMedia({ id: 'video:v', kind: 'video', pause: vi.fn() })
-    releaseMedia('audio:a')
-    expect(getActiveMedia()?.id).toBe('video:v')
-    releaseMedia('video:v')
+    claimMedia({ id: 'audio:track', kind: 'audio', pause: vi.fn() })
+    releaseMedia('audio:other')
+    expect(getActiveMedia()?.id).toBe('audio:track')
+    releaseMedia('audio:track')
     expect(getActiveMedia()).toBeNull()
   })
 })

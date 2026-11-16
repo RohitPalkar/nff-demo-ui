@@ -6,15 +6,13 @@ import {
   Lock,
   Pause,
   Play,
-  Video,
   type LucideIcon,
 } from 'lucide-react'
 import { useState, type CSSProperties } from 'react'
 import { Link } from 'react-router-dom'
-import { resolveVideoState } from '@/features/video/videoState'
 import { cn } from '@/lib/utils'
 import { formatDuration, formatReadingTime } from '@/lib/format'
-import type { ContentImage, VideoMedia } from '@/types'
+import type { ContentImage } from '@/types'
 
 export interface LibraryCardPlayback {
   state: 'idle' | 'playing' | 'paused'
@@ -45,12 +43,6 @@ export interface LibraryContentCardProps {
   unavailable?: boolean
   /** Present only when this viewer may play the track from the card. */
   playback?: LibraryCardPlayback
-  /**
-   * Present when the item is a video lesson. Adds a "Video" chip; once the
-   * video is ready, hovering or focusing the card plays a silent preview and
-   * the action becomes "Watch".
-   */
-  video?: VideoMedia
   /** Action label in the bar; defaults to "Read exploration" or "Listen". */
   ctaLabel?: string
   className?: string
@@ -89,21 +81,12 @@ export function LibraryContentCard({
   locked = false,
   unavailable = false,
   playback,
-  video,
   ctaLabel,
   className,
   style,
 }: LibraryContentCardProps) {
   const [loaded, setLoaded] = useState(false)
   const [failed, setFailed] = useState(false)
-  const [previewing, setPreviewing] = useState(false)
-  const videoReady = !!video && resolveVideoState(video) === 'ready'
-  const canPreview =
-    videoReady &&
-    !locked &&
-    !unavailable &&
-    typeof window !== 'undefined' &&
-    !window.matchMedia('(prefers-reduced-motion: reduce)').matches
   const isReading = kind === 'exploration'
   const typeLabel = isReading ? 'Exploration' : 'Meditation'
   const TypeIcon = isReading ? BookOpen : Headphones
@@ -121,11 +104,9 @@ export function LibraryContentCard({
       ? 'Sign up to unlock'
       : unavailable
         ? 'View track'
-        : videoReady
-          ? 'Watch'
-          : isReading
-            ? 'Read exploration'
-            : 'Listen')
+        : isReading
+          ? 'Read exploration'
+          : 'Listen')
 
   // One status chip on the left: the most important thing to know first.
   const status: { icon: LucideIcon; label: string } = unavailable
@@ -135,23 +116,11 @@ export function LibraryContentCard({
       : freePreview
         ? { icon: Play, label: 'Free preview' }
         : { icon: TypeIcon, label: typeLabel }
-  const cardImage: ContentImage | undefined =
-    image ?? (video?.posterUrl ? { src: video.posterUrl, alt: '' } : undefined)
-  const showImage = cardImage && !failed
+  const showImage = image && !failed
 
   return (
     <article
       style={style}
-      data-video={video ? (videoReady ? 'ready' : 'not-ready') : undefined}
-      onPointerEnter={(event) => {
-        // Touch has no hover; a tap opens the item instead.
-        if (canPreview && event.pointerType !== 'touch') setPreviewing(true)
-      }}
-      onPointerLeave={() => setPreviewing(false)}
-      onFocus={() => canPreview && setPreviewing(true)}
-      onBlur={(event) => {
-        if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setPreviewing(false)
-      }}
       className={cn(
         'group relative isolate flex aspect-[4/5] w-full min-w-0 flex-col justify-between overflow-hidden rounded-[28px] bg-nff-bg-tonal shadow-nff-1 ring-1 ring-nff-border-default transition-[box-shadow,transform] duration-[var(--nff-duration-base)] hover:-translate-y-0.5 hover:shadow-nff-3 motion-reduce:hover:translate-y-0 has-[a:focus-visible]:shadow-[var(--nff-focus-ring)]',
         className,
@@ -160,8 +129,8 @@ export function LibraryContentCard({
       {/* Photograph: fills the card behind everything. */}
       {showImage ? (
         <img
-          src={cardImage.src}
-          alt={cardImage.alt}
+          src={image.src}
+          alt={image.alt}
           width={800}
           height={600}
           loading="lazy"
@@ -185,32 +154,10 @@ export function LibraryContentCard({
         </span>
       )}
 
-      {/* Silent hover/focus preview for ready video lessons. Never claims the
-          audio slot: it is muted and stops when the pointer or focus leaves. */}
-      {previewing && video?.src && (
-        <video
-          data-testid="card-video-preview"
-          src={video.src}
-          poster={video.posterUrl}
-          muted
-          loop
-          autoPlay
-          playsInline
-          preload="metadata"
-          aria-hidden="true"
-          tabIndex={-1}
-          ref={(node) => {
-            if (node) node.muted = true
-          }}
-          className="absolute inset-0 -z-10 size-full object-cover"
-        />
-      )}
-
       {/* Chips: status or type on the left, length on the right. */}
       <div className="flex items-start justify-between gap-2 p-3">
         <span className="flex min-w-0 flex-wrap gap-1.5">
           <Chip icon={status.icon}>{status.label}</Chip>
-          {video && <Chip icon={Video}>Video</Chip>}
           {status.label !== typeLabel && <span className="sr-only">{typeLabel}</span>}
         </span>
         {length && <Chip>{length}</Chip>}

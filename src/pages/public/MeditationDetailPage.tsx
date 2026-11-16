@@ -13,7 +13,6 @@ import {
 import { Link, useParams } from 'react-router-dom'
 import { AudioPlayer } from '@/components/nff/AudioPlayer'
 import { ContentCard } from '@/components/nff/ContentCard'
-import { ContentVideo } from '@/components/nff/ContentVideo'
 import { DetailBreadcrumb } from '@/components/nff/DetailBreadcrumb'
 import { ErrorState } from '@/components/nff/ErrorState'
 import { SectionHeading } from '@/components/nff/SectionHeading'
@@ -22,7 +21,6 @@ import { UnavailableState } from '@/components/nff/UnavailableState'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { hasRegisteredAccess, publicAccessContext } from '@/services/learning/access'
-import { getContentVideo } from '@/services/learning/video'
 import { useAuth } from '@/features/auth/AuthProvider'
 import { formatDuration } from '@/lib/format'
 import { cn } from '@/lib/utils'
@@ -178,7 +176,6 @@ export function MeditationDetailPage() {
 
   const related = query.data.related
   const showGate = !canListenFull && !item.preview
-  const video = getContentVideo(item.id)
   const playerLimit =
     canListenFull || !item.preview
       ? item.durationSec
@@ -339,18 +336,6 @@ export function MeditationDetailPage() {
             </div>
           </div>
         </header>
-
-        {video && (
-          <div className="nff-content mt-10 md:mt-14">
-            <ContentVideo
-              itemId={item.id}
-              title={item.title}
-              video={video}
-              returnTo={`/meditations/${item.slug}`}
-              fullAccess={canListenFull}
-            />
-          </div>
-        )}
 
         <div className="nff-content mt-10 md:mt-14">
           <div className="nff-reading mx-auto flex flex-col gap-5">

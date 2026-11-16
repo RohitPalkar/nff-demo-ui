@@ -5,7 +5,6 @@ import { useParams } from 'react-router-dom'
 import { RequireLessonAccess } from '@/app/RequireLessonAccess'
 import { AccessDeniedState } from '@/components/learn/AccessDeniedState'
 import { AudioLesson } from '@/components/learn/lesson/AudioLesson'
-import { BlockLesson } from '@/components/learn/lesson/BlockLesson'
 import { ReadingLesson } from '@/components/learn/lesson/ReadingLesson'
 import { UnavailableState } from '@/components/nff/UnavailableState'
 import { useAuth } from '@/features/auth/AuthProvider'
@@ -63,9 +62,6 @@ export function LessonPage() {
     }
     if (lesson.kind === 'audio' && item.type === 'meditation') {
       return <AudioLesson key={lessonId} item={item} data={data} />
-    }
-    if (lesson.kind === 'video' || lesson.kind === 'mixed') {
-      return <BlockLesson key={lessonId} lesson={lesson} data={data} />
     }
     return null
   })()

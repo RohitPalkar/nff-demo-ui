@@ -9,11 +9,9 @@ import {
   RotateCw,
 } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { Link, useLocation, useParams } from 'react-router-dom'
-import { LessonVideo } from '@/components/learn/LessonVideo'
+import { Link, useParams } from 'react-router-dom'
 import type { LessonOutline } from '@/services/learning/outline'
 import { UnavailableState } from '@/components/nff/UnavailableState'
-import { getContentVideo } from '@/services/learning/video'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useAuth } from '@/features/auth/AuthProvider'
@@ -22,7 +20,7 @@ import { formatClock, formatDuration } from '@/lib/format'
 import { getPlaybackSpeed, savePlaybackSpeed } from '@/services/account'
 import { getItemById, getProgress, getStage } from '@/services/content'
 import { itemHref } from './JourneyPage'
-import { lessonHref, moduleHref, pathHref } from '@/services/learning/routes'
+import { moduleHref, pathHref } from '@/services/learning/routes'
 
 interface LessonViewProps {
   /** Set when rendered by the lesson route; otherwise read from the URL. */
@@ -37,7 +35,6 @@ export function PlayerPage({
   contentId: contentIdProp,
   outline,
 }: LessonViewProps = {}) {
-  const { pathname } = useLocation()
   const params = useParams()
   const stageId = stageIdProp ?? params.stageId ?? ''
   const contentId = contentIdProp ?? params.contentId ?? ''
@@ -119,22 +116,14 @@ export function PlayerPage({
       </Link>
 
       <div className="mx-auto flex w-full max-w-xl flex-col gap-6">
-        {getContentVideo(meditation.id) ? (
-          <LessonVideo
-            itemId={meditation.id}
-            title={meditation.title}
-            returnTo={outline ? pathname : lessonHref(meditation.id)}
-          />
-        ) : (
-          <div
-            aria-hidden="true"
-            className="mx-auto flex aspect-square w-full max-w-sm items-center justify-center rounded-2xl border bg-nff-bg-brand-subtle text-nff-text-brand shadow-nff-2"
-          >
-            <span className="nff-display text-7xl font-semibold opacity-40">
-              {meditation.artwork.label}
-            </span>
-          </div>
-        )}
+        <div
+          aria-hidden="true"
+          className="mx-auto flex aspect-square w-full max-w-sm items-center justify-center rounded-2xl border bg-nff-bg-brand-subtle text-nff-text-brand shadow-nff-2"
+        >
+          <span className="nff-display text-7xl font-semibold opacity-40">
+            {meditation.artwork.label}
+          </span>
+        </div>
 
         <header className="flex flex-col gap-1 text-center">
           <h1 className="nff-heading-h2">{meditation.title}</h1>

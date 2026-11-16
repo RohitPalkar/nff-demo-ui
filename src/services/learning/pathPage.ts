@@ -1,11 +1,10 @@
 import { formatDuration, formatReadingTime } from '@/lib/format'
-import { resolveVideoState } from '@/features/video/videoState'
 import type { ContentItem, LearningPath, LearningProgressStore } from '@/types'
 import type { AccessContext } from './access'
 import { lessonIdForItem } from './catalogue'
 import { buildMyLearning, type MyLearningItem } from './myLearning'
 import { buildPathOverview, type PathOverview, type PathOverviewLesson } from './outline'
-import { getContentVideo, videoProgressId } from './video'
+import { isSupportedAudioProgress } from './progress'
 
 /**
  * Everything the learning-path page shows, from the shared services:
@@ -22,7 +21,6 @@ export interface PathLesson extends PathOverviewLesson {
   number: number
   state: LessonState
   format: LessonFormat
-  hasVideo: boolean
   /** "6 min read" or "12 min". */
   duration: string
   /** Why it cannot be opened, in words. */
@@ -71,8 +69,8 @@ function lessonProgressed(store: LearningProgressStore, lessonId: string, item: 
   // is shared by item), so a lesson in another path reads it from there too.
   if ((store.lessons[lessonId]?.reading?.scrollPct ?? 0) > 0) return true
   if ((store.lessons[lessonIdForItem(item.id)]?.reading?.scrollPct ?? 0) > 0) return true
-  if ((store.media[item.id]?.positionSec ?? 0) > 0) return true
-  return (store.media[videoProgressId(item.id)]?.positionSec ?? 0) > 0
+  const media = store.media[item.id]
+  return isSupportedAudioProgress(item.id, media) && (media?.positionSec ?? 0) > 0
 }
 
 function stateOf(
@@ -112,7 +110,6 @@ export function buildPathPage(
         number: index + 1,
         state,
         format: lesson.item.type === 'meditation' ? 'audio' : 'article',
-        hasVideo: resolveVideoState(getContentVideo(lesson.item.id)) === 'ready',
         duration:
           lesson.item.type === 'meditation'
             ? formatDuration(lesson.item.durationSec)

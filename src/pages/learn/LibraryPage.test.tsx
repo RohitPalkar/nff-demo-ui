@@ -158,11 +158,11 @@ describe('Library page', () => {
     expect(screen.getByTestId('where')).toHaveTextContent('/learn/library?format=article')
   })
 
-  it('a video filter lists only items with a playable video', async () => {
+  it('treats unsupported media formats as no filter', async () => {
     practitioner()
     renderAt('/learn/library?format=video')
-    expect(await screen.findByText('4 resources')).toBeInTheDocument()
-    expect(within(grid()).getAllByText('Video', { selector: 'span' })).toHaveLength(4)
+    expect(await screen.findByText(`Showing 24 of ${published.length} resources`)).toBeInTheDocument()
+    expect(within(grid()).queryByText('Video', { selector: 'span' })).not.toBeInTheDocument()
   })
 
   it('sorts with the select and keeps it in the URL', async () => {
@@ -209,6 +209,18 @@ describe('Library resource detail', () => {
     expect(screen.getByRole('slider', { name: 'Seek' })).toBeInTheDocument()
     expect(screen.queryByText(/Lesson \d+ of/)).not.toBeInTheDocument()
     expect(screen.queryByRole('navigation', { name: 'Curriculum' })).not.toBeInTheDocument()
+  })
+
+  it('does not resolve unsupported media route types', async () => {
+    practitioner()
+    const item = published.find((entry) => entry.type === 'exploration')!
+
+    for (const type of ['video', 'mixed']) {
+      const view = renderAt(`/learn/library/${type}/${item.slug}`)
+      expect(await screen.findByText('We could not find that')).toBeInTheDocument()
+      expect(screen.queryByRole('heading', { level: 1, name: item.title })).not.toBeInTheDocument()
+      view.unmount()
+    }
   })
 
   it('says audio that is still processing is not ready, inside the app', async () => {

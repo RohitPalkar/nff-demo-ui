@@ -10,6 +10,7 @@ import {
   type ReactNode,
 } from 'react'
 import { useAuth } from '@/features/auth/AuthProvider'
+import { claimMedia, releaseMedia } from '@/features/media/mediaExclusive'
 import { getProgress, saveProgress } from '@/services/content'
 import type { Meditation } from '@/types'
 
@@ -48,6 +49,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const positionRef = useRef(0)
   const completedRef = useRef(false)
   const lastSaveRef = useRef(0)
+  const toggleRef = useRef<() => void>(() => undefined)
 
   positionRef.current = position
 
@@ -159,6 +161,22 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     }
     setPlaying((value) => !value)
   }, [track, ended])
+
+  toggleRef.current = toggle
+
+  // The global player shares the one-media-at-a-time slot with public previews.
+  // Claiming pauses whichever preview was playing before the full track starts.
+  const trackId = track?.id ?? null
+  useEffect(() => {
+    if (!playing || !trackId) return
+    const id = `audio:${trackId}`
+    claimMedia({
+      id,
+      kind: 'audio',
+      pause: () => toggleRef.current(),
+    })
+    return () => releaseMedia(id)
+  }, [playing, trackId])
 
   const seek = useCallback(
     (seconds: number) => {

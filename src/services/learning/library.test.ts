@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { content } from '@/mocks/db'
 import type { AccessContext } from '@/services/learning/access'
 import { getAccessContext } from '@/services/learning/accessContext'
@@ -6,6 +6,7 @@ import { getLearningCatalogue } from '@/services/learning/catalogue'
 import {
   featuredResources,
   filterLibrary,
+  LIBRARY_FORMATS,
   libraryCounts,
   libraryOutline,
   listLibraryResources,
@@ -18,16 +19,6 @@ import {
   sortLibrary,
 } from '@/services/learning/library'
 import type { Role } from '@/types'
-
-// These tests cover features switched off for SOW v1.3 (config/sowScope.ts).
-// Run them with every feature on, so the code stays ready to switch back.
-vi.mock('@/config/sowScope', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@/config/sowScope')>()
-  return {
-    SOW_SCOPE: Object.fromEntries(Object.keys(actual.SOW_SCOPE).map((key) => [key, true])),
-  }
-})
-
 
 const learnerCtx = () => getAccessContext({ id: 'u-demo', role: 'practitioner' as Role }, { surface: 'learn' })
 const all = () => listLibraryResources(learnerCtx())
@@ -92,12 +83,10 @@ describe('what the Library lists', () => {
     expect(audio.durationMin).toBe(audio.item.type === 'meditation' && Math.round(audio.item.durationSec / 60))
   })
 
-  it('adds the video format only to items with a playable video', () => {
-    const withVideo = all().filter((resource) => resource.hasVideo)
-    expect(withVideo.map((resource) => resource.item.id).sort()).toEqual(['exp-1', 'exp-20', 'exp-7', 'med-56'])
-    expect(withVideo.every((resource) => resource.formats.includes('video'))).toBe(true)
-    // med-5 has a video record that is unavailable: not offered as video.
-    expect(all().find((resource) => resource.item.id === 'med-5')!.formats).toEqual(['audio'])
+  it('offers only the item\'s native article or audio format', () => {
+    expect(LIBRARY_FORMATS).toEqual(['article', 'audio'])
+    expect(all().every((resource) => resource.formats.length === 1)).toBe(true)
+    expect(all().every((resource) => resource.formats[0] === resource.type)).toBe(true)
   })
 
   it('marks audio that is still processing', () => {
@@ -135,9 +124,9 @@ describe('filters and counts', () => {
     expect(result.every((resource) => resource.category === 'foundations' && resource.item.type === 'meditation')).toBe(true)
   })
 
-  it('a video filter keeps articles and audio that carry a video', () => {
-    const result = filterLibrary(all(), { format: 'video' })
-    expect(result.map((resource) => resource.item.id).sort()).toEqual(['exp-1', 'exp-20', 'exp-7', 'med-56'])
+  it('does not treat unsupported media formats as filters', () => {
+    expect(parseFormat('video')).toBe('all')
+    expect(parseFormat('mixed')).toBe('all')
   })
 
   it('counts each choice with the other filters applied', () => {
@@ -151,7 +140,7 @@ describe('filters and counts', () => {
   })
 
   it('offers only categories and formats that have content', () => {
-    const onlyArticles = all().filter((resource) => resource.item.type === 'exploration' && !resource.hasVideo)
+    const onlyArticles = all().filter((resource) => resource.item.type === 'exploration')
     const counts = libraryCounts(onlyArticles, {})
     expect(counts.formats.map((entry) => entry.format)).toEqual(['article'])
   })
@@ -160,7 +149,6 @@ describe('filters and counts', () => {
     expect(parseCategory('contemplate')).toBe('contemplate')
     expect(parseCategory('nope')).toBe('all')
     expect(parseCategory('toString')).toBe('all')
-    expect(parseFormat('video')).toBe('video')
     expect(parseFormat(null)).toBe('all')
     expect(parseLibrarySort('longest')).toBe('longest')
     expect(parseLibrarySort('popular')).toBe('updated')

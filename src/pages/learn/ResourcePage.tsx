@@ -1,4 +1,4 @@
-import { Headphones, Video } from 'lucide-react'
+import { Headphones } from 'lucide-react'
 import { useLayoutEffect, useMemo } from 'react'
 import { useParams } from 'react-router-dom'
 import { AccessDeniedState } from '@/components/learn/AccessDeniedState'
@@ -32,9 +32,7 @@ export function ResourcePage() {
   const { type = '', slug = '' } = useParams()
   const { user } = useAuth()
 
-  // Start each resource at the top, not at the Library's scroll position. A
-  // layout effect, so a video returning from the mini-player (which scrolls
-  // itself into view in a later, passive effect) still wins.
+  // Start each resource at the top, not at the Library's scroll position.
   useLayoutEffect(() => {
     window.scrollTo(0, 0)
   }, [type, slug])
@@ -57,18 +55,6 @@ export function ResourcePage() {
       related: relatedResources(library, item),
     } as const
   }, [item, user])
-
-  if (type === 'video' || type === 'mixed') {
-    return (
-      <UnavailableState
-        icon={Video}
-        title="This is not available yet"
-        description="Video and mixed-media resources are coming. Nothing is missing on your side."
-        trail={TRAIL}
-        {...BACK}
-      />
-    )
-  }
 
   if (!item || !context) return <AccessDeniedState reason="not-found" {...BACK} />
   if (context.denied) return <AccessDeniedState reason={context.denied} {...BACK} />

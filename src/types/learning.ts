@@ -14,9 +14,9 @@ import type { ContentStatus, Role } from './index'
  * Resource uses the content item's id, so every saved id stays valid.
  */
 
-export type LessonKind = 'reading' | 'video' | 'audio' | 'mixed'
+export type LessonKind = 'reading' | 'audio'
 
-export type ResourceKind = 'article' | 'audio' | 'video' | 'mixed'
+export type ResourceKind = 'article' | 'audio'
 
 /** Who may open something. See services/learning/access.ts for the rules. */
 export type AccessLevel = 'public' | 'registered' | 'assigned' | 'restricted'
@@ -26,18 +26,6 @@ export type ModuleUnlock = 'sequential' | 'open'
 
 /** How a lesson becomes complete. */
 export type LessonCompletion = 'manual' | 'media-end' | 'all-blocks'
-
-/** Video exists only as a structure until real assets are supplied. */
-export type VideoAvailability = 'unavailable' | 'processing' | 'ready'
-
-export interface VideoMedia {
-  availability: VideoAvailability
-  src?: string
-  posterUrl?: string
-  /** WebVTT captions. Required before a video can be published. */
-  captionsUrl?: string
-  durationSec?: number
-}
 
 export interface Resource {
   /** For migrated content this is the existing exploration/meditation id. */
@@ -51,7 +39,6 @@ export interface Resource {
   status: ContentStatus
   /** True when signed-out visitors may sample it (excerpt or free preview). */
   previewable: boolean
-  video?: VideoMedia
   /** `restricted` resources: who has been explicitly granted access. */
   grants?: AccessGrants
 }
@@ -159,7 +146,7 @@ export interface LessonProgress {
 export interface MediaProgress {
   /** The Resource id. */
   resourceId: string
-  kind: 'audio' | 'video'
+  kind: 'audio'
   positionSec: number
   /** Furthest point reached. Unknown for migrated records. */
   furthestSec?: number

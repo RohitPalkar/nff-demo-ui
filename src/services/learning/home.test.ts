@@ -183,23 +183,20 @@ describe('continue learning', () => {
   })
 })
 
-describe('video lessons', () => {
-  it('resumes a lesson video from its own saved position and lists it as watched', () => {
-    // exp-7 is a stage-one article with a demo video (config/contentVideos.ts).
-    const lessonId = lessonIdForItem('exp-7')
+describe('legacy media records', () => {
+  it('ignores legacy composite ids when choosing Continue or Recent', () => {
     const progress = store({
       media: {
-        'exp-7#video': { resourceId: 'exp-7#video', kind: 'video', positionSec: 12, updatedAt: '2026-11-09T10:00:00.000Z' },
+        'exp-7#video': {
+          resourceId: 'exp-7#video',
+          kind: 'audio',
+          positionSec: 12,
+          updatedAt: '2026-11-09T10:00:00.000Z',
+        },
       },
     })
-    const picked = pickContinueLearning(ctx(progress), progress)
-    expect(picked?.lessonId).toBe(lessonId)
-    expect(picked?.reason).toBe('recent-media')
-    expect(picked?.progress).toEqual({ percent: 40, label: 'Video · 1 min left' })
-
-    const [row] = listRecentLessons(progress, new Set())
-    expect(row?.kind).toBe('watched')
-    expect(row?.lessonId).toBe(lessonId)
+    expect(pickContinueLearning(ctx(progress), progress)).toBeNull()
+    expect(listRecentLessons(progress, new Set())).toEqual([])
   })
 })
 

@@ -28,7 +28,7 @@ export const lessonHref = (itemId: string) =>
 export const pathLessonHref = (pathSlug: string, lessonId: string) =>
   `${pathHref(pathSlug)}/lessons/${lessonId}`
 
-export type LibraryType = 'article' | 'audio' | 'video' | 'mixed'
+export type LibraryType = 'article' | 'audio'
 
 export const libraryHref = (type: LibraryType, slug: string) =>
   `${LEARN_LIBRARY}/${type}/${slug}`

@@ -1,4 +1,4 @@
-import { ArrowRight, BookOpen, CheckCircle2, Circle, CircleDot, Headphones, Lock, Video } from 'lucide-react'
+import { ArrowRight, BookOpen, CheckCircle2, Circle, CircleDot, Headphones, Lock } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { cn } from '@/lib/utils'
 import type { LessonState, PathLesson } from '@/services/learning/pathPage'
@@ -40,12 +40,6 @@ export function LessonFormatIndicator({ lesson }: { lesson: PathLesson }) {
         <Icon aria-hidden="true" className="size-4 shrink-0" />
         {lesson.format === 'audio' ? 'Audio' : 'Article'} · {lesson.duration}
       </span>
-      {lesson.hasVideo && (
-        <span className="inline-flex items-center gap-1.5">
-          <Video aria-hidden="true" className="size-4 shrink-0" />
-          Video
-        </span>
-      )}
     </span>
   )
 }

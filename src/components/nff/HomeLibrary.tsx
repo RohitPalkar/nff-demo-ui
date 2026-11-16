@@ -9,7 +9,6 @@ import { useLibraryPlayback } from '@/features/player/useLibraryPlayback'
 import { useRevealOnce } from '@/lib/useRevealOnce'
 import { cn } from '@/lib/utils'
 import { getStageNumber } from '@/services/content'
-import { getContentVideo } from '@/services/learning/video'
 import type { ContentItem, HomeTab } from '@/types'
 
 const delay = (ms: number) => ({ '--nff-delay': `${ms}ms` }) as CSSProperties
@@ -169,7 +168,6 @@ export function HomeLibrary({ tabs, activeTab, onTabChange }: HomeLibraryProps) 
                             : `/meditations/${item.slug}`
                         }
                         image={item.image}
-                        video={getContentVideo(item.id)}
                         category={tab.label}
                         stage={getStageNumber(item.stageId)}
                         readingTimeMin={

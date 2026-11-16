@@ -5,7 +5,6 @@ import { FEATURED_IMAGES } from '@/config/featuredImages'
 import { FeaturedContentCard } from '@/components/nff/FeaturedContentCard'
 import { useRevealOnce } from '@/lib/useRevealOnce'
 import { getStageNumber } from '@/services/content'
-import { getContentVideo } from '@/services/learning/video'
 import type { ContentItem, Exploration } from '@/types'
 
 const delay = (ms: number) => ({ '--nff-delay': `${ms}ms` }) as CSSProperties
@@ -113,7 +112,6 @@ export function HomeFeatured({ items }: HomeFeaturedProps) {
                 image={FEATURED_IMAGES[item.id] ?? item.image}
                 stage={getStageNumber(item.stageId)}
                 readingTimeMin={item.readingTimeMin}
-                video={getContentVideo(item.id)}
               />
             </li>
           ))}
