@@ -44,7 +44,7 @@ export function ScoreSettingsPage() {
   }
 
   return (
-    <div className="flex max-w-2xl flex-col gap-5">
+    <div className="flex w-full min-w-0 flex-col gap-5">
       <PageHeader
         title="Score Settings"
         description="Weights must add up to 100."
