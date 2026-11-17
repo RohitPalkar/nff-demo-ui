@@ -49,8 +49,7 @@ describe('Practitioner Home', () => {
 
     expect(screen.getByRole('heading', { level: 1, name: 'Welcome, Maya' })).toBeInTheDocument()
     expect(screen.queryByText(/welcome back/i)).not.toBeInTheDocument()
-    // Analytics sidebar now shows learning streak
-    expect(screen.getByText(/Day streak/i)).toBeInTheDocument()
+    // Analytics sidebar removed - progress now shown inline in path cards
 
     // Continue learning: the seeded in-progress item, linked inside /learn.
     const inProgress = content.find((item) => item.id === demoProgress.inProgressItemId)!

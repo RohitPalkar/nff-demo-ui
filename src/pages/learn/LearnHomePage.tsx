@@ -5,7 +5,6 @@ import { LearningPathCard } from '@/components/learn/home/LearningPathCard'
 import { RecentLearningList, UpNextList } from '@/components/learn/home/LessonList'
 import { ResourceCard } from '@/components/learn/home/ResourceCard'
 import { WelcomeHeader } from '@/components/learn/home/WelcomeHeader'
-import { AnalyticsSidebar } from '@/components/learn/analytics'
 import { useAuth } from '@/features/auth/AuthProvider'
 import { usePlayer } from '@/features/player/PlayerProvider'
 import { getAccessContext } from '@/services/learning/accessContext'
@@ -39,10 +38,6 @@ export function LearnHomePage() {
     recent,
     explore,
     isPreview,
-    progressOverview,
-    weeklyActivity,
-    learningStreak,
-    learningTimeSeries,
   } = home
 
   return (
@@ -59,20 +54,6 @@ export function LearnHomePage() {
           />
         </HomeSection>
       )}
-
-      {/* 2. Your Progress - Horizontal Layout (Analytics Sidebar moved here) */}
-      <HomeSection id="home-progress">
-        <HomeSectionHeader id="home-progress" title="Your Progress" />
-        <div className="rounded-xl border border-[var(--nff-border-default)] bg-white p-5 sm:p-6">
-          <AnalyticsSidebar
-            progressOverview={progressOverview}
-            weeklyActivity={weeklyActivity}
-            learningStreak={learningStreak}
-            learningTimeSeries={learningTimeSeries}
-            compact={true}
-          />
-        </div>
-      </HomeSection>
 
       {/* 2. My Learning Paths */}
       <HomeSection id="home-assigned">
