@@ -1,6 +1,6 @@
 import { LEARN_HOME } from '@/services/learning/routes'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Loader2, Copy, Check, ChevronDown, Eye, Mail } from 'lucide-react'
+import { Loader2, ChevronDown, Mail, ArrowRight } from 'lucide-react'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
@@ -10,7 +10,6 @@ import { Input } from '@/components/ui/input'
 import { useAuth } from '@/features/auth/AuthProvider'
 import { requestSignInCode } from '@/services/auth'
 import { AuthCard, Field, FormAlert, authLink } from './AuthCard'
-import { AuthHighlights } from './AuthHighlights'
 import { CodeStep } from './CodeStep'
 import { cn } from '@/lib/utils'
 
@@ -33,8 +32,6 @@ export function LoginPage() {
   const [formError, setFormError] = useState<string | null>(null)
   const [noAccount, setNoAccount] = useState<string | null>(null)
   const [demoExpanded, setDemoExpanded] = useState(false)
-  const [copiedItem, setCopiedItem] = useState<string | null>(null)
-  const [copyError, setCopyError] = useState<string | null>(null)
   const {
     register,
     handleSubmit,
@@ -46,21 +43,23 @@ export function LoginPage() {
 
   const demoAccounts = [
     { role: 'Practitioner', email: 'practitioner@nff.demo', description: 'Full library access' },
-    { role: 'Editor', email: 'editor@nff.demo', description: 'CMS preview access' },
     { role: 'Super Admin', email: 'admin@nff.demo', description: 'Full CMS access' },
   ] as const
 
-  const SHARED_PASSWORD = 'practice123'
-
-  async function copyToClipboard(text: string, label: string) {
-    try {
-      await navigator.clipboard.writeText(text)
-      setCopiedItem(label)
-      setCopyError(null)
-      setTimeout(() => setCopiedItem(null), 2000)
-    } catch {
-      setCopyError('Failed to copy. Please try again.')
-      setTimeout(() => setCopyError(null), 3000)
+  async function autofillAndLogin(email: string) {
+    // Set the email in the form and submit
+    const form = document.querySelector('form')
+    if (form) {
+      // Set the email input value
+      const emailInput = form.querySelector('input[type="email"]') as HTMLInputElement
+      if (emailInput) {
+        emailInput.value = email
+        // Trigger change event so react-hook-form picks it up
+        emailInput.dispatchEvent(new Event('input', { bubbles: true }))
+        emailInput.dispatchEvent(new Event('change', { bubbles: true }))
+      }
+      // Submit the form
+      form.requestSubmit()
     }
   }
 
@@ -99,9 +98,6 @@ export function LoginPage() {
         <p className="nff-body-lg text-[var(--nff-text-secondary)]">
           Welcome back. Enter your email and we&apos;ll send a one-time code.
         </p>
-      }
-      footer={
-        <AuthHighlights heading="A little more about Meadow" />
       }
     >
       <form onSubmit={handleSubmit(sendCode)} noValidate className="flex flex-col gap-5">
@@ -191,7 +187,7 @@ export function LoginPage() {
           >
             <div className="space-y-3" style={{ minHeight: demoExpanded ? 'auto' : 0 }}>
               {/* Demo Account Cards */}
-              <div className="grid gap-3 sm:grid-cols-3" role="list">
+              <div className="grid gap-3 sm:grid-cols-2" role="list">
                 {demoAccounts.map((account, index) => (
                   <article
                     key={account.email}
@@ -224,72 +220,16 @@ export function LoginPage() {
                         'bg-[var(--nff-sage-50)] text-[var(--nff-forest-700)]',
                         'hover:bg-[var(--nff-sage-100)] hover:border-[var(--nff-sage-300)]',
                         'text-sm font-medium transition-all duration-200',
-                        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--nff-forest-500)]',
-                        copiedItem === account.email && 'bg-[var(--nff-emerald-50)] border-[var(--nff-emerald-300)] text-[var(--nff-emerald-700)]'
+                        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--nff-forest-500)]'
                       )}
-                      onClick={() => copyToClipboard(account.email, account.email)}
-                      disabled={copiedItem === account.email}
-                      aria-label={copiedItem === account.email ? `Copied ${account.email}` : `Copy ${account.email}`}
+                      onClick={() => autofillAndLogin(account.email)}
+                      aria-label={`Use ${account.role} demo account`}
                     >
-                      {copiedItem === account.email ? (
-                        <>
-                          <Check className="size-4 text-[var(--nff-emerald-600)]" aria-hidden="true" />
-                          <span>Copied</span>
-                        </>
-                      ) : (
-                        <>
-                          <Copy className="size-4" aria-hidden="true" />
-                          <span>Copy email</span>
-                        </>
-                      )}
+                      <ArrowRight className="size-4" aria-hidden="true" />
+                      <span>Use this account</span>
                     </button>
                   </article>
                 ))}
-              </div>
-
-              {/* Shared Password Row */}
-              <div className="mt-4 p-4 rounded-xl bg-[var(--nff-sage-50)] border border-[var(--nff-sage-200)]">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                  <div className="flex items-center gap-3">
-                    <Eye className="size-5 text-[var(--nff-sage-500)]" aria-hidden="true" />
-                    <div>
-                      <p className="nff-caption text-[var(--nff-text-tertiary)]">Shared demo password</p>
-                      <p className="font-mono text-[var(--nff-forest-900)]">{SHARED_PASSWORD}</p>
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    className={cn(
-                      'inline-flex items-center justify-center gap-2 px-4 py-2',
-                      'rounded-lg border border-[var(--nff-sage-200)]',
-                      'bg-white text-[var(--nff-forest-700)]',
-                      'hover:bg-[var(--nff-sage-50)] hover:border-[var(--nff-sage-300)]',
-                      'text-sm font-medium transition-all duration-200',
-                      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--nff-forest-500)]',
-                      copiedItem === 'password' && 'bg-[var(--nff-emerald-50)] border-[var(--nff-emerald-300)] text-[var(--nff-emerald-700)]'
-                    )}
-                    onClick={() => copyToClipboard(SHARED_PASSWORD, 'password')}
-                    disabled={copiedItem === 'password'}
-                    aria-label={copiedItem === 'password' ? 'Copied password' : 'Copy password'}
-                  >
-                    {copiedItem === 'password' ? (
-                      <>
-                        <Check className="size-4 text-[var(--nff-emerald-600)]" aria-hidden="true" />
-                        <span>Copied</span>
-                      </>
-                    ) : (
-                      <>
-                        <Copy className="size-4" aria-hidden="true" />
-                        <span>Copy password</span>
-                      </>
-                    )}
-                  </button>
-                </div>
-                {copyError && (
-                  <p className="mt-2 nff-caption text-[var(--nff-error-600)]" role="alert">
-                    {copyError}
-                  </p>
-                )}
               </div>
               <p className="mt-3 text-center nff-caption text-[var(--nff-text-tertiary)]">
                 Demo credentials are provided for testing purposes only.
@@ -297,9 +237,6 @@ export function LoginPage() {
             </div>
           </div>
         </section>
-
-        {/* Supporting Meadow Benefits */}
-        <AuthHighlights heading="A little more about Meadow" />
       </form>
     </AuthCard>
   )
