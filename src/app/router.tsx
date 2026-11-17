@@ -19,7 +19,7 @@ import { PrivacyPage } from '@/pages/account/PrivacyPage'
 import { PreferencesPage } from '@/pages/account/PreferencesPage'
 import { ProfilePage } from '@/pages/account/ProfilePage'
 import { AccessDeniedPage } from '@/pages/learn/AccessDeniedPage'
-import { LearnHomePageNew } from '@/pages/learn/LearnHomePageNew'
+import { LearnHomePage } from '@/pages/learn/LearnHomePage'
 import { LearnMeditationsPage } from '@/pages/learn/LearnMeditationsPage'
 import { MeditationPage } from '@/pages/learn/MeditationPage'
 import { LearnNotFoundPage } from '@/pages/learn/LearnNotFoundPage'
@@ -112,7 +112,7 @@ export const router = createBrowserRouter(
     ),
     errorElement: <ServerErrorPage />,
     children: [
-      { path: '/learn', element: <LearnHomePageNew /> },
+      { path: '/learn', element: <LearnHomePage /> },
       { path: '/learn/my-learning', element: <MyLearningPage /> },
       { path: '/learn/library', element: <LibraryPage /> },
       { path: '/learn/library/:type/:slug', element: <ResourcePage /> },
