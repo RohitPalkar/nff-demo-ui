@@ -321,3 +321,16 @@ html:has(body[data-surface="cms"]) {
 html[data-action-bar] [data-sonner-toaster][data-y-position="bottom"] {
   bottom: calc(var(--admin-action-bar-h, 64px) + 16px) !important;
 }
+
+/* Editable role matrix: plain group headings, roomier rows, centred checkboxes */
+[data-surface="cms"] .admin-matrix-edit .admin-matrix-group th {
+  padding: 10px 16px;
+  background: var(--nff-sage-50);
+  font-size: 0.8125rem;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--admin-text);
+}
+[data-surface="cms"] .admin-matrix-edit tbody th[scope="row"] { padding: 12px 16px; min-width: 280px; }
+[data-surface="cms"] .admin-matrix-edit td { min-width: 120px; }
+[data-surface="cms"] .admin-matrix-edit tbody tr:not(.admin-matrix-group):hover > * { background: var(--nff-sage-50); }

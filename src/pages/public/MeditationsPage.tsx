@@ -220,6 +220,27 @@ export function MeditationsPage() {
         aria-label="Meditations catalogue"
         className="nff-content flex flex-col gap-6 py-10 md:py-12"
       >
+        {!user && (
+          <div className="flex flex-col gap-3 rounded-lg border border-nff-border-default bg-nff-bg-surface p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+            <div className="flex items-start gap-3">
+              <span aria-hidden="true" className="flex size-10 shrink-0 items-center justify-center rounded-full bg-[var(--nff-sage-100)] text-[var(--nff-forest-800)]">
+                <PlayCircle className="size-5" />
+              </span>
+              <div className="flex flex-col gap-0.5">
+                <p className="nff-label-md text-foreground">
+                  Listen to up to an hour of free previews, no account needed
+                </p>
+                <p className="nff-body-sm text-nff-text-secondary">
+                  Tracks marked Free preview play straight away. Create a free account to hear the whole library.
+                </p>
+              </div>
+            </div>
+            <Link to="/signup" className="inline-flex h-11 shrink-0 items-center justify-center rounded-md bg-[var(--nff-forest-900)] px-5 nff-label-md text-[var(--nff-ivory-50)] hover:bg-[var(--nff-forest-700)] nff-focus-ring">
+              Create free account
+            </Link>
+          </div>
+        )}
+
         <CategoryTabs
           active={category}
           hrefFor={(next) => hrefFor({ tab: next, page: undefined })}

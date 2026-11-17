@@ -65,7 +65,7 @@ describe('Progress page data', () => {
 
     expect(page.paths.map((entry) => entry.item.percent)).toEqual(mine.items.map((item) => item.percent))
     expect(page.paths[0]!.item.completedCount).toBe(meadow.requiredCompleted)
-    expect(page.overview).toEqual({
+    expect(page.overview).toMatchObject({
       assignedPaths: 1,
       completedPaths: 0,
       lessonsCompleted: 2,

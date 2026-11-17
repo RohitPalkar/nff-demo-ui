@@ -1,6 +1,7 @@
 import {
   ChevronDown,
   LayoutDashboard,
+  LifeBuoy,
   LogOut,
   Mail,
   Shield,
@@ -31,6 +32,7 @@ const ACCOUNT_LINKS = [
     : []),
   { label: 'Email Preferences', to: '/account/email', icon: Mail },
   { label: 'Privacy & Security', to: '/account/privacy', icon: Shield },
+  { label: 'Help & support', to: '/learn/support', icon: LifeBuoy },
 ]
 
 /**

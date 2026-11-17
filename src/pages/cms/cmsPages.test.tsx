@@ -161,11 +161,11 @@ describe('page behaviour follows permissions', () => {
     const user = userEvent.setup()
     renderPage(<RolesPage />, EMAIL.superAdmin)
     await user.click(await screen.findByRole('tab', { name: 'Roles & permissions' }, T))
-    await user.click(await screen.findByRole('button', { name: 'Compare all roles' }))
     const table = await screen.findByRole('table', { name: 'Permissions by role' })
     const headers = within(table).getAllByRole('columnheader').map((header) => header.textContent)
-    expect(headers).toEqual(expect.arrayContaining(['Admin', 'Super admin']))
-    expect(within(table).getByText('roles.manage')).toBeInTheDocument()
+    expect(headers.some((text) => text?.startsWith('Admin'))).toBe(true)
+    expect(headers.some((text) => text?.startsWith('Super admin'))).toBe(true)
+    expect(within(table).getByRole('checkbox', { name: 'Edit role permissions, Super admin' })).toBeChecked()
   })
 
   it('Delivery: recipients are hidden for a Campaign manager and shown to an Admin', async () => {

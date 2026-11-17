@@ -1,4 +1,4 @@
-import { ArrowRight } from 'lucide-react'
+import { ArrowRight, Inbox, type LucideIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { Progress } from '@/components/ui/progress'
@@ -66,19 +66,32 @@ export function HomeEmptyState({
   title,
   description,
   action,
+  icon: Icon = Inbox,
 }: {
   title: string
   description: string
   action?: { label: string; to: string }
+  icon?: LucideIcon
 }) {
   return (
-    <div className={cn(HOME_CARD, 'flex flex-col items-start gap-3 p-5')}>
-      <div className="flex flex-col gap-1">
-        <p className="nff-label-md text-foreground">{title}</p>
+    <div
+      className={cn(
+        HOME_CARD,
+        'flex flex-col items-center gap-3 border-dashed border-nff-border-strong px-6 py-10 text-center',
+      )}
+    >
+      <span
+        aria-hidden="true"
+        className="flex size-12 items-center justify-center rounded-full bg-[var(--nff-sage-100)] text-[var(--nff-forest-800)]"
+      >
+        <Icon className="size-5" />
+      </span>
+      <div className="flex max-w-md flex-col gap-1">
+        <p className="nff-label-lg text-foreground">{title}</p>
         <p className="nff-body-sm text-nff-text-secondary">{description}</p>
       </div>
       {action && (
-        <Link to={action.to} className={SECONDARY_ACTION}>
+        <Link to={action.to} className={cn(SECONDARY_ACTION, 'mt-1')}>
           {action.label}
         </Link>
       )}

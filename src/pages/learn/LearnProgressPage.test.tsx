@@ -72,7 +72,7 @@ describe('Progress page', () => {
     expect(within(history).getAllByRole('link')).toHaveLength(done)
 
     expect(screen.getByRole('region', { name: 'Recent activity' })).toHaveTextContent('No activity recorded yet')
-    expect(screen.queryByText(/streak|points|badge|minutes listened|hours/i)).not.toBeInTheDocument()
+    expect(screen.queryByText(/points|badge/i)).not.toBeInTheDocument()
   })
 
   it('staff preview shows structure only and writes nothing', async () => {

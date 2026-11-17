@@ -37,6 +37,7 @@ const PRACTICE_LINKS: FooterLink[] = PRACTICE_ITEMS.filter(({ key }) =>
 const ABOUT_LINKS: FooterLink[] = ABOUT_ITEMS
 
 const LEGAL_LINKS: FooterLink[] = [
+  { label: 'Contact & support', href: '/contact' },
   { label: 'Privacy policy', href: '/privacy' },
   { label: 'Terms of use', href: '/terms' },
   { label: 'Cookie policy', href: '/cookies' },

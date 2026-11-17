@@ -1,3 +1,4 @@
+import { BookOpen } from 'lucide-react'
 import { Tabs as TabsPrimitive } from 'radix-ui'
 import { useSearchParams } from 'react-router-dom'
 import { HomeEmptyState } from '@/components/learn/home/homeParts'
@@ -24,7 +25,6 @@ import { isPreviewRole } from '@/services/learning/previewRoles'
 import { loadProgress } from '@/services/learning/progress'
 import { LEARN_LIBRARY } from '@/services/learning/routes'
 import { LibrarySearch } from '@/components/learn/library/LibrarySearch'
-import { useSearchParams } from 'react-router-dom'
 
 const TAB_LABEL: Record<MyLearningTab, string> = {
   all: 'All Learning',
@@ -171,6 +171,7 @@ export function MyLearningPage() {
                   </ul>
                 ) : (
                   <HomeEmptyState
+                    icon={BookOpen}
                     title={EMPTY[key].title}
                     description={EMPTY[key].description}
                     action={

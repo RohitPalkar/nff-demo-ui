@@ -89,7 +89,7 @@ describe('Practitioner shell', () => {
     }
   })
 
-  it('profile menu shows the signed-in identity and the five account actions', async () => {
+  it('profile menu shows the signed-in identity and the account actions', async () => {
     session('someone.else@example.com', 'practitioner', 'u-demo', 'Priya Nair')
     window.localStorage.setItem(
       'nff.session',
@@ -109,6 +109,7 @@ describe('Practitioner shell', () => {
       '/account/preferences',
       '/account/email',
       '/account/privacy',
+      '/learn/support',
       'Log out',
     ])
   })

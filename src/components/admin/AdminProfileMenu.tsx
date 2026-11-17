@@ -1,4 +1,4 @@
-import { ChevronsUpDown, ExternalLink, Eye, LogOut } from 'lucide-react'
+import { ChevronsUpDown, ExternalLink, Eye, LifeBuoy, LogOut } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
   DropdownMenu,
@@ -86,6 +86,12 @@ export function AdminProfileMenu({
           <Link to="/">
             <ExternalLink aria-hidden="true" />
             Public website
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link to="/contact">
+            <LifeBuoy aria-hidden="true" />
+            Help &amp; support
           </Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />

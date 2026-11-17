@@ -1,4 +1,4 @@
-import { Check, Lock, Minus, RotateCcw } from 'lucide-react'
+import { Check, Info, Minus } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { ConfirmationDialog, InlineNotice } from '@/components/admin'
@@ -12,13 +12,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { Switch } from '@/components/ui/switch'
+import { Checkbox } from '@/components/ui/checkbox'
 import { attempt } from '@/features/auth/usePermissions'
 import { cn } from '@/lib/utils'
 import type { Actor } from '@/services/rbac/authorize'
 import { getRolePermissions } from '@/services/rbac/authorize'
 import {
-  ALL_PERMISSIONS,
   PERMISSION_DEFINITIONS,
   PERMISSION_DOMAINS,
   PERMISSION_LABELS,
@@ -38,7 +37,7 @@ import {
   type EditableRole,
 } from '@/services/rbac/rolePermissions'
 import type { StaffMember } from '@/services/rbac/roleResolution'
-import { ROLE_DEFINITIONS, STAFF_ROLE_IDS, getRoleLabel, type StaffRole } from '@/services/rbac/roles'
+import { STAFF_ROLE_IDS, getRoleLabel, type StaffRole } from '@/services/rbac/roles'
 
 export const DOMAIN_LABEL: Record<PermissionDomain, string> = {
   platform: 'Platform',
@@ -50,16 +49,14 @@ export const DOMAIN_LABEL: Record<PermissionDomain, string> = {
   settings: 'Settings',
 }
 
-type Mode = StaffRole | 'compare'
-
 const same = (a: readonly Permission[], b: readonly Permission[]) =>
   a.length === b.length && a.every((permission) => b.includes(permission))
 
 /**
- * What each staff role can do, and (for a Super admin) changing it. Pick a
- * role at the top; its permissions are listed by area below, each a
- * switch. Turning one on brings what it needs; turning one off takes what
- * depends on it. Changes are drafts until reviewed and saved.
+ * What each staff role can do, as one grid: a row per permission, a column
+ * per role, a checkbox where they meet. Ticking one brings what it needs;
+ * clearing one clears what depends on it. Changes are drafts until reviewed
+ * and saved. Only a Super admin can edit.
  */
 export function RolePermissionEditor({
   actor,
@@ -70,10 +67,9 @@ export function RolePermissionEditor({
   members: StaffMember[]
   onSaved: () => void
 }) {
-  const [mode, setMode] = useState<Mode>('editor')
   const [drafts, setDrafts] = useState<Partial<Record<EditableRole, Permission[]>>>({})
   const [reviewing, setReviewing] = useState(false)
-  const [resetting, setResetting] = useState(false)
+  const [resetting, setResetting] = useState<EditableRole | null>(null)
   const [hint, setHint] = useState('')
   const [, setVersion] = useState(0)
 
@@ -91,9 +87,9 @@ export function RolePermissionEditor({
     setDrafts((current) => ({ ...current, [role]: next }))
     setHint(
       added.length
-        ? `Also turned on what it needs: ${added.map((entry) => PERMISSION_LABELS[entry]).join(', ')}.`
+        ? `${getRoleLabel(role)}: also turned on what it needs: ${added.map((entry) => PERMISSION_LABELS[entry]).join(', ')}.`
         : removed.length
-          ? `Also turned off what depends on it: ${removed.map((entry) => PERMISSION_LABELS[entry]).join(', ')}.`
+          ? `${getRoleLabel(role)}: also turned off what depends on it: ${removed.map((entry) => PERMISSION_LABELS[entry]).join(', ')}.`
           : '',
     )
   }
@@ -118,74 +114,125 @@ export function RolePermissionEditor({
         </InlineNotice>
       )}
 
-      <div className="flex flex-col gap-2">
-        <p id="role-picker-label" className="nff-label-md">
-          Choose a role
-        </p>
-        <nav aria-labelledby="role-picker-label" className="max-w-full self-start">
-          <div className="nff-segmented max-w-full">
-            {STAFF_ROLE_IDS.map((role) => {
-              const dirty = isEditableRole(role) && changed.includes(role)
-              return (
-                <button
-                  key={role}
-                  type="button"
-                  aria-pressed={mode === role}
-                  onClick={() => setMode(role)}
-                  className="nff-segmented-item nff-target nff-focus-ring"
-                >
-                  {getRoleLabel(role)}
-                  {dirty && (
-                    <span className="rounded-sm bg-nff-bg-warning-subtle px-1.5 nff-label-sm text-nff-text-warning">Unsaved</span>
-                  )}
-                </button>
-              )
-            })}
-            <span aria-hidden="true" className="mx-1 w-px shrink-0 self-stretch bg-[var(--admin-border)]" />
-            <button
-              type="button"
-              aria-pressed={mode === 'compare'}
-              onClick={() => setMode('compare')}
-              className="nff-segmented-item nff-target nff-focus-ring"
-            >
-              Compare all roles
-            </button>
-          </div>
-        </nav>
-      </div>
+      <p
+        role="status"
+        aria-live="polite"
+        className={cn(
+          'flex items-start gap-2 rounded-md border border-nff-border-info bg-nff-bg-info-subtle px-4 py-2.5 nff-body-sm text-nff-text-info',
+          !hint && 'sr-only',
+        )}
+      >
+        {hint && <Info aria-hidden="true" className="mt-0.5 size-4 shrink-0" />}
+        {hint}
+      </p>
 
-      {mode === 'compare' ? (
-        <CompareMatrix working={working} />
-      ) : (
-        <RolePanel
-          key={mode}
-          role={mode}
-          actor={actor}
-          permissions={working(mode)}
-          members={memberCount(mode)}
-          hint={hint}
-          onToggle={(permission, on) => isEditableRole(mode) && toggle(mode, permission, on)}
-          onReset={() => setResetting(true)}
-        />
-      )}
-      {mode !== 'compare' && isEditableRole(mode) && (
+      <div className="admin-dt-frame">
+        <table aria-label="Permissions by role" className="admin-matrix admin-matrix-edit w-full">
+          <thead>
+            <tr>
+              <th scope="col" className="text-left">
+                Actions
+              </th>
+              {STAFF_ROLE_IDS.map((role) => {
+                const editable = canEditRole(actor, role).ok
+                const dirty = isEditableRole(role) && changed.includes(role)
+                return (
+                  <th key={role} scope="col">
+                    <span className="flex flex-col items-center gap-0.5">
+                      <span>{getRoleLabel(role)}</span>
+                      <span className="nff-caption font-normal text-[var(--admin-text-muted)]">
+                        {memberCount(role)} {memberCount(role) === 1 ? 'member' : 'members'}
+                      </span>
+                      {dirty ? (
+                        <span className="rounded-sm bg-nff-bg-warning-subtle px-1.5 nff-label-sm text-nff-text-warning">Unsaved</span>
+                      ) : role === 'super_admin' ? (
+                        <span className="nff-caption font-normal text-[var(--admin-text-muted)]">Fixed</span>
+                      ) : isEditableRole(role) && isRoleCustomised(role) ? (
+                        editable ? (
+                          <button
+                            type="button"
+                            onClick={() => setResetting(role)}
+                            aria-label={`Reset ${getRoleLabel(role)} to defaults`}
+                            className="nff-caption font-medium text-nff-text-link underline underline-offset-2 nff-focus-ring"
+                          >
+                            Reset
+                          </button>
+                        ) : (
+                          <span className="nff-caption font-normal text-nff-text-info">Customised</span>
+                        )
+                      ) : null}
+                    </span>
+                  </th>
+                )
+              })}
+            </tr>
+          </thead>
+          <tbody>
+            {PERMISSION_DOMAINS.flatMap((domain) => [
+              <tr key={`domain-${domain}`} className="admin-matrix-group">
+                <th scope="colgroup" colSpan={STAFF_ROLE_IDS.length + 1} className="text-left">
+                  {DOMAIN_LABEL[domain]}
+                </th>
+              </tr>,
+              ...permissionsInDomain(domain).map((permission) => {
+                const needs = PERMISSION_REQUIRES[permission]
+                return (
+                  <tr key={permission}>
+                    <th scope="row" className="text-left font-normal">
+                      <span className="block nff-body-sm font-medium text-[var(--admin-text)]">
+                        {PERMISSION_LABELS[permission]}
+                      </span>
+                      <span className="block nff-caption text-[var(--admin-text-muted)]">
+                        {PERMISSION_DEFINITIONS[permission].description}
+                        {needs && ` Requires ${needs.map((entry) => PERMISSION_LABELS[entry]).join(', ')}.`}
+                      </span>
+                    </th>
+                    {STAFF_ROLE_IDS.map((role) => {
+                      const locked = role !== 'super_admin' ? LOCKED_PERMISSIONS[permission] : undefined
+                      const editable = canEditRole(actor, role).ok && isEditableRole(role)
+                      return (
+                        <td key={role}>
+                          <span className="flex justify-center" title={locked?.reason}>
+                            <Checkbox
+                              checked={working(role).includes(permission)}
+                              disabled={!editable || Boolean(locked)}
+                              aria-label={`${PERMISSION_LABELS[permission]}, ${getRoleLabel(role)}`}
+                              onCheckedChange={(next) => isEditableRole(role) && toggle(role, permission, next === true)}
+                            />
+                          </span>
+                        </td>
+                      )
+                    })}
+                  </tr>
+                )
+              }),
+            ])}
+          </tbody>
+        </table>
+      </div>
+      <p className="nff-caption text-[var(--admin-text-muted)]">
+        A Super admin always holds every permission, so the platform can never be locked out. Visitor and
+        Practitioner hold no Admin permissions; what learners can open is set by content access rules.
+      </p>
+
+      {resetting && (
         <ConfirmationDialog
-          open={resetting}
-          onOpenChange={setResetting}
-          title={`Reset ${getRoleLabel(mode)} to its default permissions?`}
-          description={`Everyone with the ${getRoleLabel(mode)} role gets the default permissions straight away, and any customisation is lost.`}
+          open
+          onOpenChange={(open) => !open && setResetting(null)}
+          title={`Reset ${getRoleLabel(resetting)} to its default permissions?`}
+          description={`Everyone with the ${getRoleLabel(resetting)} role gets the default permissions straight away, and any customisation is lost.`}
           confirmLabel="Reset to defaults"
           onConfirm={() => {
-            setResetting(false)
-            if (!isEditableRole(mode)) return
-            if (!attempt(() => resetRolePermissions(mode))) return
+            const role = resetting
+            setResetting(null)
+            if (!attempt(() => resetRolePermissions(role))) return
             setDrafts((current) => {
               const next = { ...current }
-              delete next[mode]
+              delete next[role]
               return next
             })
             setVersion((value) => value + 1)
-            toast.success(`${getRoleLabel(mode)} is back to its default permissions.`)
+            toast.success(`${getRoleLabel(role)} is back to its default permissions.`)
             onSaved()
           }}
         />
@@ -260,206 +307,6 @@ export function RolePermissionEditor({
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
-  )
-}
-
-function RolePanel({
-  role,
-  actor,
-  permissions,
-  members,
-  hint,
-  onToggle,
-  onReset,
-}: {
-  role: StaffRole
-  actor: Actor | null
-  permissions: readonly Permission[]
-  members: number
-  hint: string
-  onToggle: (permission: Permission, on: boolean) => void
-  onReset: () => void
-}) {
-  const editable = canEditRole(actor, role)
-  const customised = isRoleCustomised(role)
-  const assignable = ROLE_DEFINITIONS[role].assignableRoles.map((entry) => getRoleLabel(entry)).join(', ')
-  return (
-    <section aria-labelledby="role-panel-title" className="flex min-w-0 max-w-4xl flex-col gap-4">
-      <header className="flex flex-col gap-4 rounded-lg border border-[var(--admin-border)] bg-[var(--admin-surface)] p-5 sm:flex-row sm:items-start sm:justify-between">
-        <div className="flex min-w-0 flex-col gap-1.5">
-          <h2 id="role-panel-title" className="admin-section-title">
-            {getRoleLabel(role)}
-          </h2>
-          <p className="nff-body-sm text-[var(--admin-text-muted)]">{ROLE_DEFINITIONS[role].description}</p>
-          <dl className="mt-2 flex flex-wrap gap-x-6 gap-y-1 nff-body-sm">
-            <div className="flex gap-1.5">
-              <dt className="text-[var(--admin-text-muted)]">Permissions</dt>
-              <dd className="font-semibold tabular-nums">
-                {permissions.length} of {ALL_PERMISSIONS.length}
-              </dd>
-            </div>
-            <div className="flex gap-1.5">
-              <dt className="text-[var(--admin-text-muted)]">Members</dt>
-              <dd className="font-semibold tabular-nums">{members}</dd>
-            </div>
-            {role !== 'super_admin' && (
-              <div className="flex gap-1.5">
-                <dt className="text-[var(--admin-text-muted)]">Can assign</dt>
-                <dd className="font-semibold">{assignable || 'No roles'}</dd>
-              </div>
-            )}
-          </dl>
-          {role === 'super_admin' ? (
-            <p className="mt-1 flex items-center gap-1.5 nff-caption text-[var(--admin-text-muted)]">
-              <Lock aria-hidden="true" className="size-3.5 shrink-0" />
-              Fixed: a Super admin always holds every permission, so the platform can never be locked out.
-            </p>
-          ) : (
-            customised && (
-              <p className="mt-1 nff-caption text-nff-text-info">Customised by a Super admin. Differs from the default.</p>
-            )
-          )}
-        </div>
-        {editable.ok && customised && (
-          <Button size="sm" variant="outline" className="shrink-0" onClick={onReset}>
-            <RotateCcw aria-hidden="true" className="size-4" />
-            Reset to defaults
-          </Button>
-        )}
-      </header>
-
-      <p
-        role="status"
-        aria-live="polite"
-        className={cn(
-          'rounded-md border border-nff-border-info bg-nff-bg-info-subtle px-4 py-2.5 nff-body-sm text-nff-text-info',
-          !hint && 'sr-only',
-        )}
-      >
-        {hint}
-      </p>
-
-      {PERMISSION_DOMAINS.map((domain) => {
-        const list = permissionsInDomain(domain)
-        const on = list.filter((permission) => permissions.includes(permission)).length
-        return (
-          <fieldset
-            key={domain}
-            className="flex min-w-0 flex-col overflow-hidden rounded-lg border border-[var(--admin-border)] bg-[var(--admin-surface)]"
-          >
-            <legend className="sr-only">{DOMAIN_LABEL[domain]}</legend>
-            <div
-              aria-hidden="true"
-              className="flex items-center justify-between gap-3 border-b border-[var(--admin-border)] bg-[var(--nff-sage-50)] px-5 py-3"
-            >
-              <span className="nff-label-lg">{DOMAIN_LABEL[domain]}</span>
-              <span className="nff-caption tabular-nums text-[var(--admin-text-muted)]">
-                {on} of {list.length} allowed
-              </span>
-            </div>
-            <ul className="flex flex-col divide-y divide-[var(--admin-border)]">
-              {list.map((permission) => {
-                const locked = role !== 'super_admin' ? LOCKED_PERMISSIONS[permission] : undefined
-                const checked = permissions.includes(permission)
-                const disabled = !editable.ok || Boolean(locked)
-                const needs = PERMISSION_REQUIRES[permission]
-                const id = `perm-${role}-${permission}`
-                return (
-                  <li key={permission} className="flex items-center gap-4 px-5 py-3.5">
-                    <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-                      <label htmlFor={id} className="nff-label-md">
-                        {PERMISSION_LABELS[permission]}
-                      </label>
-                      <span className="nff-body-sm text-[var(--admin-text-muted)]">
-                        {PERMISSION_DEFINITIONS[permission].description}
-                      </span>
-                      {needs && (
-                        <span className="nff-caption text-[var(--admin-text-muted)]">
-                          Requires: {needs.map((entry) => PERMISSION_LABELS[entry]).join(', ')}
-                        </span>
-                      )}
-                      {locked && (
-                        <span className="flex items-center gap-1 nff-caption text-[var(--admin-text-muted)]">
-                          <Lock aria-hidden="true" className="size-3" />
-                          {locked.reason}
-                        </span>
-                      )}
-                    </div>
-                    <span
-                      aria-hidden="true"
-                      className={cn(
-                        'hidden w-16 text-right nff-label-sm sm:block',
-                        checked ? 'text-nff-text-success' : 'text-[var(--admin-text-muted)]',
-                      )}
-                    >
-                      {checked ? 'Allowed' : 'Off'}
-                    </span>
-                    <Switch
-                      id={id}
-                      checked={checked}
-                      disabled={disabled}
-                      onCheckedChange={(next) => onToggle(permission, next)}
-                    />
-                  </li>
-                )
-              })}
-            </ul>
-          </fieldset>
-        )
-      })}
-    </section>
-  )
-}
-
-function CompareMatrix({ working }: { working: (role: StaffRole) => readonly Permission[] }) {
-  return (
-    <div className="flex min-w-0 flex-col gap-2">
-      <div className="admin-dt-frame">
-        <table aria-label="Permissions by role" className="admin-matrix w-full text-sm">
-          <thead>
-            <tr>
-              <th scope="col" className="text-left">
-                Permission
-              </th>
-              {STAFF_ROLE_IDS.map((role) => (
-                <th key={role} scope="col">
-                  {getRoleLabel(role)}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {PERMISSION_DOMAINS.flatMap((domain) => [
-              <tr key={`domain-${domain}`} className="admin-matrix-group">
-                <th scope="colgroup" colSpan={STAFF_ROLE_IDS.length + 1} className="text-left">
-                  {DOMAIN_LABEL[domain]}
-                </th>
-              </tr>,
-              ...permissionsInDomain(domain).map((permission) => (
-                <tr key={permission}>
-                  <th scope="row" className="text-left font-normal">
-                    <span className="block nff-label-md">{PERMISSION_LABELS[permission]}</span>
-                    <code className="font-mono text-[0.6875rem] text-[var(--admin-text-muted)]">{permission}</code>
-                  </th>
-                  {STAFF_ROLE_IDS.map((role) => (
-                    <td key={role}>
-                      {working(role).includes(permission) ? (
-                        <Check aria-label="Allowed" className="mx-auto size-4 text-nff-text-success" />
-                      ) : (
-                        <Minus aria-label="Not allowed" className="mx-auto size-4 text-[var(--admin-border-strong)]" />
-                      )}
-                    </td>
-                  ))}
-                </tr>
-              )),
-            ])}
-          </tbody>
-        </table>
-      </div>
-      <p className="nff-caption text-[var(--admin-text-muted)]">
-        Visitor and Practitioner hold no Admin permissions; what learners can open is set by content access rules.
-      </p>
     </div>
   )
 }

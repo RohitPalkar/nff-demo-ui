@@ -14,8 +14,8 @@ import { countsTowardCompletion, isLessonComplete, pathCompletion } from './prog
 /**
  * `/learn/progress`, as data. Pure, and built from the same services as Home
  * and My Learning (`buildMyLearning`, `pathCompletion`), so every number on
- * the page agrees with them. Nothing here is estimated: no time spent, no
- * streaks, no dates that were not recorded.
+ * the page agrees with them. Nothing here is estimated: minutes come from
+ * seconds actually played, the streak from recorded activity dates only.
  */
 
 export interface ProgressOverview {
@@ -24,6 +24,10 @@ export interface ProgressOverview {
   /** Each lesson counted once, even when it appears in more than one path. */
   lessonsCompleted: number
   lessonsRemaining: number
+  /** From seconds played; falls back to the furthest point for older records. */
+  minutesListened: number
+  /** Consecutive days with recorded activity, ending today or yesterday. */
+  dayStreak: number
 }
 
 export interface ModuleProgressRow {
@@ -77,6 +81,33 @@ function countedLessonKeys(pathId: string, store: LearningProgressStore) {
   return keys
 }
 
+const dayKey = (iso: string) => {
+  const date = new Date(iso)
+  return `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`
+}
+
+export function minutesListened(store: LearningProgressStore) {
+  const seconds = Object.values(store.media).reduce(
+    (sum, entry) => sum + (entry.playedSec ?? entry.furthestSec ?? entry.positionSec ?? 0),
+    0,
+  )
+  return Math.round(seconds / 60)
+}
+
+export function dayStreak(store: LearningProgressStore, now = new Date()) {
+  const days = new Set<string>()
+  for (const entry of store.activity) days.add(dayKey(entry.at))
+  for (const lesson of Object.values(store.lessons)) if (lesson.completedAt) days.add(dayKey(lesson.completedAt))
+  const cursor = new Date(now)
+  if (!days.has(dayKey(cursor.toISOString()))) cursor.setDate(cursor.getDate() - 1)
+  let streak = 0
+  while (days.has(dayKey(cursor.toISOString()))) {
+    streak += 1
+    cursor.setDate(cursor.getDate() - 1)
+  }
+  return streak
+}
+
 export function progressOverview(
   items: MyLearningItem[],
   store: LearningProgressStore,
@@ -93,6 +124,8 @@ export function progressOverview(
     completedPaths: items.filter((item) => item.status === 'completed').length,
     lessonsCompleted,
     lessonsRemaining: all.size - lessonsCompleted,
+    minutesListened: minutesListened(store),
+    dayStreak: dayStreak(store),
   }
 }
 
@@ -163,7 +196,7 @@ export function buildProgressPage(
     // Staff see the structure a learner would, never anyone's record.
     return {
       isPreview: true,
-      overview: { assignedPaths: 0, completedPaths: 0, lessonsCompleted: 0, lessonsRemaining: 0 },
+      overview: { assignedPaths: 0, completedPaths: 0, lessonsCompleted: 0, lessonsRemaining: 0, minutesListened: 0, dayStreak: 0 },
       paths: items.map((item) => ({ item, modules: moduleRows(item, store) })),
       history: { dated: [], undated: [] },
       timeline: [],

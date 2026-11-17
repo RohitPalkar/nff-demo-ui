@@ -61,16 +61,14 @@ describe('role permission editing', () => {
     const user = userEvent.setup()
     renderAt('/cms/roles', '/cms/roles', <RolesPage />, EMAIL.superAdmin)
     await user.click(await screen.findByRole('tab', { name: 'Roles & permissions' }, T))
-    await user.click(screen.getByRole('button', { name: /^Editor/ }))
-
-    const approve = screen.getByRole('switch', { name: 'Approve' })
+    const approve = screen.getByRole('checkbox', { name: 'Approve, Editor' })
     expect(approve).not.toBeChecked()
     await user.click(approve)
     expect(approve).toBeChecked()
-    expect(screen.getByRole('switch', { name: 'Open the review queue' })).toBeChecked()
-    expect(screen.getByText(/Also turned on what it needs: Open the review queue/)).toBeInTheDocument()
-    // Fixed permissions cannot be switched.
-    expect(screen.getByRole('switch', { name: 'Open the Admin' })).toBeDisabled()
+    expect(screen.getByRole('checkbox', { name: 'Open the review queue, Editor' })).toBeChecked()
+    expect(screen.getByText(/also turned on what it needs: Open the review queue/)).toBeInTheDocument()
+    // Fixed permissions cannot be changed.
+    expect(screen.getByRole('checkbox', { name: 'Open the Admin, Editor' })).toBeDisabled()
 
     // Nothing changes until it is reviewed and saved.
     expect(can({ id: 'u-editor', role: 'editor' }, 'content.approve')).toBe(false)
@@ -79,10 +77,10 @@ describe('role permission editing', () => {
     expect(within(dialog).getByText('Approve')).toBeInTheDocument()
     await user.click(within(dialog).getByRole('button', { name: 'Save changes' }))
     expect(can({ id: 'u-editor', role: 'editor' }, 'content.approve')).toBe(true)
-    expect(await screen.findByRole('button', { name: 'Reset to defaults' })).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: 'Reset Editor to defaults' })).toBeInTheDocument()
 
     // Resetting asks first (WCAG 3.3.6): nothing changes until it is confirmed.
-    await user.click(screen.getByRole('button', { name: 'Reset to defaults' }))
+    await user.click(screen.getByRole('button', { name: 'Reset Editor to defaults' }))
     const confirm = await screen.findByRole('alertdialog')
     expect(can({ id: 'u-editor', role: 'editor' }, 'content.approve')).toBe(true)
     await user.click(within(confirm).getByRole('button', { name: 'Reset to defaults' }))
@@ -93,9 +91,10 @@ describe('role permission editing', () => {
     const user = userEvent.setup()
     renderAt('/cms/roles', '/cms/roles', <RolesPage />, EMAIL.superAdmin)
     await user.click(await screen.findByRole('tab', { name: 'Roles & permissions' }, T))
-    await user.click(screen.getByRole('button', { name: /^Super admin/ }))
     expect(screen.getByText(/always holds every permission/)).toBeInTheDocument()
-    expect(screen.getAllByRole('switch').every((element) => element.hasAttribute('disabled'))).toBe(true)
+    const superAdmin = screen.getAllByRole('checkbox').filter((box) => box.getAttribute('aria-label')?.endsWith(', Super admin'))
+    expect(superAdmin.length).toBeGreaterThan(0)
+    expect(superAdmin.every((element) => element.hasAttribute('disabled'))).toBe(true)
   })
 
   it('an Admin sees every role read-only', async () => {
@@ -103,7 +102,7 @@ describe('role permission editing', () => {
     renderAt('/cms/roles', '/cms/roles', <RolesPage />, EMAIL.admin)
     await user.click(await screen.findByRole('tab', { name: 'Roles & permissions' }, T))
     expect(screen.getAllByText(/Only a Super admin can change what roles can do/).length).toBeGreaterThan(0)
-    expect(screen.getAllByRole('switch').every((element) => element.hasAttribute('disabled'))).toBe(true)
+    expect(screen.getAllByRole('checkbox').every((element) => element.hasAttribute('disabled'))).toBe(true)
     expect(screen.queryByRole('button', { name: 'Review and save' })).not.toBeInTheDocument()
   })
 })

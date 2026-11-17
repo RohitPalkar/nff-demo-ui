@@ -38,19 +38,13 @@ export function ProgressOverview({ overview }: { overview: Overview }) {
     { label: 'Paths completed', value: overview.completedPaths },
     { label: 'Lessons completed', value: overview.lessonsCompleted },
     { label: 'Lessons remaining', value: overview.lessonsRemaining },
+    { label: 'Minutes listened', value: overview.minutesListened },
+    { label: overview.dayStreak === 1 ? 'Day streak' : 'Days in a row', value: overview.dayStreak },
   ]
   return (
-    <dl className={cn(HOME_CARD, 'grid grid-cols-2 overflow-hidden md:grid-cols-4')}>
-      {stats.map((stat, index) => (
-        <div
-          key={stat.label}
-          className={cn(
-            'flex flex-col-reverse gap-1 p-4 sm:p-5',
-            index % 2 === 1 && 'border-l border-nff-border-default',
-            index >= 2 && 'border-t border-nff-border-default md:border-t-0',
-            index === 2 && 'md:border-l',
-          )}
-        >
+    <dl className={cn(HOME_CARD, 'grid grid-cols-2 gap-px overflow-hidden bg-nff-border-default sm:grid-cols-3 xl:grid-cols-6')}>
+      {stats.map((stat) => (
+        <div key={stat.label} className="flex flex-col-reverse gap-1 bg-nff-bg-surface p-4 sm:p-5">
           <dt className="nff-body-sm text-nff-text-secondary">
             {stat.label}
           </dt>

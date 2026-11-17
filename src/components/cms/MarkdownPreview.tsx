@@ -3,7 +3,7 @@ import { cn } from '@/lib/utils'
 
 /**
  * Renders the editor's light markdown (## / ### headings, - lists, > quotes,
- * **bold**, _italic_ and [links](url)) as reading text. Text only: no HTML
+ * **bold**, _italic_, [links](url) and ![images](src)) as reading text. Text only: no HTML
  * is ever injected, so nothing typed can run.
  */
 function inline(text: string): ReactNode[] {
@@ -41,6 +41,17 @@ export function MarkdownPreview({ body, className, limit }: { body: string; clas
       {shown.map((block, index) => {
         if (block.startsWith('### ')) return <h3 key={index} className="nff-heading-h4">{inline(block.slice(4))}</h3>
         if (block.startsWith('## ')) return <h2 key={index} className="nff-heading-h3">{inline(block.slice(3))}</h2>
+        const image = /^!\[([^\]]*)\]\(([^)\s]+)\)$/.exec(block)
+        if (image) {
+          const [, alt, src] = image
+          const safe = /^(data:image\/|https?:|\/)/.test(src!) ? src : undefined
+          return safe ? (
+            <figure key={index} className="flex flex-col gap-2">
+              <img src={safe} alt={alt} className="w-full rounded-lg object-cover" />
+              {alt && <figcaption className="nff-caption text-[var(--nff-text-secondary)]">{alt}</figcaption>}
+            </figure>
+          ) : null
+        }
         const lines = block.split('\n')
         if (lines.every((line) => line.startsWith('- '))) {
           return (

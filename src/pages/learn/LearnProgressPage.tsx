@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { Eye } from 'lucide-react'
+import { BookOpen, CheckCircle2, Eye } from 'lucide-react'
 import { useState } from 'react'
 import { HomeEmptyState, HomeSection, HomeSectionHeader } from '@/components/learn/home/homeParts'
 import {
@@ -100,6 +100,7 @@ export function LearnProgressPage() {
               </ul>
             ) : (
               <HomeEmptyState
+                icon={BookOpen}
                 title="No learning assigned yet"
                 description="When a learning path is assigned to you, your progress through it appears here."
                 action={{ label: 'Browse the library', to: LEARN_LIBRARY }}
@@ -126,6 +127,7 @@ export function LearnProgressPage() {
                   />
                 ) : (
                   <HomeEmptyState
+                    icon={CheckCircle2}
                     title="No completed lessons yet"
                     description="Lessons you mark complete are listed here."
                     action={{ label: 'Go to My Learning', to: LEARN_MY_LEARNING }}

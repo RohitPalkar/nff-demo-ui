@@ -1,3 +1,4 @@
+import { BookOpen, History, Library } from 'lucide-react'
 import { useMemo } from 'react'
 import { ContinueLearningCard } from '@/components/learn/home/ContinueLearningCard'
 import { HomeEmptyState, HomeSection, HomeSectionHeader } from '@/components/learn/home/homeParts'
@@ -84,6 +85,7 @@ export function LearnHomePage() {
           </ul>
         ) : (
           <HomeEmptyState
+            icon={BookOpen}
             title="Nothing assigned yet"
             description="When a learning path is assigned to you, it will appear here."
             action={{ label: 'Browse the library', to: home.libraryHref }}
@@ -115,6 +117,7 @@ export function LearnHomePage() {
             <RecentLearningList items={recent} />
           ) : (
             <HomeEmptyState
+              icon={History}
               title="Nothing yet"
               description="Lessons you start or finish will be listed here."
             />
@@ -140,6 +143,7 @@ export function LearnHomePage() {
           </ul>
         ) : (
           <HomeEmptyState
+            icon={Library}
             title="Nothing featured right now"
             description="Everything you can open is in the library."
             action={{ label: 'Browse the library', to: home.libraryHref }}

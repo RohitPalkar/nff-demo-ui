@@ -28,6 +28,7 @@ export function EngagementDashboardPage() {
     queryFn: () => mockApi(() => true),
   })
   const [stage, setStage] = useState('all')
+  const [range, setRange] = useState<'7' | '30' | '90'>('30')
 
   if (query.isPending) {
     return (
@@ -56,8 +57,10 @@ export function EngagementDashboardPage() {
   const avg = people.length
     ? Math.round(people.reduce((sum, entry) => sum + entry.engagementScore, 0) / people.length)
     : 0
-  const completions = events.filter((event) => event.type === 'complete').length
-  const plays = events.filter((event) => event.type === 'play').length
+  const since = Date.now() - Number(range) * 86_400_000
+  const inRange = events.filter((event) => new Date(event.at).getTime() >= since)
+  const completions = inRange.filter((event) => event.type === 'complete').length
+  const plays = inRange.filter((event) => event.type === 'play').length
 
   const buckets = ['0-20', '21-40', '41-60', '61-80', '81-100'].map((label, index) => ({
     label,
@@ -90,6 +93,17 @@ export function EngagementDashboardPage() {
         title="Engagement"
         description="Demo figures. Not calculated from learner activity."
         action={
+          <div className="flex flex-wrap gap-2">
+          <Select value={range} onValueChange={(value) => setRange(value as typeof range)}>
+            <SelectTrigger aria-label="Date range" className="w-40">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="7">Last 7 days</SelectItem>
+              <SelectItem value="30">Last 30 days</SelectItem>
+              <SelectItem value="90">Last 90 days</SelectItem>
+            </SelectContent>
+          </Select>
           <Select value={stage} onValueChange={setStage}>
             <SelectTrigger aria-label="Stage segment" className="w-48">
               <SelectValue />
@@ -103,6 +117,7 @@ export function EngagementDashboardPage() {
               ))}
             </SelectContent>
           </Select>
+          </div>
         }
       />
 

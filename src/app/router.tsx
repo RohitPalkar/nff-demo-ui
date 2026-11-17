@@ -39,6 +39,7 @@ import { LibraryCategoryPage } from '@/pages/public/LibraryCategoryPage'
 import { MeditationDetailPage } from '@/pages/public/MeditationDetailPage'
 import { MeditationsPage } from '@/pages/public/MeditationsPage'
 import { ComingSoonPage } from '@/pages/system/ComingSoonPage'
+import { ContactPage } from '@/pages/public/ContactPage'
 import { CookiePolicyPage } from '@/pages/public/legal/CookiePolicyPage'
 import { PrivacyPolicyPage } from '@/pages/public/legal/PrivacyPolicyPage'
 import { TermsPage } from '@/pages/public/legal/TermsPage'
@@ -69,6 +70,7 @@ export const router = createBrowserRouter(
         path: 'accessibility',
         element: <ComingSoonPage title="Accessibility" />,
       },
+      { path: 'contact', element: <ContactPage /> },
       { path: 'cookie-preferences', element: <PrivacyChoicesPage /> },
       { path: 'unsubscribe/:token', element: <UnsubscribePage /> },
       { path: '403', element: <ForbiddenPage /> },
@@ -121,6 +123,7 @@ export const router = createBrowserRouter(
       { path: '/learn/progress', element: <LearnProgressPage /> },
       { path: '/learn/paths/:pathSlug', element: <PathPage /> },
       { path: '/learn/paths/:pathSlug/lessons/:lessonId', element: <LessonPage /> },
+      { path: '/learn/support', element: <ContactPage /> },
       { path: '/learn/access-denied', element: <AccessDeniedPage /> },
       { path: '/learn/*', element: <LearnNotFoundPage /> },
       {

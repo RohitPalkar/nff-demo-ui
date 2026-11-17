@@ -6,6 +6,7 @@ import {
   Heading3,
   Eye,
   History,
+  ImagePlus,
   Italic,
   Link2,
   List,
@@ -122,6 +123,7 @@ export function ExplorationEditorPage() {
     readJson<Version[]>(versionsKey(id), []),
   )
   const bodyRef = useRef<HTMLTextAreaElement>(null)
+  const imageInputRef = useRef<HTMLInputElement>(null)
   const [bodyMode, setBodyMode] = useState<'write' | 'preview'>('write')
   const stageOptions = loadStages()
 
@@ -179,6 +181,27 @@ export function ExplorationEditorPage() {
       body:
         draft.body.slice(0, start) + before + selected + after + draft.body.slice(end),
     })
+  }
+
+  function insertImage(file: File) {
+    if (!draft) return
+    if (!file.type.startsWith('image/')) {
+      toast.error('Choose an image file (JPG, PNG, WebP or GIF).')
+      return
+    }
+    if (file.size > 1_500_000) {
+      toast.error('That image is over 1.5 MB. Choose a smaller one.')
+      return
+    }
+    const reader = new FileReader()
+    reader.onload = () => {
+      const at = bodyRef.current?.selectionEnd ?? draft.body.length
+      const alt = file.name.replace(/\.[^.]+$/, '').replace(/[-_]+/g, ' ')
+      const block = `\n\n![${alt}](${String(reader.result)})\n\n`
+      update({ body: (draft.body.slice(0, at) + block + draft.body.slice(at)).replace(/^\n+/, '') })
+      toast.success('Image added. Edit the text in [ ] to change its description.')
+    }
+    reader.readAsDataURL(file)
   }
 
   function linePrefix(prefix: string) {
@@ -244,6 +267,7 @@ export function ExplorationEditorPage() {
     { label: 'Bulleted list', icon: List, run: () => linePrefix('- ') },
     { label: 'Link', icon: Link2, run: () => wrap('[', '](https://)', 'link text') },
     { label: 'Quote', icon: Quote, run: () => linePrefix('> ') },
+    { label: 'Insert image', icon: ImagePlus, run: () => imageInputRef.current?.click() },
   ]
 
   const words = draft.body.split(/\s+/).filter(Boolean).length
@@ -399,6 +423,19 @@ export function ExplorationEditorPage() {
                     <entry.icon aria-hidden="true" className="size-4" />
                   </Button>
                 ))}
+                <input
+                  ref={imageInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="sr-only"
+                  tabIndex={-1}
+                  aria-hidden="true"
+                  onChange={(event) => {
+                    const file = event.target.files?.[0]
+                    if (file) insertImage(file)
+                    event.target.value = ''
+                  }}
+                />
               </div>
             )}
           </div>

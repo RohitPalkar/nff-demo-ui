@@ -15,7 +15,15 @@ import {
 } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useAuth } from '@/features/auth/AuthProvider'
-import { getProfile, saveProfile, TIME_ZONES } from '@/services/account'
+import {
+  CONTENT_MIXES,
+  SESSION_LENGTHS,
+  getProfile,
+  saveProfile,
+  TIME_ZONES,
+  type ContentMix,
+  type SessionLength,
+} from '@/services/account'
 
 export function ProfilePage() {
   const { user } = useAuth()
@@ -27,6 +35,8 @@ export function ProfilePage() {
   })
   const [name, setName] = useState('')
   const [timeZone, setTimeZone] = useState('Europe/London')
+  const [sessionLength, setSessionLength] = useState<SessionLength>('10')
+  const [contentMix, setContentMix] = useState<ContentMix>('balanced')
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
 
@@ -34,6 +44,8 @@ export function ProfilePage() {
     if (query.data) {
       setName(query.data.displayName)
       setTimeZone(query.data.timeZone)
+      setSessionLength(query.data.sessionLength ?? '10')
+      setContentMix(query.data.contentMix ?? 'balanced')
     }
   }, [query.data])
 
@@ -56,7 +68,10 @@ export function ProfilePage() {
   }
 
   const dirty =
-    name !== query.data.displayName || timeZone !== query.data.timeZone
+    name !== query.data.displayName ||
+    timeZone !== query.data.timeZone ||
+    sessionLength !== (query.data.sessionLength ?? '10') ||
+    contentMix !== (query.data.contentMix ?? 'balanced')
 
   async function save(event: React.FormEvent) {
     event.preventDefault()
@@ -67,7 +82,7 @@ export function ProfilePage() {
     setError(null)
     setSaving(true)
     try {
-      await saveProfile(user!.id, { displayName: name.trim(), timeZone })
+      await saveProfile(user!.id, { displayName: name.trim(), timeZone, sessionLength, contentMix })
       await queryClient.invalidateQueries({ queryKey: ['account', 'profile'] })
       toast.success('Profile saved.')
     } catch {
@@ -149,6 +164,45 @@ export function ProfilePage() {
           </p>
         </div>
 
+        <h2 id="curriculum-heading" className="nff-heading-h3 lg:col-span-2">Curriculum preferences</h2>
+
+        <fieldset className="flex flex-col gap-2">
+          <legend className="mb-1.5 nff-label-md">Daily session length</legend>
+          <div role="radiogroup" aria-label="Daily session length" className="nff-segmented self-start">
+            {SESSION_LENGTHS.map((length) => (
+              <button
+                key={length}
+                type="button"
+                role="radio"
+                aria-checked={sessionLength === length}
+                aria-pressed={sessionLength === length}
+                onClick={() => setSessionLength(length)}
+                className="nff-segmented-item nff-focus-ring"
+              >
+                {length} min
+              </button>
+            ))}
+          </div>
+          <p className="nff-caption text-muted-foreground">Used to suggest how much to take on each day.</p>
+        </fieldset>
+
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="content-mix">What you prefer</Label>
+          <Select value={contentMix} onValueChange={(value) => setContentMix(value as ContentMix)}>
+            <SelectTrigger id="content-mix" className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {(Object.keys(CONTENT_MIXES) as ContentMix[]).map((mix) => (
+                <SelectItem key={mix} value={mix}>
+                  {CONTENT_MIXES[mix]}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <p className="nff-caption text-muted-foreground">Your daily email leans toward this.</p>
+        </div>
+
         <div className="sticky bottom-0 -mx-1 flex gap-3 border-t bg-background/95 p-3 backdrop-blur lg:col-span-2">
           <Button type="submit" className="h-11" disabled={!dirty || saving}>
             {saving && (
@@ -164,6 +218,8 @@ export function ProfilePage() {
             onClick={() => {
               setName(query.data.displayName)
               setTimeZone(query.data.timeZone)
+              setSessionLength(query.data.sessionLength ?? '10')
+              setContentMix(query.data.contentMix ?? 'balanced')
               setError(null)
             }}
           >

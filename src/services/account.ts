@@ -3,9 +3,21 @@ import { mockApi, readJson, writeJson } from '@/mocks/api'
 import { userById } from '@/mocks/db'
 import { getProgress } from '@/services/content'
 
+export const SESSION_LENGTHS = ['5', '10', '20'] as const
+export type SessionLength = (typeof SESSION_LENGTHS)[number]
+export const CONTENT_MIXES = {
+  balanced: 'Readings and meditations',
+  listen: 'Mostly meditations',
+  read: 'Mostly readings',
+} as const
+export type ContentMix = keyof typeof CONTENT_MIXES
+
 export interface AccountProfile {
   displayName: string
   timeZone: string
+  /** Curriculum preferences: how long a daily session is, and what it leans toward. */
+  sessionLength?: SessionLength
+  contentMix?: ContentMix
 }
 
 export interface EmailPrefs {
