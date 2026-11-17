@@ -23,6 +23,8 @@ import {
 import { isPreviewRole } from '@/services/learning/previewRoles'
 import { loadProgress } from '@/services/learning/progress'
 import { LEARN_LIBRARY } from '@/services/learning/routes'
+import { LibrarySearch } from '@/components/learn/library/LibrarySearch'
+import { useSearchParams } from 'react-router-dom'
 
 const TAB_LABEL: Record<MyLearningTab, string> = {
   all: 'All Learning',
@@ -92,21 +94,25 @@ export function MyLearningPage() {
   return (
     <div className="mx-auto flex max-w-[1280px] flex-col gap-8 px-4 py-6 sm:px-6 md:py-10 lg:px-8">
       {/* Welcome Section */}
-      <header className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+      <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div className="flex flex-col gap-2">
           <h1 className="nff-heading-h1 text-foreground">My Learning</h1>
           <p className="max-w-2xl nff-body-lg text-[var(--nff-text-secondary)]">
             Your assigned learning paths, organized by progress. Resume where you left off or start something new.
           </p>
         </div>
-        {!data?.isPreview && data && data.items.length > 0 && (
-          <a href={LEARN_LIBRARY} className="inline-flex items-center gap-1.5 nff-label-md text-[var(--nff-forest-700)] hover:text-[var(--nff-forest-900)] transition-colors nff-focus-ring">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="size-3.5" aria-hidden="true">
-              <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-            Browse library
-          </a>
-        )}
+        <div className="w-full sm:w-auto">
+          <LibrarySearch
+            value=""
+            onSearch={(value) => {
+              if (value.trim()) {
+                window.location.href = `${LEARN_LIBRARY}?q=${encodeURIComponent(value.trim())}`
+              }
+            }}
+            placeholder="Search the library…"
+            label="Search the library"
+          />
+        </div>
       </header>
 
       {/* Tab Navigation with Botanical Illustrations */}
