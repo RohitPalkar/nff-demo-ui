@@ -5,6 +5,7 @@ import { Progress } from '@/components/ui/progress'
 import { cn } from '@/lib/utils'
 import type { ContentItem } from '@/types'
 import { HOME_CARD, SECONDARY_ACTION } from './homeStyles'
+import { LeafDivider } from './BotanicalIllustrations'
 
 /** Small shared pieces of the Practitioner Home. Presentation only. */
 
@@ -123,3 +124,5 @@ export function Thumb({ item, className }: { item: ContentItem; className?: stri
     />
   )
 }
+
+export { LeafDivider }
