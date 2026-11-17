@@ -122,11 +122,26 @@
   color: var(--admin-text-muted);
 }
 
-/* The selected tab is marked by more than a 1.07:1 fill change: a forest underline and weight. */
+/* Tabs read as a segmented control: a tinted track, and the selected tab white
+   with a forest outline (well over 3:1 against the track) and bold text. */
+[data-surface="cms"] [data-slot="tabs-list"] {
+  height: auto;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-card);
+  background: var(--nff-neutral-100);
+}
+[data-surface="cms"] [data-slot="tabs-trigger"] {
+  min-height: 40px;
+  padding: 0 14px;
+  font-size: 0.875rem;
+}
 [data-surface="cms"] [data-slot="tabs-trigger"][data-state="active"] {
   color: var(--admin-text);
   font-weight: 600;
-  box-shadow: inset 0 -2px 0 var(--admin-primary);
+  background: var(--admin-surface);
+  box-shadow: 0 0 0 1px var(--nff-forest-800), var(--nff-shadow-1);
 }
 
 /* The audio seek/volume tracks (shared player) are 1.5:1 by default; 3.6:1 here. */
@@ -172,42 +187,9 @@ html:has(body[data-surface="cms"]) {
    One table for every Admin list. Views are an underlined tab row with counts;
    the toolbar wraps; the frame scrolls sideways on tablets, and on phones each
    row becomes a card with labelled fields (same DOM, nothing duplicated). */
-[data-surface="cms"] .admin-dt-views {
-  display: flex;
-  gap: 4px;
-  overflow-x: auto;
-  scrollbar-width: none;
-  border-bottom: 1px solid var(--admin-border);
-}
-[data-surface="cms"] .admin-dt-view {
-  display: inline-flex;
-  flex: none;
-  align-items: center;
-  gap: 8px;
-  height: 44px; /* WCAG 2.5.5 AAA target */
-  padding: 0 12px;
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: var(--admin-text-muted);
-  border-radius: var(--admin-radius-control) var(--admin-radius-control) 0 0;
-}
-[data-surface="cms"] .admin-dt-view:hover { color: var(--admin-text); background: var(--nff-neutral-100); }
-[data-surface="cms"] .admin-dt-view[data-state="active"] {
-  color: var(--admin-text);
-  font-weight: 600;
-  box-shadow: inset 0 -2px 0 var(--admin-primary);
-}
-[data-surface="cms"] .admin-dt-count {
-  min-width: 20px;
-  padding: 0 6px;
-  border-radius: 4px;
-  background: var(--nff-neutral-100);
-  font-size: 0.75rem;
-  line-height: 1.25rem;
-  font-variant-numeric: tabular-nums;
-  text-align: center;
-}
-[data-surface="cms"] .admin-dt-view[data-state="active"] .admin-dt-count {
+/* Segmented controls keep the AAA 44px target in Admin (WCAG 2.5.5). */
+[data-surface="cms"] .nff-segmented-item { min-height: 44px; }
+[data-surface="cms"] .nff-segmented-item[data-state="active"] .nff-segmented-count {
   background: var(--admin-primary);
   color: var(--nff-neutral-0);
 }
@@ -231,15 +213,29 @@ html:has(body[data-surface="cms"]) {
   background: var(--admin-surface);
 }
 [data-surface="cms"] .admin-dt-table thead tr {
-  background: var(--admin-surface-subtle);
+  background: var(--nff-sage-50);
+}
+[data-surface="cms"] .admin-dt-table tbody tr:hover {
+  background: var(--nff-sage-50);
 }
 [data-surface="cms"] .admin-dt-table th {
-  height: 40px;
+  height: 44px;
   padding: 0 16px;
-  font-size: 0.75rem;
+}
+
+/* One header style for every Admin table: sortable and plain headers match. */
+[data-surface="cms"] thead th,
+[data-surface="cms"] thead th .nff-data-table-header {
+  font-size: 0.8125rem;
+  line-height: 1.25rem;
   font-weight: 600;
-  letter-spacing: 0.02em;
-  color: var(--admin-text-muted);
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--admin-text);
+}
+[data-surface="cms"] thead tr {
+  background: var(--nff-sage-50);
+  border-bottom: 1px solid var(--admin-border);
 }
 [data-surface="cms"] .admin-dt-table td {
   padding: 10px 16px;
@@ -297,10 +293,7 @@ html:has(body[data-surface="cms"]) {
 [data-surface="cms"] .admin-matrix thead th {
   position: sticky;
   top: 0;
-  background: var(--admin-surface-subtle);
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--admin-text-muted);
+  background: var(--nff-sage-50);
   white-space: nowrap;
 }
 [data-surface="cms"] .admin-matrix tbody th[scope="row"],
@@ -312,7 +305,7 @@ html:has(body[data-surface="cms"]) {
   background: var(--admin-surface);
   text-align: left;
 }
-[data-surface="cms"] .admin-matrix thead th:first-child { background: var(--admin-surface-subtle); }
+[data-surface="cms"] .admin-matrix thead th:first-child { background: var(--nff-sage-50); }
 [data-surface="cms"] .admin-matrix .admin-matrix-group th {
   background: var(--nff-neutral-100);
   font-size: 0.75rem;

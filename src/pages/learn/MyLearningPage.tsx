@@ -1,6 +1,5 @@
 import { Tabs as TabsPrimitive } from 'radix-ui'
 import { useSearchParams } from 'react-router-dom'
-import { BookOpen, Check } from 'lucide-react'
 import { HomeEmptyState } from '@/components/learn/home/homeParts'
 import { HOME_CARD } from '@/components/learn/home/homeStyles'
 import { LearningCard } from '@/components/learn/my-learning/LearningCard'
@@ -24,7 +23,6 @@ import {
 import { isPreviewRole } from '@/services/learning/previewRoles'
 import { loadProgress } from '@/services/learning/progress'
 import { LEARN_LIBRARY } from '@/services/learning/routes'
-import { LeafDivider, Sprout } from '@/components/learn/home/BotanicalIllustrations'
 
 const TAB_LABEL: Record<MyLearningTab, string> = {
   all: 'All Learning',
@@ -50,13 +48,6 @@ const EMPTY: Record<MyLearningTab, { title: string; description: string }> = {
     title: 'Nothing completed yet',
     description: 'A learning path appears here once every one of its lessons is complete.',
   },
-}
-
-const TAB_ILLUSTRATIONS: Record<MyLearningTab, React.ReactNode> = {
-  all: <BookOpen className="size-4" />,
-  'in-progress': <Sprout className="text-[var(--nff-forest-700)]" />,
-  'not-started': <Sprout className="text-[var(--nff-sage-600)]" />,
-  completed: <Check className="size-4" />,
 }
 
 /**
@@ -103,10 +94,7 @@ export function MyLearningPage() {
       {/* Welcome Section */}
       <header className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
         <div className="flex flex-col gap-2">
-          <div className="flex items-center gap-2">
-            <Sprout className="text-[var(--nff-forest-600)]" />
-            <h1 className="nff-heading-h1 text-foreground">My Learning</h1>
-          </div>
+          <h1 className="nff-heading-h1 text-foreground">My Learning</h1>
           <p className="max-w-2xl nff-body-lg text-[var(--nff-text-secondary)]">
             Your assigned learning paths, organized by progress. Resume where you left off or start something new.
           </p>
@@ -127,30 +115,14 @@ export function MyLearningPage() {
         onValueChange={(value) => update('tab', value, 'all')}
         className="flex flex-col gap-6"
       >
-        <div className="-mx-4 overflow-x-auto overflow-y-hidden border-b border-[var(--nff-border-default)] px-4 sm:mx-0 sm:px-0">
-          <TabsPrimitive.List aria-label="Filter learning by status" className="flex min-w-max gap-6">
-            {(Object.keys(TAB_LABEL) as MyLearningTab[]).map((key) => (
-              <TabsPrimitive.Trigger
-                key={key}
-                value={key}
-                className={cn(
-                  '-mb-px flex h-11 items-center gap-2 border-b-2 border-transparent nff-label-md text-[var(--nff-text-secondary)] transition-colors hover:text-foreground nff-focus-ring',
-                  'data-[state=active]:border-[var(--nff-forest-900)] data-[state=active]:text-foreground',
-                )}
-              >
-                <span className="flex items-center gap-1.5">
-                  {TAB_ILLUSTRATIONS[key]}
-                  <span>{TAB_LABEL[key]}</span>
-                </span>
-                {counts && (
-                  <span className="rounded-sm bg-[var(--nff-sage-100)] px-1.5 nff-caption text-[var(--nff-forest-900)]">
-                    {counts[key]}
-                  </span>
-                )}
-              </TabsPrimitive.Trigger>
-            ))}
-          </TabsPrimitive.List>
-        </div>
+        <TabsPrimitive.List aria-label="Filter learning by status" className="nff-segmented self-start">
+          {(Object.keys(TAB_LABEL) as MyLearningTab[]).map((key) => (
+            <TabsPrimitive.Trigger key={key} value={key} className="nff-segmented-item nff-focus-ring">
+              {TAB_LABEL[key]}
+              {counts && <span className="nff-segmented-count">{counts[key]}</span>}
+            </TabsPrimitive.Trigger>
+          ))}
+        </TabsPrimitive.List>
 
         {(Object.keys(TAB_LABEL) as MyLearningTab[]).map((key) => (
           <TabsPrimitive.Content key={key} value={key} className="flex flex-col gap-5 focus-visible:outline-none">
@@ -212,7 +184,6 @@ export function MyLearningPage() {
 
       {data && data.withdrawn.length > 0 && (
         <section aria-labelledby="withdrawn-heading" className="flex flex-col gap-3">
-          <LeafDivider />
           <h2 id="withdrawn-heading" className="nff-heading-h4 text-foreground">
             No longer assigned
           </h2>

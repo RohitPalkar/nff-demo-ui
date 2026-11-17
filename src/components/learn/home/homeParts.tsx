@@ -112,7 +112,9 @@ export function LearnProgress({
 /** Card thumbnail. Decorative: the title next to it carries the meaning. */
 export function Thumb({ item, className }: { item: ContentItem; className?: string }) {
   if (!item.image) {
-    return <div aria-hidden="true" className={cn('bg-[var(--nff-sage-100)]', className)} />
+    return (
+      <div aria-hidden="true" className={cn('bg-[var(--nff-sage-100)]', className)} />
+    )
   }
   return (
     <img

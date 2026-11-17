@@ -51,7 +51,9 @@ export function ProgressOverview({ overview }: { overview: Overview }) {
             index === 2 && 'md:border-l',
           )}
         >
-          <dt className="nff-body-sm text-nff-text-secondary">{stat.label}</dt>
+          <dt className="nff-body-sm text-nff-text-secondary">
+            {stat.label}
+          </dt>
           <dd className="nff-heading-h2 tabular-nums text-foreground">{stat.value}</dd>
         </div>
       ))}
@@ -67,15 +69,17 @@ export function PathProgressCard({ entry, preview }: { entry: PathProgress; prev
     <article aria-labelledby={titleId} className={cn(HOME_CARD, 'flex flex-col')}>
       <div className="flex flex-col gap-4 p-5 sm:p-6">
         <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
-          <div className="flex min-w-0 flex-col gap-1">
-            <p className="nff-caption text-nff-text-secondary">
-              Learning path · {pluralise(item.moduleCount, 'module')} · {pluralise(item.lessonCount, 'lesson')}
-            </p>
-            <h3 id={titleId} className="nff-heading-h4 text-foreground">
-              <Link to={item.href} className="underline-offset-4 hover:underline nff-focus-ring">
-                {item.path.title}
-              </Link>
-            </h3>
+          <div className="flex min-w-0 items-start gap-3">
+            <div className="flex min-w-0 flex-col gap-1">
+              <p className="nff-caption text-nff-text-secondary">
+                Learning path · {pluralise(item.moduleCount, 'module')} · {pluralise(item.lessonCount, 'lesson')}
+              </p>
+              <h3 id={titleId} className="nff-heading-h4 text-foreground">
+                <Link to={item.href} className="underline-offset-4 hover:underline nff-focus-ring">
+                  {item.path.title}
+                </Link>
+              </h3>
+            </div>
           </div>
           {!preview && <StatusLabel status={item.status} />}
         </div>
@@ -249,11 +253,7 @@ export function LearningHistory({
         <p className="nff-body-sm text-nff-text-secondary">
           <strong className="font-medium text-foreground">{pluralise(total, 'lesson')}</strong> completed
         </p>
-        <div
-          role="group"
-          aria-label="Order completed lessons"
-          className="inline-flex rounded-md border border-nff-border-default bg-nff-bg-surface p-0.5"
-        >
+        <div role="group" aria-label="Order completed lessons" className="nff-segmented">
           {(
             [
               ['stage', 'By stage'],
@@ -265,12 +265,7 @@ export function LearningHistory({
               type="button"
               aria-pressed={view === value}
               onClick={() => setView(value)}
-              className={cn(
-                'nff-target rounded-[5px] px-3 py-1.5 nff-label-sm transition-colors nff-focus-ring',
-                view === value
-                  ? 'bg-[var(--nff-bg-active)] text-[var(--nff-text-active)] border border-[var(--nff-border-active)]'
-                  : 'text-nff-text-secondary hover:bg-[var(--nff-sage-50)] hover:text-[var(--nff-text-active)]',
-              )}
+              className="nff-segmented-item nff-target nff-focus-ring"
             >
               {label}
             </button>

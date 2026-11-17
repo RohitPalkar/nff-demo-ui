@@ -107,7 +107,7 @@ export function LessonShell({
         {data && (
           <aside
             aria-label="Curriculum"
-            className="hidden lg:sticky lg:top-[7.5rem] lg:block lg:max-h-[calc(100dvh-9rem)] lg:self-start lg:overflow-y-auto lg:py-10"
+            className="hidden lg:sticky lg:top-[8.5rem] lg:my-10 lg:block lg:max-h-[calc(100dvh-10rem)] lg:self-start lg:overflow-y-auto lg:rounded-lg lg:border lg:border-nff-border-default lg:bg-nff-bg-surface lg:p-5 lg:shadow-[var(--nff-shadow-1)]"
           >
             {curriculum()}
           </aside>

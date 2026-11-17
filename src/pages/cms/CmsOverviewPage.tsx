@@ -1,5 +1,17 @@
 import { useQuery } from '@tanstack/react-query'
-import { AlertTriangle } from 'lucide-react'
+import {
+  AlertTriangle,
+  Clock3,
+  FileClock,
+  Loader2,
+  Mail,
+  PauseCircle,
+  Percent,
+  Sunrise,
+  TrendingUp,
+  Users,
+  type LucideIcon,
+} from 'lucide-react'
 import { Link } from 'react-router-dom'
 import {
   ContentStatusChip,
@@ -85,23 +97,23 @@ export function CmsOverviewPage() {
   // Every figure here comes from seeded records (plus changes made in this
   // browser), so each says so. There is no engagement source, so that card
   // shows no value rather than the invented figure it used to.
-  const cards: Array<{ label: string; value: string; hint?: string; source: DataSourceKind }> =
+  const cards: Array<{ label: string; value: string; hint?: string; source: DataSourceKind; icon: LucideIcon }> =
     view === 'campaign'
       ? [
-          { label: 'Next send', value: 'Tonight 07:00', hint: 'Example schedule; nothing is sent', source: 'demo' },
-          { label: 'Last-send delivery rate', value: rate, source: 'demo' },
-          { label: 'Paused campaigns', value: String(paused.length), source: 'demo' },
+          { label: 'Next send', value: 'Tonight 07:00', hint: 'Example schedule; nothing is sent', source: 'demo', icon: Mail },
+          { label: 'Last-send delivery rate', value: rate, source: 'demo', icon: Percent },
+          { label: 'Paused campaigns', value: String(paused.length), source: 'demo', icon: PauseCircle },
         ]
       : view === 'admin'
         ? [
-            { label: 'Active users', value: String(activeUsers), source: 'demo' },
-            { label: 'Awaiting review', value: String(review.length), source: 'demo' },
-            { label: 'Engagement trend', value: '—', hint: 'No analytics source is connected', source: 'unavailable' },
+            { label: 'Active users', value: String(activeUsers), source: 'demo', icon: Users },
+            { label: 'Awaiting review', value: String(review.length), source: 'demo', icon: Clock3 },
+            { label: 'Engagement trend', value: '—', hint: 'No analytics source is connected', source: 'unavailable', icon: TrendingUp },
           ]
         : [
-            { label: 'Drafts', value: String(drafts), source: 'demo' },
-            { label: 'In review', value: String(review.length), source: 'demo' },
-            { label: 'Processing', value: String(processing), source: 'demo' },
+            { label: 'Drafts', value: String(drafts), source: 'demo', icon: FileClock },
+            { label: 'In review', value: String(review.length), source: 'demo', icon: Clock3 },
+            { label: 'Processing', value: String(processing), source: 'demo', icon: Loader2 },
           ]
 
   const alerts: string[] = []
@@ -117,6 +129,11 @@ export function CmsOverviewPage() {
       <PageHeader
         title={`${greeting()}, ${user?.name.split(' ')[0] ?? ''}`}
         description={getRoleLabel(user?.role)}
+        meta={
+          <span aria-hidden="true" className="flex size-7 shrink-0 items-center justify-center rounded-md bg-[var(--nff-sage-100)]">
+            <Sunrise className="size-4 text-[var(--nff-forest-700)]" />
+          </span>
+        }
       />
 
       {alerts.length > 0 && (

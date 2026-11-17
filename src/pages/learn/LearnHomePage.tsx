@@ -93,7 +93,7 @@ export function LearnHomePage() {
 
       {/* Up Next */}
       {upNext.length > 0 && (
-        <HomeSection id="home-up-next" className="rounded-2xl bg-[var(--nff-bg-brand-subtle)] p-6 sm:p-8">
+        <HomeSection id="home-up-next">
           <HomeSectionHeader
             id="home-up-next"
             title="Up next"

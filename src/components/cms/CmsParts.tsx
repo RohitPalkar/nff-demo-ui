@@ -218,16 +218,26 @@ export function MetricCard({
   value,
   hint,
   source,
+  icon: Icon,
 }: {
   label: string
   value: string
   hint?: string
   /** What kind of data the value is. Shown as a small label. */
   source?: DataSourceKind
+  /** A small brand-toned chip next to the label. Decorative. */
+  icon?: LucideIcon
 }) {
   return (
-    <div className="flex flex-col gap-1 rounded-xl border bg-card p-4">
-      <span className="nff-caption text-muted-foreground">{label}</span>
+    <div className="flex flex-col gap-2 rounded-xl border bg-card p-4">
+      <span className="flex items-center gap-2">
+        {Icon && (
+          <span aria-hidden="true" className="flex size-7 shrink-0 items-center justify-center rounded-md bg-[var(--nff-sage-100)]">
+            <Icon className="size-4 text-[var(--nff-forest-700)]" />
+          </span>
+        )}
+        <span className="nff-caption text-muted-foreground">{label}</span>
+      </span>
       <span className="nff-data-metric tabular-nums">{value}</span>
       {hint && <span className="nff-caption text-muted-foreground">{hint}</span>}
       {source && <DataSourceBadge kind={source} />}

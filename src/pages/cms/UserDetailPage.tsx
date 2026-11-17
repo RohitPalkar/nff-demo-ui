@@ -133,17 +133,24 @@ export function UserDetailPage() {
         </TabsList>
 
         <TabsContent value="profile" className="pt-4">
-          <dl className="grid max-w-md gap-2 nff-body-sm">
-            <div className="flex justify-between"><dt>Role</dt><dd className="capitalize">{person.role}</dd></div>
-            <div className="flex justify-between">
-              <dt>Current stage</dt>
-              <dd>{stages.find((s) => s.id === person.currentStageId)?.title}</dd>
+          <dl className="flex max-w-xl flex-col divide-y rounded-xl border bg-card nff-body-sm">
+            <div className="flex justify-between gap-4 px-5 py-3">
+              <dt className="text-muted-foreground">Role</dt>
+              <dd className="font-medium capitalize">{person.role}</dd>
             </div>
-            <div className="flex justify-between"><dt>Verified</dt><dd>{person.verified ? 'Yes' : 'No'}</dd></div>
+            <div className="flex justify-between gap-4 px-5 py-3">
+              <dt className="text-muted-foreground">Current stage</dt>
+              <dd className="font-medium">{stages.find((s) => s.id === person.currentStageId)?.title}</dd>
+            </div>
+            <div className="flex justify-between gap-4 px-5 py-3">
+              <dt className="text-muted-foreground">Verified</dt>
+              <dd className="font-medium">{person.verified ? 'Yes' : 'No'}</dd>
+            </div>
           </dl>
         </TabsContent>
 
-        <TabsContent value="progress" className="flex flex-col gap-3 pt-4">
+        <TabsContent value="progress" className="pt-4">
+          <div className="flex flex-col gap-3 rounded-xl border bg-card p-5">
           {completed.size === 0 && (
             <p className="nff-body-sm text-muted-foreground">No activity recorded yet.</p>
           )}
@@ -160,15 +167,16 @@ export function UserDetailPage() {
               </div>
             )
           })}
+          </div>
         </TabsContent>
 
         <TabsContent value="email" className="pt-4">
           {emails.length === 0 ? (
-            <p className="nff-body-sm text-muted-foreground">No emails sent to this user.</p>
+            <p className="rounded-xl border bg-card p-5 nff-body-sm text-muted-foreground">No emails sent to this user.</p>
           ) : (
-            <ul className="flex max-w-lg flex-col divide-y rounded-xl border bg-card">
+            <ul className="flex max-w-xl flex-col divide-y rounded-xl border bg-card">
               {emails.map((log) => (
-                <li key={log.id} className="flex justify-between p-3 nff-body-sm">
+                <li key={log.id} className="flex justify-between px-5 py-3 nff-body-sm">
                   <span className="capitalize">{log.status}</span>
                   <span className="text-muted-foreground">{formatDate(log.at)}</span>
                 </li>
@@ -178,7 +186,7 @@ export function UserDetailPage() {
         </TabsContent>
 
         <TabsContent value="privacy" className="pt-4">
-          <p className="nff-body-sm text-muted-foreground">
+          <p className="rounded-xl border bg-card p-5 nff-body-sm text-muted-foreground">
             Analytics consent granted. No open export or deletion requests.
           </p>
         </TabsContent>

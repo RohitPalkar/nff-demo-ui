@@ -28,7 +28,7 @@ function LessonRow({
     <li>
       <Link
         to={href}
-        className="group flex items-center gap-3 p-3 transition-colors hover:bg-[var(--nff-sage-50)] nff-focus-ring sm:gap-4 sm:p-4"
+        className="group flex items-center gap-4 px-4 py-3 transition-colors hover:bg-[var(--nff-sage-50)] nff-focus-ring sm:px-5 sm:py-4"
       >
         <Thumb item={thumb} className="size-14 shrink-0 rounded-sm" />
         <div className="flex min-w-0 flex-1 flex-col gap-0.5">

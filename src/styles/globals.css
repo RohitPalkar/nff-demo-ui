@@ -322,3 +322,56 @@
     opacity: 0.5;
   }
 }
+
+/* Segmented control: one tinted track holding mutually exclusive choices.
+   The selected item is white with a forest outline (≥3:1 against the track),
+   bold text, and a lift, so selection never relies on a fill change alone. */
+@layer components {
+  .nff-segmented {
+    display: inline-flex;
+    max-width: 100%;
+    gap: 4px;
+    padding: 4px;
+    overflow-x: auto;
+    border: 1px solid var(--nff-color-border-default);
+    border-radius: var(--nff-radius-lg);
+    background: var(--nff-neutral-100);
+    scrollbar-width: none;
+  }
+  .nff-segmented::-webkit-scrollbar { display: none; }
+  .nff-segmented-item {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    gap: 8px;
+    min-height: 40px;
+    padding: 0 14px;
+    border-radius: var(--nff-radius-md);
+    font-size: var(--nff-type-label-md-size);
+    line-height: var(--nff-type-label-md-line-height);
+    font-weight: 500;
+    color: var(--nff-color-text-secondary);
+    white-space: nowrap;
+    transition: background-color var(--nff-duration-fast), color var(--nff-duration-fast), box-shadow var(--nff-duration-fast);
+  }
+  .nff-segmented-item:hover { color: var(--nff-color-text-primary); background: rgb(255 255 255 / 0.6); }
+  .nff-segmented-item[data-state="active"],
+  .nff-segmented-item[aria-selected="true"],
+  .nff-segmented-item[aria-pressed="true"] {
+    background: var(--nff-neutral-0);
+    color: var(--nff-color-text-primary);
+    font-weight: 600;
+    box-shadow: 0 0 0 1px var(--nff-forest-800), var(--nff-shadow-1);
+  }
+  .nff-segmented-count {
+    min-width: 20px;
+    padding: 0 6px;
+    border-radius: 4px;
+    background: var(--nff-sage-200);
+    color: var(--nff-forest-900);
+    font-size: 0.75rem;
+    line-height: 1.25rem;
+    font-variant-numeric: tabular-nums;
+    text-align: center;
+  }
+}

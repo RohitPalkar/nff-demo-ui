@@ -166,7 +166,7 @@ export function DataTable<T>({
   return (
     <div className="admin-dt flex min-w-0 flex-col gap-3">
       {views && views.length > 1 && (
-        <div role="tablist" aria-label={`${caption} views`} className="admin-dt-views">
+        <div role="tablist" aria-label={`${caption} views`} className="nff-segmented self-start">
           {views.map((entry) => {
             const count = matched.filter(entry.predicate).length
             const selected = entry.id === activeView?.id
@@ -177,11 +177,11 @@ export function DataTable<T>({
                 role="tab"
                 aria-selected={selected}
                 data-state={selected ? 'active' : 'inactive'}
-                className="admin-dt-view nff-target nff-focus-ring"
+                className="nff-segmented-item nff-target nff-focus-ring"
                 onClick={() => changeView(entry.id)}
               >
                 {entry.label}
-                <span className="admin-dt-count" aria-label={`, ${count}`}>
+                <span className="nff-segmented-count" aria-label={`, ${count}`}>
                   {count}
                 </span>
               </button>

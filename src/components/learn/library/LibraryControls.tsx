@@ -1,5 +1,4 @@
 import { X } from 'lucide-react'
-import { cn } from '@/lib/utils'
 import {
   LIBRARY_SORTS,
   LIBRARY_SORT_LABEL,
@@ -10,24 +9,6 @@ import type { Category } from '@/types'
 
 /** Category, format and sort controls, and the results line. Presentation only. */
 
-const CHIP =
-  'inline-flex h-10 shrink-0 items-center gap-2 rounded-md border px-3.5 nff-label-md transition-colors nff-focus-ring'
-const CHIP_OFF =
-  'border-nff-border-default bg-nff-bg-surface text-nff-text-secondary hover:border-[var(--nff-forest-800)] hover:text-foreground'
-const CHIP_ON = 'border-[var(--nff-border-active)] bg-[var(--nff-bg-active)] text-[var(--nff-text-active)]'
-
-function Count({ value, active }: { value: number; active: boolean }) {
-  return (
-    <span
-      className={cn(
-        'rounded-sm px-1.5 nff-caption',
-        active ? 'bg-[var(--nff-ivory-50)]/15 text-[var(--nff-ivory-50)]' : 'bg-[var(--nff-sage-100)] text-[var(--nff-forest-900)]',
-      )}
-    >
-      {value}
-    </span>
-  )
-}
 
 export function LibraryCategoryNavigation({
   value,
@@ -42,20 +23,20 @@ export function LibraryCategoryNavigation({
 }) {
   const options = [{ category: 'all' as const, label: 'All', count: all }, ...categories]
   return (
-    <nav aria-label="Library categories" className="-mx-4 overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0">
-      <ul className="flex min-w-max gap-2">
+    <nav aria-label="Library categories" className="max-w-full self-start">
+      <ul className="nff-segmented max-w-full">
         {options.map((option) => {
           const active = option.category === value
           return (
-            <li key={option.category}>
+            <li key={option.category} className="flex shrink-0">
               <button
                 type="button"
                 aria-pressed={active}
                 onClick={() => onChange(option.category)}
-                className={cn(CHIP, active ? CHIP_ON : CHIP_OFF)}
+                className="nff-segmented-item nff-focus-ring"
               >
                 {option.label}
-                <Count value={option.count} active={active} />
+                <span className="nff-segmented-count">{option.count}</span>
               </button>
             </li>
           )
@@ -81,7 +62,7 @@ export function LibraryFilters({
     <div
       role="group"
       aria-label="Format"
-      className="flex max-w-full gap-1 overflow-x-auto rounded-md border border-nff-border-default bg-nff-bg-surface p-1"
+      className="nff-segmented max-w-full"
     >
       {options.map((option) => {
         const active = option.format === value
@@ -91,12 +72,7 @@ export function LibraryFilters({
             type="button"
             aria-pressed={active}
             onClick={() => onChange(option.format)}
-            className={cn(
-              'inline-flex h-9 shrink-0 items-center gap-1.5 rounded-sm px-2.5 nff-label-md transition-colors nff-focus-ring sm:px-3',
-              active
-                ? 'bg-[var(--nff-bg-active)] text-[var(--nff-text-active)] border border-[var(--nff-border-active)]'
-                : 'text-nff-text-secondary hover:text-foreground',
-            )}
+            className="nff-segmented-item shrink-0 nff-focus-ring"
           >
             {option.format === 'all' ? (
               <>
@@ -106,7 +82,7 @@ export function LibraryFilters({
             ) : (
               option.label
             )}
-            <span className="nff-caption opacity-80">{option.count}</span>
+            <span className="nff-segmented-count">{option.count}</span>
           </button>
         )
       })}

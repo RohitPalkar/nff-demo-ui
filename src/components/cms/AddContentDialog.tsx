@@ -123,7 +123,7 @@ function Picker({
       </DialogHeader>
 
       {canCreate && (
-        <div role="tablist" aria-label="Add content" className="admin-dt-views">
+        <div role="tablist" aria-label="Add content" className="nff-segmented self-start">
           {(['pick', 'create'] as const).map((entry) => (
             <button
               key={entry}
@@ -131,7 +131,7 @@ function Picker({
               role="tab"
               aria-selected={mode === entry}
               data-state={mode === entry ? 'active' : 'inactive'}
-              className="admin-dt-view nff-target nff-focus-ring"
+              className="nff-segmented-item nff-target nff-focus-ring"
               onClick={() => setMode(entry)}
             >
               {entry === 'pick' ? 'Existing content' : 'Create new'}

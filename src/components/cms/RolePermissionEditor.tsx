@@ -1,4 +1,4 @@
-import { Check, Lock, Minus, RotateCcw, ShieldCheck } from 'lucide-react'
+import { Check, Lock, Minus, RotateCcw } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { ConfirmationDialog, InlineNotice } from '@/components/admin'
@@ -57,7 +57,7 @@ const same = (a: readonly Permission[], b: readonly Permission[]) =>
 
 /**
  * What each staff role can do, and (for a Super admin) changing it. Pick a
- * role on the left; its permissions are grouped by area on the right, each a
+ * role at the top; its permissions are listed by area below, each a
  * switch. Turning one on brings what it needs; turning one off takes what
  * depends on it. Changes are drafts until reviewed and saved.
  */
@@ -118,89 +118,78 @@ export function RolePermissionEditor({
         </InlineNotice>
       )}
 
-      <div className="grid gap-4 lg:grid-cols-[260px_minmax(0,1fr)]">
-        <nav aria-label="Roles" className="flex gap-2 overflow-x-auto pb-1 lg:flex-col lg:overflow-visible lg:pb-0">
-          {STAFF_ROLE_IDS.map((role) => {
-            const count = working(role).length
-            const dirty = isEditableRole(role) && changed.includes(role)
-            return (
-              <button
-                key={role}
-                type="button"
-                aria-current={mode === role ? 'true' : undefined}
-                onClick={() => setMode(role)}
-                className={cn(
-                  'flex min-w-48 flex-col gap-1 rounded-lg border p-3 text-left nff-focus-ring lg:min-w-0',
-                  mode === role
-                    ? 'border-[var(--admin-primary)] bg-[var(--admin-nav-active-bg)]'
-                    : 'border-[var(--admin-border)] bg-[var(--admin-surface)] hover:border-[var(--admin-border-strong)]',
-                )}
-              >
-                <span className="flex items-center justify-between gap-2">
-                  <span className="nff-label-md">{getRoleLabel(role)}</span>
-                  {dirty ? (
+      <div className="flex flex-col gap-2">
+        <p id="role-picker-label" className="nff-label-md">
+          Choose a role
+        </p>
+        <nav aria-labelledby="role-picker-label" className="max-w-full self-start">
+          <div className="nff-segmented max-w-full">
+            {STAFF_ROLE_IDS.map((role) => {
+              const dirty = isEditableRole(role) && changed.includes(role)
+              return (
+                <button
+                  key={role}
+                  type="button"
+                  aria-pressed={mode === role}
+                  onClick={() => setMode(role)}
+                  className="nff-segmented-item nff-target nff-focus-ring"
+                >
+                  {getRoleLabel(role)}
+                  {dirty && (
                     <span className="rounded-sm bg-nff-bg-warning-subtle px-1.5 nff-label-sm text-nff-text-warning">Unsaved</span>
-                  ) : isRoleCustomised(role) ? (
-                    <span className="rounded-sm bg-nff-bg-info-subtle px-1.5 nff-label-sm text-nff-text-info">Customised</span>
-                  ) : role === 'super_admin' ? (
-                    <Lock aria-label="Fixed" className="size-3.5 text-[var(--admin-text-muted)]" />
-                  ) : null}
-                </span>
-                <span className="nff-caption text-[var(--admin-text-muted)]">
-                  {count} of {ALL_PERMISSIONS.length} permissions · {memberCount(role)} {memberCount(role) === 1 ? 'member' : 'members'}
-                </span>
-              </button>
-            )
-          })}
-          <button
-            type="button"
-            aria-current={mode === 'compare' ? 'true' : undefined}
-            onClick={() => setMode('compare')}
-            className={cn(
-              'flex min-w-40 items-center gap-2 rounded-lg border border-dashed p-3 text-left nff-label-md nff-focus-ring lg:min-w-0',
-              mode === 'compare' ? 'border-[var(--admin-primary)] bg-[var(--admin-nav-active-bg)]' : 'border-[var(--admin-border-strong)]',
-            )}
-          >
-            Compare all roles
-          </button>
+                  )}
+                </button>
+              )
+            })}
+            <span aria-hidden="true" className="mx-1 w-px shrink-0 self-stretch bg-[var(--admin-border)]" />
+            <button
+              type="button"
+              aria-pressed={mode === 'compare'}
+              onClick={() => setMode('compare')}
+              className="nff-segmented-item nff-target nff-focus-ring"
+            >
+              Compare all roles
+            </button>
+          </div>
         </nav>
-
-        {mode === 'compare' ? (
-          <CompareMatrix working={working} />
-        ) : (
-          <RolePanel
-            key={mode}
-            role={mode}
-            actor={actor}
-            permissions={working(mode)}
-            hint={hint}
-            onToggle={(permission, on) => isEditableRole(mode) && toggle(mode, permission, on)}
-            onReset={() => setResetting(true)}
-          />
-        )}
-        {mode !== 'compare' && isEditableRole(mode) && (
-          <ConfirmationDialog
-            open={resetting}
-            onOpenChange={setResetting}
-            title={`Reset ${getRoleLabel(mode)} to its default permissions?`}
-            description={`Everyone with the ${getRoleLabel(mode)} role gets the default permissions straight away, and any customisation is lost.`}
-            confirmLabel="Reset to defaults"
-            onConfirm={() => {
-              setResetting(false)
-              if (!isEditableRole(mode)) return
-              if (!attempt(() => resetRolePermissions(mode))) return
-              setDrafts((current) => {
-                const next = { ...current }
-                delete next[mode]
-                return next
-              })
-              setVersion((value) => value + 1)
-              toast.success(`${getRoleLabel(mode)} is back to its default permissions.`)
-              onSaved()
-            }}
-          />
-        )}
       </div>
+
+      {mode === 'compare' ? (
+        <CompareMatrix working={working} />
+      ) : (
+        <RolePanel
+          key={mode}
+          role={mode}
+          actor={actor}
+          permissions={working(mode)}
+          members={memberCount(mode)}
+          hint={hint}
+          onToggle={(permission, on) => isEditableRole(mode) && toggle(mode, permission, on)}
+          onReset={() => setResetting(true)}
+        />
+      )}
+      {mode !== 'compare' && isEditableRole(mode) && (
+        <ConfirmationDialog
+          open={resetting}
+          onOpenChange={setResetting}
+          title={`Reset ${getRoleLabel(mode)} to its default permissions?`}
+          description={`Everyone with the ${getRoleLabel(mode)} role gets the default permissions straight away, and any customisation is lost.`}
+          confirmLabel="Reset to defaults"
+          onConfirm={() => {
+            setResetting(false)
+            if (!isEditableRole(mode)) return
+            if (!attempt(() => resetRolePermissions(mode))) return
+            setDrafts((current) => {
+              const next = { ...current }
+              delete next[mode]
+              return next
+            })
+            setVersion((value) => value + 1)
+            toast.success(`${getRoleLabel(mode)} is back to its default permissions.`)
+            onSaved()
+          }}
+        />
+      )}
 
       {changed.length > 0 && (
         <ActionBar status={`Unsaved changes to ${changed.map((role) => getRoleLabel(role)).join(', ')}.`}>
@@ -279,6 +268,7 @@ function RolePanel({
   role,
   actor,
   permissions,
+  members,
   hint,
   onToggle,
   onReset,
@@ -286,102 +276,138 @@ function RolePanel({
   role: StaffRole
   actor: Actor | null
   permissions: readonly Permission[]
+  members: number
   hint: string
   onToggle: (permission: Permission, on: boolean) => void
   onReset: () => void
 }) {
   const editable = canEditRole(actor, role)
   const customised = isRoleCustomised(role)
+  const assignable = ROLE_DEFINITIONS[role].assignableRoles.map((entry) => getRoleLabel(entry)).join(', ')
   return (
-    <section aria-labelledby="role-panel-title" className="flex min-w-0 flex-col gap-4">
-      <header className="flex flex-col gap-3 rounded-lg border border-[var(--admin-border)] bg-[var(--admin-surface)] p-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="flex min-w-0 flex-col gap-1">
-          <h2 id="role-panel-title" className="flex items-center gap-2 admin-section-title">
-            <ShieldCheck aria-hidden="true" className="size-5 text-[var(--admin-primary)]" />
+    <section aria-labelledby="role-panel-title" className="flex min-w-0 max-w-4xl flex-col gap-4">
+      <header className="flex flex-col gap-4 rounded-lg border border-[var(--admin-border)] bg-[var(--admin-surface)] p-5 sm:flex-row sm:items-start sm:justify-between">
+        <div className="flex min-w-0 flex-col gap-1.5">
+          <h2 id="role-panel-title" className="admin-section-title">
             {getRoleLabel(role)}
           </h2>
           <p className="nff-body-sm text-[var(--admin-text-muted)]">{ROLE_DEFINITIONS[role].description}</p>
+          <dl className="mt-2 flex flex-wrap gap-x-6 gap-y-1 nff-body-sm">
+            <div className="flex gap-1.5">
+              <dt className="text-[var(--admin-text-muted)]">Permissions</dt>
+              <dd className="font-semibold tabular-nums">
+                {permissions.length} of {ALL_PERMISSIONS.length}
+              </dd>
+            </div>
+            <div className="flex gap-1.5">
+              <dt className="text-[var(--admin-text-muted)]">Members</dt>
+              <dd className="font-semibold tabular-nums">{members}</dd>
+            </div>
+            {role !== 'super_admin' && (
+              <div className="flex gap-1.5">
+                <dt className="text-[var(--admin-text-muted)]">Can assign</dt>
+                <dd className="font-semibold">{assignable || 'No roles'}</dd>
+              </div>
+            )}
+          </dl>
           {role === 'super_admin' ? (
-            <p className="nff-caption text-[var(--admin-text-muted)]">
+            <p className="mt-1 flex items-center gap-1.5 nff-caption text-[var(--admin-text-muted)]">
+              <Lock aria-hidden="true" className="size-3.5 shrink-0" />
               Fixed: a Super admin always holds every permission, so the platform can never be locked out.
             </p>
           ) : (
-            <p className="nff-caption text-[var(--admin-text-muted)]">
-              {customised ? 'Customised by a Super admin.' : 'Using the default permissions.'}{' '}
-              Can assign: {ROLE_DEFINITIONS[role].assignableRoles.map((entry) => getRoleLabel(entry)).join(', ') || 'no roles'}.
-            </p>
+            customised && (
+              <p className="mt-1 nff-caption text-nff-text-info">Customised by a Super admin. Differs from the default.</p>
+            )
           )}
         </div>
         {editable.ok && customised && (
-          <Button size="sm" variant="outline" onClick={onReset}>
+          <Button size="sm" variant="outline" className="shrink-0" onClick={onReset}>
             <RotateCcw aria-hidden="true" className="size-4" />
             Reset to defaults
           </Button>
         )}
       </header>
 
-      <p role="status" aria-live="polite" className={cn('nff-caption text-[var(--admin-text-muted)]', !hint && 'sr-only')}>
+      <p
+        role="status"
+        aria-live="polite"
+        className={cn(
+          'rounded-md border border-nff-border-info bg-nff-bg-info-subtle px-4 py-2.5 nff-body-sm text-nff-text-info',
+          !hint && 'sr-only',
+        )}
+      >
         {hint}
       </p>
 
-      <div className="grid gap-4 xl:grid-cols-2">
-        {PERMISSION_DOMAINS.map((domain) => {
-          const list = permissionsInDomain(domain)
-          const on = list.filter((permission) => permissions.includes(permission)).length
-          return (
-            <fieldset
-              key={domain}
-              className="flex min-w-0 flex-col rounded-lg border border-[var(--admin-border)] bg-[var(--admin-surface)]"
+      {PERMISSION_DOMAINS.map((domain) => {
+        const list = permissionsInDomain(domain)
+        const on = list.filter((permission) => permissions.includes(permission)).length
+        return (
+          <fieldset
+            key={domain}
+            className="flex min-w-0 flex-col overflow-hidden rounded-lg border border-[var(--admin-border)] bg-[var(--admin-surface)]"
+          >
+            <legend className="sr-only">{DOMAIN_LABEL[domain]}</legend>
+            <div
+              aria-hidden="true"
+              className="flex items-center justify-between gap-3 border-b border-[var(--admin-border)] bg-[var(--nff-sage-50)] px-5 py-3"
             >
-              <legend className="sr-only">{DOMAIN_LABEL[domain]}</legend>
-              <div aria-hidden="true" className="flex items-center justify-between border-b border-[var(--admin-border)] px-4 py-2.5">
-                <span className="nff-label-md">{DOMAIN_LABEL[domain]}</span>
-                <span className="nff-caption tabular-nums text-[var(--admin-text-muted)]">
-                  {on} of {list.length}
-                </span>
-              </div>
-              <ul className="flex flex-col divide-y divide-[var(--admin-border)]">
-                {list.map((permission) => {
-                  const locked = role !== 'super_admin' ? LOCKED_PERMISSIONS[permission] : undefined
-                  const checked = permissions.includes(permission)
-                  const disabled = !editable.ok || Boolean(locked)
-                  const needs = PERMISSION_REQUIRES[permission]
-                  const id = `perm-${role}-${permission}`
-                  return (
-                    <li key={permission} className="flex items-start gap-3 px-4 py-3">
-                      <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-                        <label htmlFor={id} className="nff-label-md">
-                          {PERMISSION_LABELS[permission]}
-                        </label>
+              <span className="nff-label-lg">{DOMAIN_LABEL[domain]}</span>
+              <span className="nff-caption tabular-nums text-[var(--admin-text-muted)]">
+                {on} of {list.length} allowed
+              </span>
+            </div>
+            <ul className="flex flex-col divide-y divide-[var(--admin-border)]">
+              {list.map((permission) => {
+                const locked = role !== 'super_admin' ? LOCKED_PERMISSIONS[permission] : undefined
+                const checked = permissions.includes(permission)
+                const disabled = !editable.ok || Boolean(locked)
+                const needs = PERMISSION_REQUIRES[permission]
+                const id = `perm-${role}-${permission}`
+                return (
+                  <li key={permission} className="flex items-center gap-4 px-5 py-3.5">
+                    <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+                      <label htmlFor={id} className="nff-label-md">
+                        {PERMISSION_LABELS[permission]}
+                      </label>
+                      <span className="nff-body-sm text-[var(--admin-text-muted)]">
+                        {PERMISSION_DEFINITIONS[permission].description}
+                      </span>
+                      {needs && (
                         <span className="nff-caption text-[var(--admin-text-muted)]">
-                          {PERMISSION_DEFINITIONS[permission].description}
+                          Requires: {needs.map((entry) => PERMISSION_LABELS[entry]).join(', ')}
                         </span>
-                        <span className="flex flex-wrap gap-x-2 nff-caption text-[var(--admin-text-muted)]">
-                          <code className="font-mono text-[0.6875rem]">{permission}</code>
-                          {needs && <span>· Needs {needs.map((entry) => PERMISSION_LABELS[entry]).join(', ')}</span>}
+                      )}
+                      {locked && (
+                        <span className="flex items-center gap-1 nff-caption text-[var(--admin-text-muted)]">
+                          <Lock aria-hidden="true" className="size-3" />
+                          {locked.reason}
                         </span>
-                        {locked && (
-                          <span className="flex items-center gap-1 nff-caption text-[var(--admin-text-muted)]">
-                            <Lock aria-hidden="true" className="size-3" />
-                            {locked.reason}
-                          </span>
-                        )}
-                      </div>
-                      <Switch
-                        id={id}
-                        checked={checked}
-                        disabled={disabled}
-                        aria-describedby={undefined}
-                        onCheckedChange={(next) => onToggle(permission, next)}
-                      />
-                    </li>
-                  )
-                })}
-              </ul>
-            </fieldset>
-          )
-        })}
-      </div>
+                      )}
+                    </div>
+                    <span
+                      aria-hidden="true"
+                      className={cn(
+                        'hidden w-16 text-right nff-label-sm sm:block',
+                        checked ? 'text-nff-text-success' : 'text-[var(--admin-text-muted)]',
+                      )}
+                    >
+                      {checked ? 'Allowed' : 'Off'}
+                    </span>
+                    <Switch
+                      id={id}
+                      checked={checked}
+                      disabled={disabled}
+                      onCheckedChange={(next) => onToggle(permission, next)}
+                    />
+                  </li>
+                )
+              })}
+            </ul>
+          </fieldset>
+        )
+      })}
     </section>
   )
 }

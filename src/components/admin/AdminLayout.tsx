@@ -73,7 +73,7 @@ export function AdminLayout() {
       <aside
         aria-label="Admin sidebar"
         className={cn(
-          'sticky top-0 hidden h-dvh shrink-0 flex-col border-r border-[var(--admin-border)] bg-[var(--admin-surface)] lg:flex',
+          'sticky top-0 hidden h-dvh shrink-0 flex-col border-r border-[var(--admin-border)] bg-[var(--nff-sage-50)] lg:flex',
           collapsed ? 'w-[var(--admin-sidebar-width-collapsed)]' : 'w-[var(--admin-sidebar-width)]',
         )}
       >

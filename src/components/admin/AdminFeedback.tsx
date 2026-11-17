@@ -81,7 +81,9 @@ export function EmptyState({
 }) {
   return (
     <div role="status" className="flex flex-col items-center gap-3 rounded-lg border border-dashed border-[var(--admin-border-strong)] bg-[var(--admin-surface)] px-6 py-10 text-center">
-      <Icon aria-hidden="true" className="size-6 text-[var(--admin-text-muted)]" />
+      <span className="flex size-11 items-center justify-center rounded-full bg-[var(--nff-sage-100)]">
+        <Icon aria-hidden="true" className="size-5 text-[var(--nff-forest-700)]" />
+      </span>
       <div className="flex max-w-prose flex-col gap-1">
         <h2 className="nff-label-lg text-[var(--admin-text)]">{title}</h2>
         <p className="nff-body-sm text-[var(--admin-text-muted)]">{description}</p>
