@@ -61,7 +61,7 @@ describe('My Learning', () => {
     renderPage()
 
     expect(screen.getByRole('heading', { level: 1, name: 'My Learning' })).toBeInTheDocument()
-    expect(screen.getByText('The learning paths assigned to you, and how far you are in each.')).toBeInTheDocument()
+    expect(screen.getByText('Your assigned learning paths, organized by progress. Resume where you left off or start something new.')).toBeInTheDocument()
 
     const card = await screen.findByRole('article', { name: 'Meadow Journey' })
     const done = demoProgress.completedItemIds.length
