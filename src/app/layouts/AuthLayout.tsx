@@ -1,4 +1,4 @@
-import { Link, Outlet } from 'react-router-dom'
+import { Link, Outlet, ScrollRestoration } from 'react-router-dom'
 import { BrandLogo } from '@/components/nff/BrandLogo'
 
 /**
@@ -44,6 +44,7 @@ export function AuthLayout() {
           </Link>
         ))}
       </footer>
+      <ScrollRestoration />
     </div>
   )
 }

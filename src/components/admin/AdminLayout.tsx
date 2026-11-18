@@ -1,6 +1,6 @@
 import { ChevronsLeft, ChevronsRight, Menu } from 'lucide-react'
 import { useLayoutEffect, useMemo, useState, type CSSProperties } from 'react'
-import { Link, Outlet, useLocation } from 'react-router-dom'
+import { Link, Outlet, ScrollRestoration, useLocation } from 'react-router-dom'
 import { BrandLogo } from '@/components/nff/BrandLogo'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetDescription, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
@@ -140,6 +140,7 @@ export function AdminLayout() {
           </AdminContentContainer>
         </main>
       </div>
+      <ScrollRestoration />
     </div>
   )
 }

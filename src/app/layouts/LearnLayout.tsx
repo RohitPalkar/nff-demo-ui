@@ -1,4 +1,4 @@
-import { Outlet } from 'react-router-dom'
+import { Outlet, ScrollRestoration } from 'react-router-dom'
 import { LearnMobileNav } from '@/components/learn/LearnMobileNav'
 import { LearnNav } from '@/components/learn/LearnNav'
 import { PreviewIndicator } from '@/components/learn/PreviewIndicator'
@@ -40,6 +40,7 @@ export function LearnLayout() {
         <Outlet />
       </main>
       <MiniPlayer />
+      <ScrollRestoration />
     </div>
   )
 }
