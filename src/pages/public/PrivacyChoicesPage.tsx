@@ -36,13 +36,15 @@ export function PrivacyChoicesPage() {
   }, [])
 
   return (
-    <div className="nff-content flex flex-col gap-8 py-8 md:py-12">
-      <DetailBreadcrumb
-        trail={[{ label: 'Home', to: '/' }]}
-        current="Cookie preferences"
-      />
+    <div className="w-full flex flex-col gap-8 py-8 md:py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-[1440px] mx-auto">
+        <DetailBreadcrumb
+          trail={[{ label: 'Home', to: '/' }]}
+          current="Cookie preferences"
+        />
+      </div>
 
-      <header className="nff-reading flex flex-col gap-3">
+      <header className="flex flex-col gap-3 max-w-[1440px] mx-auto">
         <span
           aria-hidden="true"
           className="flex size-12 items-center justify-center rounded-full bg-nff-bg-warning-subtle text-nff-text-warning"
@@ -61,7 +63,7 @@ export function PrivacyChoicesPage() {
         </p>
       </header>
 
-      <div className="nff-reading flex flex-col gap-8">
+      <div className="flex flex-col gap-8 max-w-[1440px] mx-auto w-full">
         <section
           aria-label="Current choice"
           aria-live="polite"

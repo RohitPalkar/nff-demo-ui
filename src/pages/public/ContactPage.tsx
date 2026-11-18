@@ -70,7 +70,7 @@ export function ContactPage() {
   ]
 
   return (
-    <div className="mx-auto flex max-w-[1080px] flex-col gap-10 px-4 py-8 sm:px-6 md:py-12">
+    <div className="w-full flex flex-col gap-10 px-4 py-8 sm:px-6 md:py-12">
       <header className="flex flex-col gap-2">
         <h1 className="nff-heading-h1 text-foreground">Contact &amp; support</h1>
         <p className="max-w-2xl nff-body-lg text-nff-text-secondary">
